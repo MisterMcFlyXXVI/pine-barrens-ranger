@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1316" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="data:," />
+    <title>Pine Barrens Ranger</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="screen"><canvas id="game" aria-label="Pine Barrens Ranger game screen"></canvas></div>
+      <div id="deck" aria-hidden="true"></div>
+      <div id="corner">
+        <button id="mute-toggle" type="button" aria-label="Toggle sound">SND</button>
+        <button id="pad-toggle" type="button" aria-label="Toggle touch controls">PAD</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
