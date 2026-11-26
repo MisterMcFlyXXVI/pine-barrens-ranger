@@ -9,6 +9,7 @@ const KEYMAP: Record<string, Action> = {
   ShiftLeft: 'b', ShiftRight: 'b', Escape: 'b', KeyX: 'b', Backspace: 'b', KeyQ: 'b',
   Tab: 'dex', KeyJ: 'dex',
   KeyI: 'bag', KeyB: 'bag',
+  KeyP: 'map',
   KeyM: 'mute',
 };
 

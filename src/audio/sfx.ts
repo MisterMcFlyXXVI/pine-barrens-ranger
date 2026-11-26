@@ -46,6 +46,11 @@ class Sfx {
     return this.muted;
   }
 
+  /** Shared output for the music engine (muting the master silences both). */
+  output(): { ac: AudioContext; dest: AudioNode } | null {
+    return this.ac && this.master ? { ac: this.ac, dest: this.master } : null;
+  }
+
   private ready(): AudioContext | null {
     if (!this.ac || !this.master || this.muted) return null;
     return this.ac;

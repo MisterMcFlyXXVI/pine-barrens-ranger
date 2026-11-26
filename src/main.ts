@@ -57,7 +57,7 @@ window.addEventListener('pagehide', () => game.snapshot());
 setInterval(() => { if (!document.hidden) game.snapshot(); }, 90_000);
 bindCanvasTaps(canvas, game.input, gesture);
 new TouchControls(deck, padBtn, game.input, gesture, () => requestAnimationFrame(layout));
-muteBtn.classList.toggle('on', !sfx.muted);
+Game.syncSoundButton();
 muteBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   sfx.unlock();

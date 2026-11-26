@@ -138,6 +138,7 @@ export class TouchControls {
     const pills = el('div', 'ctl pills', d);
     this.bindButton(el('div', 'pill', pills, 'DEX'), 'dex');
     this.bindButton(el('div', 'pill', pills, 'BAG'), 'bag');
+    this.bindButton(el('div', 'pill', pills, 'MAP'), 'map');
   }
 
   /** Track a D-pad pointer; `null` = engaged but resting in the centre deadzone. */

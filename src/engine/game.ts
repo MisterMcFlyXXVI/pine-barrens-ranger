@@ -19,10 +19,12 @@ import { BUILT_MAPS, BED_SPAWN, MapId, MAP_NAMES } from '../data/maps';
 import { O, T, objProps, Interact, SLOW_GROUND, WADE_GROUND, COVER_OBJECTS, MOUNT_OBJECT } from '../data/tiles';
 import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind } from '../data/items';
 import { CRYPTID_BY_ID, CryptidDef, Variant } from '../data/cryptids';
-import { DayWeather, rollWeather, weatherAt, moonPhase, Weather, WEATHER_LABEL } from '../data/weather';
+import { DayWeather, rollWeather, weatherAt, moonPhase, timeTags, Weather, WEATHER_LABEL } from '../data/weather';
 import { Dex, Kit, newDex, loadDex, defaultKit } from './dex';
 import { pickCryptid, rollVariant, encounterChance, eligible, SpawnCtx } from './spawn';
 import { Encounter } from './encounter';
+import { music, TrackId } from '../audio/music';
+import { StoryPanels } from '../ui/intro';
 import { DexMenu } from '../ui/dex';
 import { WeatherFx } from '../graphics/weatherFx';
 import { Progress } from './progress';
@@ -45,6 +47,7 @@ import type { Overlay } from '../ui/overlay';
 import { Dialog, BagMenu, DresserMenu, JournalMenu, SleepSummary } from '../ui/menus';
 import { TitleScreen } from '../ui/title';
 import { StorageMenu } from '../ui/storage';
+import { WorldMap } from '../ui/worldmap';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
 import { drawHud, hotbarHit } from '../ui/hud';
@@ -625,6 +628,7 @@ export class Game {
     this.time += dt;
     this.input.beginFrame(dt);
     if (this.input.pressed('mute')) this.toggleMute();
+    music.play(this.musicTrack());
     this.updateFade(dt);
 
     if (this.mode === 'title') {
@@ -699,13 +703,41 @@ export class Game {
     }
   }
 
+  /** M / the SND button cycle: music + sound -> sound effects only -> off -> back on. */
   toggleMute(): void {
-    const m = sfx.toggleMute();
-    this.toast(m ? 'Sound muted (M)' : 'Sound on (M)');
-    document.getElementById('mute-toggle')?.classList.toggle('on', !m);
+    if (!sfx.muted && music.enabled) { music.setEnabled(false); this.toast('Music off, sound effects on (M)'); }
+    else if (!sfx.muted) { sfx.toggleMute(); this.toast('All sound off (M)'); }
+    else { sfx.toggleMute(); music.setEnabled(true); this.toast('Music and sound on (M)'); }
+    Game.syncSoundButton();
   }
 
-  /** Title screen → fade → new game or loaded save. */
+  /** Label the corner button with the current sound state. */
+  static syncSoundButton(): void {
+    const b = document.getElementById('mute-toggle');
+    if (!b) return;
+    b.textContent = sfx.muted ? 'OFF' : music.enabled ? 'SND' : 'SFX';
+    b.classList.toggle('on', !sfx.muted);
+  }
+
+  /** Background music that fits the moment. */
+  private musicTrack(): TrackId {
+    if (this.mode === 'title') return 'title';
+    const top = this.overlays[this.overlays.length - 1];
+    if (top instanceof Encounter) return 'encounter';
+    if (top instanceof StoryPanels || top instanceof FinaleScene) return 'title';
+    const m = this.cur;
+    if (!m) return 'title';
+    if (m.def.indoor) return 'interior';
+    const tags = timeTags(this.clock.minutes);
+    const night = tags.includes('NIGHT') || tags.includes('WITCHING');
+    if (m.id === 'PINE_HOLLOW_TOWN') return this.isFestival() ? 'festival' : night ? 'night' : 'town';
+    if (night) return 'night';
+    if (m.id === 'CABIN_YARD') return 'cabin';
+    if (m.id === 'CRANBERRY_BOG_AND_SPRINGS') return 'bog';
+    if (m.id === 'RADIO_RIDGE_AND_CROSSROADS') return 'ridge';
+    return 'woods';
+  }
+
   /** Quick-resume snapshot (app hidden / closed / every 90s). Skipped on the title screen and mid-transition. */
   snapshot(): void {
     if (this.mode !== 'play' || this.fadeDir !== 0 || !this.cur) return;
@@ -722,7 +754,7 @@ export class Game {
   }
   private lastSaveKey: string | null = null;
 
-  /** `fromRealSave`: loading the real save (CONTINUE), so it becomes the baseline for quick-resume snapshots. */
+  /** Title screen → fade → new game or loaded save. `fromRealSave`: loading the real save (CONTINUE), so it becomes the baseline for quick-resume snapshots. */
   startFromTitle(load: SaveData | null, fromRealSave = false): void {
     sfx.unlock();
     sfx.confirm();
@@ -742,6 +774,7 @@ export class Game {
     }
     if (inp.pressed('bag')) { sfx.open(); this.openOverlay(new BagMenu()); }
     else if (inp.pressed('dex')) { sfx.open(); this.openOverlay(new DexMenu()); }
+    else if (inp.pressed('map')) { sfx.open(); this.openOverlay(new WorldMap(this)); }
   }
 
   /* ------------------------------------------------------------ */
