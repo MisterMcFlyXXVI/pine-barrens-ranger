@@ -14,6 +14,7 @@ import { Inventory, Stack, HOTBAR_SIZE } from './inventory';
 import { MapRuntime } from './world';
 import { Player, TOOL_DURATION } from './player';
 import { SaveData, Stats, writeSave, SAVE_VERSION, MapSave } from './save';
+import { cloudBackup, cloudCode } from './cloud';
 import { BUILT_MAPS, BED_SPAWN, MapId, MAP_NAMES } from '../data/maps';
 import { O, T, objProps, Interact, SLOW_GROUND, WADE_GROUND, COVER_OBJECTS, MOUNT_OBJECT } from '../data/tiles';
 import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind } from '../data/items';
@@ -258,7 +259,12 @@ export class Game {
   }
 
   saveGame(): boolean {
-    return writeSave(this.toSave());
+    const ok = writeSave(this.toSave());
+    if (ok && cloudCode()) {
+      // Off-device copy (see api/save.ts). Runs in the background; the local save already succeeded.
+      void cloudBackup().then((r) => this.toast(r.ok ? 'Cloud backup saved.' : 'Cloud backup failed. It will retry at your next save.'));
+    }
+    return ok;
   }
 
   enterMap(id: MapId, x: number, y: number, dir: Dir): void {

@@ -1,23 +1,43 @@
 /** Export / import the localStorage save as a JSON file (desktop & mobile friendly). */
 import { SAVE_KEY, SAVE_VERSION, SaveData } from '../engine/save';
 
-export function exportSave(): string {
+/**
+ * Export the save as a JSON file. Where the browser has a Share sheet that accepts
+ * files (iPhone, iPad, Android) it opens that, so the file can go to iCloud Drive,
+ * Files, AirDrop or email; otherwise it downloads. Also copies the save to the clipboard.
+ */
+export function exportSave(onDone: (msg: string) => void): void {
   let raw: string | null = null;
   try { raw = localStorage.getItem(SAVE_KEY); } catch { /* blocked */ }
-  if (!raw) return 'No save to export yet.';
+  if (!raw) { onDone('No save to export yet.'); return; }
   let day = 0;
   try { day = (JSON.parse(raw) as SaveData).day; } catch { /* ignore */ }
-  const blob = new Blob([raw], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const name = `pine-holler-ranger-day${day}.json`;
+  try { navigator.clipboard?.writeText(raw).catch(() => undefined); } catch { /* optional */ }
+
+  const file = new File([raw], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file], title: 'Pine Holler Ranger save' })
+      .then(() => onDone('Save exported. Keep it somewhere safe, like iCloud Drive.'))
+      .catch((e: unknown) => {
+        if (e instanceof DOMException && e.name === 'AbortError') onDone('Export cancelled.');
+        else { download(raw!, name); onDone('Save exported (file downloaded).'); }
+      });
+    return;
+  }
+  download(raw, name);
+  onDone('Save exported (file downloaded).');
+}
+
+function download(raw: string, name: string): void {
+  const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `pine-holler-ranger-day${day}.json`;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
-  try { navigator.clipboard?.writeText(raw).catch(() => undefined); } catch { /* optional */ }
-  return 'Save exported (file downloaded).';
 }
 
 /** Basic shape check so a bad file can never brick the title screen. */

@@ -17,6 +17,17 @@ npm run build    # type-checks (strict) and outputs to dist/
 3. Vercel reads `vercel.json` (framework `vite`, build `npm run build`, output `dist`). Leave the defaults and click **Deploy**.
 No environment variables or API keys are needed.
 
+## Saves & backups
+- The game saves on the device when you sleep in the bed or use the cabin desk.
+- **Cloud backup** (title screen → CLOUD BACKUP → TURN ON): every save is also uploaded to a Redis database
+  attached to the Vercel project, under a recovery code like `HOLLER-ABCD-EFGH-JKLM`. On a new device or after
+  deleting the app, choose RESTORE FROM CODE. No accounts; the server stores saves under a hash of the code and keeps
+  the previous upload as a spare. Server code: `api/save.ts`.
+- **One-time setup:** in the Vercel dashboard open the project → **Storage** → create an **Upstash for Redis**
+  database (free plan) and connect it to the project, then redeploy. Check it at `https://<your-site>/api/save`:
+  it should show `{"cloud":true}`.
+- **EXPORT SAVE** opens the Share sheet on phones (save to Files / iCloud Drive, AirDrop, email) or downloads a file.
+
 ## Controls
 | Action | Keyboard | Touch |
 | --- | --- | --- |

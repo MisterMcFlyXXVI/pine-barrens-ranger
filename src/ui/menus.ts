@@ -21,6 +21,7 @@ import { panel, slotBox, inRect, Rect } from './panel';
 import { drawItemSlot } from './hud';
 import type { Dir } from '../util';
 import { touchOn } from '../util';
+import { cloudCode, formatCode } from '../engine/cloud';
 
 function anyConfirm(game: Game): boolean {
   return game.input.pressed('a') || game.input.taps.length > 0;
@@ -455,6 +456,8 @@ export class JournalMenu implements Overlay {
       line(`     ${moveName(game.kit.document)} / ${moveName(game.kit.stealth)}`);
       const gear = ['bog_waders', 'scent_mask', 'thermal_lens', 'brass_bell', 'silver_bell', 'static_radio', 'parabolic_dish', 'chronos_shutter'].filter((id) => game.inv.count(id) > 0);
       wrapText(`GEAR: ${gear.length ? gear.map((id) => ITEMS[id].name).join(', ') : 'none yet (Porch Workbench catalog)'}`, w - 12).forEach((l) => line(l));
+      const code = cloudCode();
+      line(code ? `CLOUD BACKUP: ${formatCode(code)}` : 'CLOUD BACKUP: OFF (TURN ON AT TITLE SCREEN)', code ? P.FOREST : P.RUST);
       if (game.wispNight === c.day) line('WISP-LIGHT OIL ACTIVE TONIGHT', P.VIOLET);
       if (game.lunarNight === c.day) line('LUNAR DEW: 3X RARE VARIANTS TONIGHT', P.VIOLET);
     } else {
