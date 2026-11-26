@@ -112,7 +112,7 @@ const base: ItemDef[] = [
 
   // ---- Whistle-Stop Diner food buffs ----
   { id: 'black_coffee', name: 'Black Coffee', kind: 'food', price: 10, stack: 20, edible: 30, desc: '+30 energy. Mabel brews it strong.' },
-  { id: 'pancakes', name: 'Pine Barrens Pancakes', kind: 'food', price: 25, stack: 20, edible: 60, desc: '+60 energy. Blueberry & sap syrup.' },
+  { id: 'pancakes', name: 'Buckwheat Pancakes', kind: 'food', price: 25, stack: 20, edible: 60, desc: '+60 energy. Buckwheat & maple syrup.' },
   { id: 'cranberry_pie', name: 'Cranberry Pie', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today.' },
   { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },
 ];

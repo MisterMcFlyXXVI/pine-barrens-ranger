@@ -63,7 +63,7 @@ const adArt: Art = (g, x, y, w, h) => {
   drawText(g, 'CLASSIFIEDS', px + 5, py + 15, P.RUST);
   fill(g, P.VOID, px + 4, py + 22, pw - 8, ph - 28);
   fill(g, P.FOG, px + 5, py + 23, pw - 10, ph - 30);
-  const lines = wrapText('HELP WANTED: OVERNIGHT FIRE-WATCH RANGER. PINE HOLLOW. ROOM & BOARD. NO QUESTIONS.', pw - 16);
+  const lines = wrapText('HELP WANTED: OVERNIGHT FIRE-WATCH RANGER. PINE HOLLOW, W.VA. ROOM & BOARD. NO QUESTIONS.', pw - 16);
   lines.slice(0, 5).forEach((l, i) => drawText(g, l, px + 8, py + 26 + i * 7, P.SHADOW));
   const tx = px + pw - 18, ty = py + 15;
   for (let k = 0; k < 6; k++) fill(g, P.FOREST, tx - k, ty + k, k * 2 + 1, 1);

@@ -1184,7 +1184,7 @@ export class Game {
       case 'bookshelf':
         sfx.blip();
         this.openOverlay(new Dialog([
-          '"Field Guide to the Pine Barrens, 3rd Ed." A page is dog-eared: "Lures matter. A Jackalope will cross a whole meadow for Wild Clover."',
+          '"Field Guide to the Allegheny Barrens, 3rd Ed." A page is dog-eared: "Lures matter. A Jackalope will cross a whole meadow for Wild Clover."',
           'Scrawled in the margin: "Tall grass rustles when you walk through it. Some nights, something rustles back."',
         ]));
         return true;
@@ -1286,7 +1286,7 @@ export class Game {
         return true;
       case 'booth':
         sfx.blip();
-        this.openOverlay(new Dialog(['TICKET BOOTH. A faded timetable lists stops nobody has visited in decades: Hollow Junction, Leeds Point, Bray Road...']));
+        this.openOverlay(new Dialog(['TICKET BOOTH. A faded timetable lists stops nobody has visited in decades: Hollow Junction, Point Pleasant, Flatwoods, Bray Road...']));
         return true;
       case 'signal':
         sfx.blip();
