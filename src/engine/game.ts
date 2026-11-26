@@ -13,7 +13,7 @@ import { Clock, DAY_START } from './clock';
 import { Inventory, Stack, HOTBAR_SIZE } from './inventory';
 import { MapRuntime } from './world';
 import { Player, TOOL_DURATION } from './player';
-import { SaveData, Stats, writeSave, SAVE_VERSION, MapSave } from './save';
+import { SaveData, Stats, clearResume, writeSave, writeResume, SAVE_VERSION, MapSave } from './save';
 import { accountEmail, uploadSave } from './account';
 import { BUILT_MAPS, BED_SPAWN, MapId, MAP_NAMES } from '../data/maps';
 import { O, T, objProps, Interact, SLOW_GROUND, WADE_GROUND, COVER_OBJECTS, MOUNT_OBJECT } from '../data/tiles';
@@ -201,6 +201,7 @@ export class Game {
   }
 
   loadGame(d: SaveData): void {
+    this.lastSaveKey = null;
     this.clock = new Clock();
     this.clock.day = d.day;
     this.clock.minutes = d.minutes;
@@ -296,7 +297,9 @@ export class Game {
   }
 
   saveGame(): boolean {
-    const ok = writeSave(this.toSave());
+    const save = this.toSave();
+    const ok = writeSave(save);
+    if (ok) this.lastSaveKey = Game.saveKey(save);
     if (ok && accountEmail()) {
       // Off-device copy to the player's account. Runs in the background; the device save already succeeded.
       void uploadSave().then((r) => this.toast(r.ok ? 'Saved to your account.' : 'Cloud save failed. It will retry at your next save.'));
@@ -703,11 +706,29 @@ export class Game {
   }
 
   /** Title screen → fade → new game or loaded save. */
-  startFromTitle(load: SaveData | null): void {
+  /** Quick-resume snapshot (app hidden / closed / every 90s). Skipped on the title screen and mid-transition. */
+  snapshot(): void {
+    if (this.mode !== 'play' || this.fadeDir !== 0 || !this.cur) return;
+    const d = this.toSave();
+    // Nothing meaningful changed since the last real save (just walking / the clock ticking): no snapshot.
+    if (this.lastSaveKey !== null && Game.saveKey(d) === this.lastSaveKey) { clearResume(); return; }
+    writeResume(d);
+  }
+
+  /** Fingerprint of a save that ignores position, time of day and stamina. */
+  private static saveKey(d: SaveData): string {
+    const { minutes: _m, stamina: _s, px: _x, py: _y, dir: _d, ...rest } = d;
+    return JSON.stringify(rest);
+  }
+  private lastSaveKey: string | null = null;
+
+  /** `fromRealSave`: loading the real save (CONTINUE), so it becomes the baseline for quick-resume snapshots. */
+  startFromTitle(load: SaveData | null, fromRealSave = false): void {
     sfx.unlock();
     sfx.confirm();
     this.transition(() => {
       if (load) this.loadGame(load); else this.newGame();
+      if (load && fromRealSave) this.lastSaveKey = Game.saveKey(this.toSave());
     });
   }
 

@@ -8,7 +8,7 @@ import {
   localSaveText, onAccountChange, passwordRecovery, sendPasswordReset, setNewPassword, signInWithEmail,
   signInWithGoogle, signOut, uploadSave,
 } from '../engine/account';
-import { SAVE_KEY } from '../engine/save';
+import { SAVE_KEY, clearResume } from '../engine/save';
 import { validateSave } from './saveio';
 
 type View = 'main' | 'choose' | 'busy';
@@ -84,7 +84,7 @@ function same(a: string, b: string): boolean {
 function writeLocal(raw: string): boolean {
   const d = validateSave(raw);
   if (!d) return false;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch { return false; }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); clearResume(); } catch { return false; }
   onLocalChanged();
   return true;
 }

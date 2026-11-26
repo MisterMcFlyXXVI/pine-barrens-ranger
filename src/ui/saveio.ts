@@ -1,5 +1,5 @@
 /** Export / import the localStorage save as a JSON file (desktop & mobile friendly). */
-import { SAVE_KEY, SAVE_VERSION, SaveData } from '../engine/save';
+import { SAVE_KEY, SAVE_VERSION, SaveData, clearResume } from '../engine/save';
 
 /**
  * Export the save as a JSON file. Where the browser has a Share sheet that accepts
@@ -65,7 +65,7 @@ export function importSave(onDone: (msg: string, ok: boolean) => void): void {
     file.text().then((text) => {
       const d = validateSave(text);
       if (!d) { onDone('That file is not a Pine Holler Ranger save.', false); return; }
-      try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch { onDone('Could not write save (storage blocked).', false); return; }
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); clearResume(); } catch { onDone('Could not write save (storage blocked).', false); return; }
       onDone(`Imported save: day ${d.day}. Choose CONTINUE.`, true);
     }).catch(() => onDone('Could not read that file.', false));
   });

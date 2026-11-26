@@ -60,6 +60,8 @@ export interface SaveData {
   storage?: Array<Stack | null>;
   /** Materials list (recipe id + how many wanted). */
   needs?: Array<{ recipe: string; qty: number }>;
+  /** When this save was written (ms since epoch). */
+  savedAt?: number;
 }
 
 export function hasSave(): boolean {
@@ -80,11 +82,38 @@ export function loadSave(): SaveData | null {
 
 export function writeSave(d: SaveData): boolean {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ ...d, savedAt: Date.now() }));
+    clearResume(); // the real save is now the newest
     return true;
   } catch {
     return false;
   }
+}
+
+/* ---- Quick-resume snapshot: taken when the app is hidden/closed, kept separate from the real save ---- */
+export const RESUME_KEY = 'pbr_resume_v1';
+
+export function writeResume(d: SaveData): void {
+  try { localStorage.setItem(RESUME_KEY, JSON.stringify({ ...d, savedAt: Date.now() })); } catch { /* storage full or blocked */ }
+}
+
+/** The snapshot, but only if it's newer than the real save. */
+export function loadResume(): SaveData | null {
+  try {
+    const raw = localStorage.getItem(RESUME_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as SaveData;
+    if (d.v !== SAVE_VERSION || typeof d.day !== 'number') return null;
+    const main = loadSave();
+    if (main && (main.savedAt ?? 0) >= (d.savedAt ?? 0)) return null;
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+export function clearResume(): void {
+  try { localStorage.removeItem(RESUME_KEY); } catch { /* ignore */ }
 }
 
 export function deleteSave(): void {

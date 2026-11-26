@@ -44,6 +44,9 @@ No environment variables or API keys are needed.
 
 ## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
+- **Quick resume**: whenever the app is switched away from or closed (and every 90s), the game snapshots exactly
+  where you are. If that's newer than your last real save, the title screen offers **RESUME**; CONTINUE still loads
+  the last bed/desk save. Snapshots stay on the device; bed/desk saves also go to your account.
 - **Accounts** (title screen → ACCOUNT): Continue with Google, or email + password (with password reset).
   While signed in, every save also uploads to the player's account, and signing in on another device (or after
   deleting the app) brings the save back. If the device and the account disagree, the player chooses which to keep.

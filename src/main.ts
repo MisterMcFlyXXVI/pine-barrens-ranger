@@ -51,6 +51,10 @@ function layout(): void {
 
 bindKeyboard(game.input, gesture);
 startAccounts(() => game.reloadTitleSave());
+// Quick-resume: snapshot whenever the app is switched away from or closed, and every 90s as a safety net.
+document.addEventListener('visibilitychange', () => { if (document.hidden) game.snapshot(); });
+window.addEventListener('pagehide', () => game.snapshot());
+setInterval(() => { if (!document.hidden) game.snapshot(); }, 90_000);
 bindCanvasTaps(canvas, game.input, gesture);
 new TouchControls(deck, padBtn, game.input, gesture, () => requestAnimationFrame(layout));
 muteBtn.classList.toggle('on', !sfx.muted);

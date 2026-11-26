@@ -4,25 +4,28 @@ import { drawText, drawTextCentered, wrapText } from '../graphics/font';
 import { hex, P } from '../graphics/palette';
 import { OBJ } from '../graphics/sprites';
 import { sfx } from '../audio/sfx';
-import { loadSave, SaveData } from '../engine/save';
+import { loadResume, loadSave, SaveData } from '../engine/save';
 import { exportSave, importSave } from './saveio';
 import { accountEmail } from '../engine/account';
 import { accountModalOpen, openAccount } from './accountModal';
 import { hash2, touchOn } from '../util';
 import { inRect, panel, Rect } from './panel';
 
-type Opt = 'continue' | 'new' | 'export' | 'import' | 'account';
-const LABEL: Record<Opt, string> = { continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT' };
+type Opt = 'resume' | 'continue' | 'new' | 'export' | 'import' | 'account';
+const LABEL: Record<Opt, string> = { resume: 'RESUME', continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT' };
 
 export class TitleScreen {
   private sel = 0;
   private save: SaveData | null = loadSave();
+  /** Quick-resume snapshot, if newer than the save. */
+  private resume: SaveData | null = loadResume();
   private msg = '';
   private msgT = 0;
   private confirmNew = false;
 
   private options(): Opt[] {
-    return this.save ? ['continue', 'new', 'export', 'import', 'account'] : ['new', 'import', 'account'];
+    const base: Opt[] = this.save ? ['continue', 'new', 'export', 'import', 'account'] : ['new', 'import', 'account'];
+    return this.resume ? ['resume', ...base] : base;
   }
 
   private optionRects(game: Game): Rect[] {
@@ -37,7 +40,7 @@ export class TitleScreen {
   private say(m: string, secs = 5): void { this.msg = m; this.msgT = secs; }
 
   /** Re-read the device save (after an account sign-in pulls one down). */
-  reload(): void { this.save = loadSave(); this.sel = 0; }
+  reload(): void { this.save = loadSave(); this.resume = loadResume(); this.sel = 0; }
 
   update(game: Game): void {
     const inp = game.input;
@@ -61,12 +64,13 @@ export class TitleScreen {
     sfx.unlock();
     const o = opts[this.sel];
     if (o === 'account') { sfx.open(); openAccount(); return; }
-    if (o === 'continue' && this.save) game.startFromTitle(this.save);
-    else if (o === 'new') { if (this.save) { this.confirmNew = true; sfx.alert(); } else game.startFromTitle(null); }
+    if (o === 'resume' && this.resume) game.startFromTitle(this.resume);
+    else if (o === 'continue' && this.save) game.startFromTitle(this.save, true);
+    else if (o === 'new') { if (this.save || this.resume) { this.confirmNew = true; sfx.alert(); } else game.startFromTitle(null); }
     else if (o === 'export') { sfx.confirm(); exportSave((m) => this.say(m)); }
     else if (o === 'import') {
       sfx.open();
-      importSave((m, ok) => { this.say(m); if (ok) { this.save = loadSave(); this.sel = 0; sfx.fanfare(); } else sfx.error(); });
+      importSave((m, ok) => { this.say(m); if (ok) { this.reload(); sfx.fanfare(); } else sfx.error(); });
     }
   }
 
@@ -121,7 +125,15 @@ export class TitleScreen {
       if (s && Math.floor(t * 3) % 2 === 0) drawText(g, '>', r.x + 2, r.y + 2, P.LANTERN);
     });
     const below = r0.y + rects.length * 12 + 5;
-    if (this.save && this.msgT <= 0) drawTextCentered(g, `SAVE: ${['SPR', 'SUM', 'FAL', 'WIN'][Math.floor((this.save.day - 1) / 28) % 4]} ${((this.save.day - 1) % 28) + 1}, ${this.save.gold}G`, W / 2, below, P.PINE);
+    const when = (d: SaveData) => {
+      const h = Math.floor(d.minutes / 60) % 24, mm = String(d.minutes % 60).padStart(2, '0');
+      return `${['SPR', 'SUM', 'FAL', 'WIN'][Math.floor((d.day - 1) / 28) % 4]} ${((d.day - 1) % 28) + 1} ${((h + 11) % 12) + 1}:${mm}${h < 12 ? 'AM' : 'PM'}`;
+    };
+    const onResume = this.options()[this.sel] === 'resume';
+    if (this.msgT <= 0) {
+      if (onResume && this.resume) drawTextCentered(g, `RESUME: ${when(this.resume)}, ${this.resume.gold}G`, W / 2, below, P.FERN, P.VOID);
+      else if (this.save) drawTextCentered(g, `SAVE: ${when(this.save)}, ${this.save.gold}G`, W / 2, below, P.PINE);
+    }
     if (this.msgT <= 0) {
       const email = accountEmail();
       drawTextCentered(g, email ? `SIGNED IN: ${email.length > 30 ? email.slice(0, 28) + '..' : email}`.toUpperCase() : 'NOT SIGNED IN: SAVES STAY ON THIS DEVICE', W / 2, below + 8, email ? P.FERN : P.MIST, P.VOID);
