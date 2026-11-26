@@ -18,7 +18,7 @@ import { MAP_NAMES, getMapDef } from '../data/maps';
 import { CRYPTIDS } from '../data/cryptids';
 import { inRect, panel, Rect } from './panel';
 import { Dialog } from './menus';
-import { STOPS } from '../data/handcar';
+import { RAIL_LINKS, STOPS } from '../data/handcar';
 
 /** Outdoor regions on the valley map: position (0..1) and short label. */
 const NODES: Array<{ id: MapId; x: number; y: number; label: string }> = [
@@ -73,6 +73,7 @@ const STRUCT_LABEL: Partial<Record<string, string>> = {
 
 /** The region map in park-brochure colors, with fog over unexplored ground. */
 function bakeMinimap(m: MapRuntime): Canv {
+  const stop = STOPS.get(m.id);
   const W = m.w * PX, H = m.h * PX;
   const { c, g } = makeCanvas(W, H);
   const img = g.createImageData(W, H);
@@ -102,6 +103,13 @@ function bakeMinimap(m: MapRuntime): Canv {
       else if (gr === T.VOID) col = P.SHADOW;
       if (TREES.has(o)) col = (px + py) % 2 === 0 ? P.PINE : P.FOREST; // stippled woods
       if (o === O.BLOCK) col = px === 0 && py === 0 ? P.VOID : P.CRAN; // buildings
+      // Railroad symbol along the old line: dark track with crossties.
+      const rail = stop?.route.get(y * m.w + x);
+      if (rail !== undefined && !TRAILS.has(gr) && gr !== T.WATER) {
+        const along = rail === 0 ? py === 0 : px === 0;
+        const tie = rail === 0 ? x % 2 === 0 : y % 2 === 0;
+        col = along || tie ? P.VOID : P.FOG; // dark track with a pale edge so it reads on any ground
+      }
       // Fog of war: drifting white mist with blue-grey wisps, thinning at the edge of what you've seen.
       if (!seen(x, y)) {
         const edge = seen(x - 1, y) || seen(x + 1, y) || seen(x, y - 1) || seen(x, y + 1);
@@ -137,6 +145,26 @@ function plate(g: CanvasRenderingContext2D, text: string, cx: number, cy: number
   const x = Math.round(cx - w / 2), y = Math.round(cy - 4);
   g.fillStyle = hex(bg); g.fillRect(x, y, w, 8);
   drawText(g, text, x + 2, y + 2, fg);
+}
+
+/** Places map labels without overlaps: tries the spot, then nudges below/above; skips if nothing fits. */
+class LabelBoard {
+  private used: Rect[] = [];
+  constructor(private readonly bounds: Rect) {}
+  reserve(r: Rect): void { this.used.push(r); }
+  place(g: CanvasRenderingContext2D, text: string, cx: number, cy: number, fg: number, bg: number): boolean {
+    const w = text.length * 4 + 3;
+    for (const dy of [0, 9, -9, 18, -18]) {
+      const r = { x: Math.round(cx - w / 2), y: Math.round(cy + dy - 4), w, h: 8 };
+      const B = this.bounds;
+      if (r.x < B.x || r.y < B.y || r.x + r.w > B.x + B.w || r.y + r.h > B.y + B.h) continue;
+      if (this.used.some((u) => r.x < u.x + u.w + 1 && r.x + r.w + 1 > u.x && r.y < u.y + u.h + 1 && r.y + r.h + 1 > u.y)) continue;
+      this.used.push(r);
+      plate(g, text, cx, cy + dy, fg, bg);
+      return true;
+    }
+    return false;
+  }
 }
 
 function compass(g: CanvasRenderingContext2D, x: number, y: number): void {
@@ -265,11 +293,17 @@ export class WorldMap implements Overlay {
     const sx = (tx: number) => Math.round(ox + (tx + 0.5) * s), sy = (ty: number) => Math.round(oy + (ty + 0.5) * s);
     const seenAt = (tx: number, ty: number) => m.inBounds(tx, ty) && m.seen[ty * m.w + tx] === 1;
     g.save(); g.beginPath(); g.rect(ox, oy, mw, mh); g.clip();
+    const labels = new LabelBoard({ x: ox, y: oy, w: mw, h: mh });
+    labels.reserve({ x: ox + mw - 14, y: oy, w: 14, h: 20 });  // compass
+    labels.reserve({ x: ox, y: oy, w: 50, h: 16 });              // scale bar
+    const youX = sx(game.player.tx), youY = sy(game.player.ty);
+    labels.reserve({ x: youX - 4, y: youY - 4, w: 9, h: 9 });    // you
+    labels.reserve({ x: youX - 26, y: youY - 14, w: 52, h: 9 }); // YOU ARE HERE
     // Landmarks you've seen
     for (const z of m.def.zones) {
       const label = ZONE_LABEL[z.zone];
       const cx = z.x + Math.floor(z.w / 2), cy = z.y + Math.floor(z.h / 2);
-      if (label && seenAt(cx, cy)) plate(g, label, sx(cx), sy(cy), P.LANTERN, P.RUST);
+      if (label && seenAt(cx, cy)) labels.place(g, label, sx(cx), sy(cy), P.LANTERN, P.RUST);
     }
     for (const st of m.def.structures) {
       const cx = st.x + Math.floor(st.w / 2), cy = st.y + Math.floor(st.h / 2);
@@ -282,8 +316,9 @@ export class WorldMap implements Overlay {
     const stop = STOPS.get(m.id);
     if (stop && seenAt(stop.car.x, stop.car.y)) {
       const ok = game.stopRepaired(m.id);
-      plate(g, ok ? 'HANDCAR' : 'STOP (BROKEN)', sx(stop.car.x), sy(stop.car.y) - 6, P.LANTERN, ok ? P.FOREST : P.RUST);
       symbol(g, sx(stop.car.x) - 2, sy(stop.car.y) - 2, 'station');
+      labels.reserve({ x: sx(stop.car.x) - 3, y: sy(stop.car.y) - 3, w: 7, h: 7 });
+      labels.place(g, ok ? 'HANDCAR' : 'STOP (BROKEN)', sx(stop.car.x), sy(stop.car.y) - 8, P.LANTERN, ok ? P.FOREST : P.RUST);
     }
     // Trailheads (exits) with where they lead
     const done = new Set<string>();
@@ -298,7 +333,7 @@ export class WorldMap implements Overlay {
       const text = left ? `< ${name}` : right ? `${name} >` : top ? `^ ${name}` : `${name} V`;
       const px = left ? sx(cx) + text.length * 2 + 3 : right ? sx(cx) - text.length * 2 - 3 : sx(cx);
       const py = top ? sy(cy) + 6 : cy >= m.h - 2 ? sy(cy) - 6 : sy(cy);
-      plate(g, text, px, py, P.LANTERN, P.VOID);
+      labels.place(g, text, px, py, P.LANTERN, P.VOID);
     }
     // Snares & lure mounts
     const mark = (tx: number, ty: number, c: number) => { g.fillStyle = hex(P.VOID); g.fillRect(sx(tx) - 2, sy(ty) - 2, 5, 5); g.fillStyle = hex(c); g.fillRect(sx(tx) - 1, sy(ty) - 1, 3, 3); };
@@ -308,7 +343,7 @@ export class WorldMap implements Overlay {
       else if (Object.values(MOUNT_OBJECT).includes(o)) mark(tx, ty, P.VIOLET);
     }
     // You are here
-    const yx = sx(game.player.tx), yy = sy(game.player.ty);
+    const yx = youX, yy = youY;
     const on = Math.floor(game.time * 3) % 2 === 0;
     g.fillStyle = hex(P.LANTERN); g.fillRect(yx - 3, yy - 3, 7, 7);
     g.fillStyle = hex(on ? P.RED : P.CRAN); g.fillRect(yx - 2, yy - 2, 5, 5);
@@ -348,6 +383,27 @@ export class WorldMap implements Overlay {
       const [x0, y0] = center(ra), [x1, y1] = center(rb);
       const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
       for (let i = 0; i <= n; i++) if (i % 5 < 3) { g.fillStyle = hex(P.RED); g.fillRect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), 2, 2); }
+    }
+    // The C&O spur: railroad symbol (line with crossties) between handcar stops.
+    for (const [a, b] of RAIL_LINKS) {
+      const ia = NODES.findIndex((nd) => nd.id === a), ib = NODES.findIndex((nd) => nd.id === b);
+      if (ia < 0 || ib < 0) continue;
+      const known = game.progress.visited.has(a) && game.progress.visited.has(b);
+      const [x0, y0] = center(rects[ia]), [x1, y1] = center(rects[ib]);
+      // Offset the rail a little from the trail so both read.
+      const nx = -(y1 - y0), ny = x1 - x0, nl = Math.hypot(nx, ny) || 1;
+      const ox = (nx / nl) * 6, oy = (ny / nl) * 6;
+      const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+      for (let i = 0; i <= n; i++) {
+        if (!known && i % 4 > 1) continue; // faint where unexplored
+        const px = Math.round(x0 + ox + ((x1 - x0) * i) / n), py = Math.round(y0 + oy + ((y1 - y0) * i) / n);
+        g.fillStyle = hex(known ? P.VOID : P.SHADOW); g.fillRect(px, py, 1, 1);
+        if (known && i % 4 === 0) { g.fillRect(Math.round(px - (nx / nl) * 2), Math.round(py - (ny / nl) * 2), 1, 1); g.fillRect(Math.round(px + (nx / nl) * 2), Math.round(py + (ny / nl) * 2), 1, 1); }
+      }
+    }
+    {
+      const [x0, y0] = center(rects[NODES.findIndex((nd) => nd.id === 'CABIN_YARD')]), [x1, y1] = center(rects[NODES.findIndex((nd) => nd.id === 'PINE_HOLLOW_TOWN')]);
+      if (game.progress.visited.has('PINE_HOLLOW_TOWN')) drawText(g, 'C&O SPUR', Math.round((x0 + x1) / 2) - 14, Math.round((y0 + y1) / 2) + 6, P.VOID, P.FERN);
     }
     // The sealed coal mine, north-east of the Old Growth.
     const mx = rects[0].x + rects[0].w + 12, my = rects[0].y + 2;

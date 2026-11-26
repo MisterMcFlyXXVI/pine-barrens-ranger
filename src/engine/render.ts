@@ -275,6 +275,7 @@ function drawTool(g: CanvasRenderingContext2D, tool: ToolKind, dir: Dir, f: numb
 export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const m = game.cur;
   stopFixed = game.stopRepaired(m.id);
+  const railBits = STOPS.get(m.id) ?? null;
   const cam = game.cam;
   const cx = cam.ix, cy = cam.iy;
   const time = game.time;
@@ -290,6 +291,11 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     for (let x = x0; x <= x1; x++) {
       const sx = x * 16 - cx, sy = y * 16 - cy;
       drawGround(g, m, x, y, sx, sy, time);
+      // Bits of the old C&O spur peeking through the woods (drawn under trees and objects).
+      if (railBits) {
+        const ri = m.idx(x, y);
+        if (railBits.bits.has(ri)) g.drawImage(railBits.route.get(ri) === 1 ? ((x + y) % 2 ? MISC.oldRailV0 : MISC.oldRailV1) : ((x + y) % 2 ? MISC.oldRailH0 : MISC.oldRailH1), sx, sy);
+      }
       const o = m.obj(x, y);
       if (FLAT.has(o)) {
         const img = objSprite(m, o, x, y, time, night, false);

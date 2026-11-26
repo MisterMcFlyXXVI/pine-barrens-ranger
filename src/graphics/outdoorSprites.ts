@@ -88,6 +88,29 @@ function handcarObj(broken: boolean): Canv {
   return outline(c);
 }
 
+/** A stretch of the abandoned spur: rusted rails, rotten ties, grass growing through. */
+function oldRail(vertical: boolean, seed: number): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  let a = seed;
+  const r = () => { a = (a * 9301 + 49297) % 233280; return a / 233280; };
+  for (let k = 0; k < 4; k++) { // ties, some missing
+    if (r() < 0.2) continue;
+    const o = 1 + k * 4;
+    if (vertical) p.rect(3, o, 10, 2, r() < 0.5 ? RUST : CRAN); else p.rect(o, 3, 2, 10, r() < 0.5 ? RUST : CRAN);
+  }
+  for (const rail of [5, 10]) for (let t = 0; t < 16; t++) { // rails, rusted and broken in places
+    if (r() < 0.12) continue;
+    const col = r() < 0.3 ? RUST : r() < 0.5 ? SHADOW : MIST;
+    if (vertical) p.px(rail, t, col); else p.px(t, rail, col);
+  }
+  for (let k = 0; k < 7; k++) { // grass tufts over the line
+    const x = Math.floor(r() * 16), y = Math.floor(r() * 16);
+    p.px(x, y, FERN); p.px(x, Math.max(0, y - 1), MOSS);
+  }
+  return c;
+}
+
 function stopSign(): Canv {
   const { c, g } = makeCanvas(16, 16);
   const p = new Pen(g);
@@ -131,6 +154,8 @@ export function bakeOutdoors(): void {
   OBJ.snare = [snareObj(false), snareObj(true)];
   OBJ.handcar = [handcarObj(false), handcarObj(true)];
   OBJ.stopsign = [stopSign()];
+  MISC.oldRailH0 = oldRail(false, 11); MISC.oldRailH1 = oldRail(false, 29);
+  MISC.oldRailV0 = oldRail(true, 47); MISC.oldRailV1 = oldRail(true, 83);
   for (const buck of [false, true]) for (const grazing of [false, true]) for (const f of [0, 1]) {
     const right = deer(f, buck, grazing);
     MISC[deerKey(buck, false, grazing, f)] = right;
