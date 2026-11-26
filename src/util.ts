@@ -43,3 +43,8 @@ export function valueNoise(x: number, y: number, seed = 0): number {
 export const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 export const randInt = (r: () => number, lo: number, hi: number): number => lo + Math.floor(r() * (hi - lo + 1));
+
+/** True while the on-screen touch pad is showing, so hints can name touch buttons instead of keys. */
+export function touchOn(): boolean {
+  return typeof document !== 'undefined' && document.body.classList.contains('touch-on');
+}

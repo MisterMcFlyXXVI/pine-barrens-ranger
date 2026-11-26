@@ -20,6 +20,7 @@ import { HOTBAR_SIZE } from '../engine/inventory';
 import { panel, slotBox, inRect, Rect } from './panel';
 import { drawItemSlot } from './hud';
 import type { Dir } from '../util';
+import { touchOn } from '../util';
 
 function anyConfirm(game: Game): boolean {
   return game.input.pressed('a') || game.input.taps.length > 0;
@@ -457,7 +458,13 @@ export class JournalMenu implements Overlay {
       if (game.wispNight === c.day) line('WISP-LIGHT OIL ACTIVE TONIGHT', P.VIOLET);
       if (game.lunarNight === c.day) line('LUNAR DEW: 3X RARE VARIANTS TONIGHT', P.VIOLET);
     } else {
-      const rows = [
+      const rows = touchOn() ? [
+        'MOVE: D-PAD (SLIDE YOUR THUMB TO TURN)', 'A: USE, TALK, PICK   B: CANCEL, HOLD TO RUN',
+        'TAP A HOTBAR SLOT TO HOLD THAT ITEM', 'BAG: INVENTORY   DEX: CRYPTID-DEX', 'TAP DEX TWICE: THIS JOURNAL',
+        'SND: MUTE   PAD: HIDE TOUCH CONTROLS', 'TAP TEXT BOXES, MENU ROWS & BATTLE MOVES',
+        'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',
+        'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
+      ] : [
         'MOVE: WASD / ARROWS / D-PAD', 'A: SPACE / E / ENTER - USE, TALK', 'B: SHIFT / ESC - RUN, CANCEL',
         '1-9 / WHEEL / TAP: HOTBAR', 'I or B: BAG   TAB or J: CRYPTID-DEX', 'M: MUTE   PAD: TOUCH CONTROLS',
         'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',

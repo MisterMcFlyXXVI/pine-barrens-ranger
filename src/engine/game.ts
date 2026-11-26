@@ -31,7 +31,7 @@ import { CraftMenu, BoardMenu, PedestalMenu, ShopMenu } from '../ui/shops';
 import { GIFT_STOCK, MILESTONES, Recipe, ToolLine, UPGRADES } from '../data/economy';
 import { QUESTS } from '../data/quests';
 import { CRYPTIDS } from '../data/cryptids';
-import { hash2 } from '../util';
+import { hash2, touchOn } from '../util';
 import { campaignTick, setAct } from './campaign';
 import { playIntro, playEpilogue } from '../ui/intro';
 import { VanceJournal } from '../ui/vanceJournal';
@@ -169,7 +169,7 @@ export class Game {
     playIntro(this, () => {
       this.openOverlay(new Dialog([
         'The cabin porch creaks under your boots. Somewhere out in the pines, something answers the creak.',
-        "Ranger Vance's half-burned Field Journal waits on the table inside. Clear the garden, grow lure crops, and sleep in the bed to end each day and save. Press Tab for your Campaign journal.",
+        `Ranger Vance's half-burned Field Journal waits on the table inside. Clear the garden, grow lure crops, and sleep in the bed to end each day and save. ` + (touchOn() ? 'Tap DEX twice' : 'Press Tab twice') + ' to open your Campaign journal.',
       ]));
       setAct(this, 1);
     });
@@ -847,7 +847,7 @@ export class Game {
     const [tx, ty] = p.facing();
     if (!repeat && this.tryInteract(tx, ty)) return;
     const st = this.selected;
-    if (!st) { if (!repeat) this.notice('Nothing in hand. Pick a hotbar slot with 1-9 or tap it.'); return; }
+    if (!st) { if (!repeat) this.notice(touchOn() ? 'Nothing in hand. Tap a hotbar slot to pick it.' : 'Nothing in hand. Pick a hotbar slot with 1-9 or tap it.'); return; }
     const def = ITEMS[st.id];
     if (def.kind === 'tool' && def.tool) {
       if (this.cur.def.indoor) { if (!repeat) this.notice(`Better not swing the ${def.name} indoors.`); return; }

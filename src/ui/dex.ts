@@ -12,6 +12,7 @@ import { dexTotals, stars } from '../engine/dex';
 import { drawStar } from '../engine/encounter';
 import { panel, inRect, Rect } from './panel';
 import { JournalMenu } from './menus';
+import { touchOn } from '../util';
 
 const VARIANTS: Variant[] = ['normal', 'albino', 'static'];
 const SHORT_MAP: Record<string, string> = {
@@ -116,7 +117,7 @@ export class DexMenu implements Overlay {
     const track = rows * 13, th = Math.max(6, Math.floor((track * rows) / CRYPTIDS.length));
     g.fillStyle = hex(P.RUST);
     g.fillRect(B.x + B.w - 3, B.y + 16 + Math.floor(((track - th) * this.scroll) / Math.max(1, CRYPTIDS.length - rows)), 1, th);
-    drawText(g, 'A: DETAILS  L/R: PAGE  TAB: JOURNAL  B: CLOSE', B.x + 5, B.y + B.h - 9, P.RUST);
+    drawText(g, touchOn() ? 'A: DETAILS  L/R: PAGE  DEX: JOURNAL  B: CLOSE' : 'A: DETAILS  L/R: PAGE  TAB: JOURNAL  B: CLOSE', B.x + 5, B.y + B.h - 9, P.RUST);
   }
 
   private drawDetail(game: Game, g: CanvasRenderingContext2D, B: Rect): void {

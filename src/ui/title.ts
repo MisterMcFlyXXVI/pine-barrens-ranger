@@ -6,7 +6,7 @@ import { OBJ } from '../graphics/sprites';
 import { sfx } from '../audio/sfx';
 import { loadSave, SaveData } from '../engine/save';
 import { exportSave, importSave } from './saveio';
-import { hash2 } from '../util';
+import { hash2, touchOn } from '../util';
 import { inRect, panel, Rect } from './panel';
 
 type Opt = 'continue' | 'new' | 'export' | 'import';
@@ -119,6 +119,6 @@ export class TitleScreen {
       drawTextCentered(g, 'A: YES   B: NO', W / 2, H / 2 + 3, P.FERN);
     }
     if (this.msgT > 0) wrapText(this.msg, W - 20).forEach((l, i) => drawTextCentered(g, l, W / 2, H - 20 + i * 7 - 7, P.AMBER, P.VOID));
-    else drawTextCentered(g, 'PRESS A / SPACE', W / 2, H - 9, P.MIST, P.VOID);
+    else drawTextCentered(g, touchOn() ? 'PRESS A' : 'PRESS A / SPACE', W / 2, H - 9, P.MIST, P.VOID);
   }
 }
