@@ -196,6 +196,63 @@ function creekStones(): Canv {
   return art((p) => { for (const [x, y, r] of [[4, 6, 2], [10, 9, 2.5], [6, 12, 1.6], [12, 4, 1.4]] as Array<[number, number, number]>) { p.ellipse(x, y, r, r * 0.8, MIST); p.px(x - 1, y - 1, FOG); p.px(x + 1, y + 1, TWILIGHT); } });
 }
 
+/* ---------------------------- town props ---------------------------- */
+
+function trashCan(): Canv {
+  return art((p) => {
+    p.rect(4, 6, 8, 9, MIST); for (const x of [5, 8, 11]) p.vline(x, 7, 14, TWILIGHT);
+    p.rect(3, 4, 10, 2, FOG); p.px(7, 3, FOG); p.px(8, 3, FOG); p.px(10, 5, TWILIGHT); // dented lid, ajar
+    p.px(12, 13, RUST); p.px(3, 14, AMBER);
+  }, 16, 16, true);
+}
+
+function bike(): Canv {
+  return art((p) => {
+    for (const cx of [4, 12]) { for (let a = 0; a < 12; a++) p.px(Math.round(cx + Math.cos(a / 12 * Math.PI * 2) * 3), Math.round(11 + Math.sin(a / 12 * Math.PI * 2) * 3), SHADOW); p.px(cx, 11, MIST); }
+    p.line(4, 11, 8, 7, RED); p.line(8, 7, 12, 11, RED); p.line(8, 7, 7, 11, RED); p.line(7, 11, 12, 11, RED);
+    p.hline(6, 8, 6, SHADOW); p.line(11, 5, 12, 11, MIST); p.hline(10, 12, 5, SHADOW);
+    p.rect(12, 7, 3, 2, AMBER); // basket
+  }, 16, 16, true);
+}
+
+/** A tabby curled up on the step: breathing, now and then flicking its tail. */
+function cat(frame: number): Canv {
+  return art((p) => {
+    const b = frame === 1 ? 1 : 0;
+    p.ellipse(8, 12, 5, 2.5 + b * 0.4, AMBER);
+    for (const x of [6, 8, 10]) p.px(x, 11, RUST);
+    p.ellipse(4, 11, 2.2, 2, AMBER); p.px(3, 9, AMBER); p.px(5, 9, AMBER); p.px(3, 10, RUST); p.px(5, 10, RUST);
+    p.px(3, 11, SHADOW); p.px(5, 11, SHADOW); // closed eyes
+    if (frame === 2) { p.line(12, 12, 14, 9, AMBER); p.px(14, 8, RUST); } else p.hline(10, 13, 14, RUST);
+  }, 16, 16, true);
+}
+
+function newsBox(): Canv {
+  return art((p) => {
+    p.vline(6, 11, 15, SHADOW); p.vline(10, 11, 15, SHADOW);
+    p.rect(4, 2, 9, 10, CRAN); p.rect(5, 4, 7, 4, MIST); p.hline(6, 10, 5, SHADOW); p.hline(6, 9, 6, SHADOW);
+    p.hline(4, 12, 9, RED); p.px(11, 10, LANTERN);
+  }, 16, 16, true);
+}
+
+function flowerPot(kind: number): Canv {
+  return art((p) => {
+    p.rect(5, 11, 6, 4, RUST); p.hline(4, 11, 11, AMBER);
+    const c = [RED, LANTERN, VIOLET][kind];
+    for (const [x, y] of [[6, 8], [8, 7], [10, 9], [7, 10], [9, 10]]) { p.px(x, y, c); p.px(x, y + 1, MOSS); }
+    p.px(8, 6, FERN);
+  });
+}
+
+function milkCans(): Canv {
+  return art((p) => {
+    for (const [x, h] of [[3, 9], [9, 8]]) {
+      p.rect(x, 15 - h, 5, h, MIST); p.rect(x + 1, 13 - h, 3, 2, MIST); p.hline(x, x + 4, 15 - h, FOG); p.vline(x + 4, 16 - h, 14, TWILIGHT);
+      p.px(x + 2, 12 - h, SHADOW);
+    }
+  }, 16, 16, true);
+}
+
 /* ------------------------------ decals ------------------------------ */
 
 function puddle(seed: number): Canv {
@@ -274,6 +331,12 @@ export function bakeDecor(): void {
   PROP.clothesline = [clothesline(0), clothesline(1)];
   PROP.creekstones = [creekStones()];
   PROP.barnquilt = [barnQuilt()];
+  PROP.trashcan = [trashCan()];
+  PROP.bike = [bike()];
+  PROP.cat = [cat(0), cat(1), cat(2)];
+  PROP.newsbox = [newsBox()];
+  PROP.flowerpot = [flowerPot(0), flowerPot(1), flowerPot(2)];
+  PROP.milkcans = [milkCans()];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];
   DECAL.snowLight = [snowLight(7), snowLight(19), snowLight(41)];

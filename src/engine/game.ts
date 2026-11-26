@@ -1432,6 +1432,12 @@ export class Game {
         sfx.blip();
         this.openOverlay(new Dialog([m.def.signs.get(m.anchorIdx(i)) ?? 'The sign is too weathered to read.']));
         return true;
+      case 'cat': {
+        sfx.blip();
+        const lines = ['The cat cracks one eye, decides you\'re all right, and purrs.', 'A scrap of a tabby. Somebody in town has been feeding it -- probably everybody.', 'The cat stretches, shows you its belly, and dares you to try.'];
+        this.openOverlay(new Dialog([lines[(this.clock.day + tx + ty) % lines.length]]));
+        return true;
+      }
       case 'rocker': {
         sfx.blip();
         const h = Math.floor(this.clock.minutes / 60) % 24;
@@ -1730,7 +1736,7 @@ export class Game {
     const kind = this.interactKind(tx, ty);
     const labels: Partial<Record<string, string>> = {
       forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'CRAFT',
-      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', mailbox: 'MAIL', fireplace: 'LOOK',
+      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', cat: 'PET', mailbox: 'MAIL', fireplace: 'LOOK',
       bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
       board: 'READ BOARD', case: 'LOOK', kiosk: 'GIFT SHOP', maptable: 'STUDY', railcar: 'LOOK', pedestal: 'DISPLAY',
     };

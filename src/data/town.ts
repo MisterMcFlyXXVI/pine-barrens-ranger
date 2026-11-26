@@ -81,10 +81,10 @@ export function buildTown(): MapDef {
 
   // Buildings
   b.structure({ kind: 'museum', x: 32, y: 14, w: 12, h: 8, door: { x: 37, y: 21 }, open: true, windows: [[28, 98], [164, 98]] });
-  b.structure({ kind: 'diner', x: 14, y: 29, w: 8, h: 6, door: { x: 17, y: 34 }, open: true, windows: [[20, 70], [100, 70]] });
+  b.structure({ kind: 'diner', x: 14, y: 29, w: 8, h: 6, door: { x: 17, y: 34 }, open: true, windows: [[20, 70], [100, 70]], chimney: [107, -14] });
   b.structure({ kind: 'store', x: 50, y: 29, w: 8, h: 6, door: { x: 53, y: 34 }, open: true, windows: [[20, 70], [100, 70]] });
   const house = (x: number, y: number, msg: string) =>
-    b.structure({ kind: 'house', x, y, w: 6, h: 5, door: { x: x + 2, y: y + 4 }, open: false, windows: [[20, 54]], lockedMsg: msg });
+    b.structure({ kind: 'house', x, y, w: 6, h: 5, door: { x: x + 2, y: y + 4 }, open: false, windows: [[20, 54]], lockedMsg: msg, chimney: [(x + y) % 3 === 1 ? 21 : 73, -16] });
   house(12, 42, "Agnes Vance's cottage. A note on the door: \"At the Historical Society. -A.V.\"");
   house(24, 44, "Barnaby Finch's house. A dog bowl sits by the door, labeled BUSTER.");
   house(38, 44, 'The Miller-Thorne house. You smell pie... and hot iron.');
@@ -116,6 +116,38 @@ export function buildTown(): MapDef {
   };
   oldSign([[49, 34], [58, 34], [49, 33], [58, 33], [49, 35], [58, 35]], 'PINE HOLLOW COAL & COKE CO. -- COMPANY STORE. (Paint shows through the newer sign. Old-timers still call it "the commissary.") Scrip no longer accepted.');
   oldSign([[57, 7], [51, 7], [58, 7], [50, 7], [57, 8], [53, 8], [55, 8], [56, 8], [58, 6], [50, 6], [57, 9], [50, 8]], 'PINE HOLLOW COAL & COKE CO. -- SAFETY FIRST. This mine has worked ___ days without a lost-time accident. (The number has been scratched out.)');
+  // Lived-in clutter by the doors: cats on the steps, pots, bins, a bike, the morning paper.
+  const prop = (spots: Array<[number, number]>, o: number, text?: string) => {
+    const at = spots.find(([x, y]) => b.o(x, y) === O.NONE && b.g(x, y) !== T.PATH && b.g(x, y) !== T.WATER && b.g(x, y) !== T.RAIL && !b.structAt.has(b.i(x, y)));
+    if (!at) return;
+    if (text) b.sign(at[0], at[1], text);
+    b.setO(at[0], at[1], o);
+  };
+  // Diner
+  prop([[22, 34], [22, 33], [13, 34]], O.TRASH_CAN);
+  prop([[19, 35], [20, 35], [15, 35]], O.NEWS_BOX, 'THE PINE HOLLOW GAZETTE: "LIGHTS OVER RADIO RIDGE AGAIN -- COUNCIL SAYS IT\'S WEATHER." Also: buckwheat cakes at the fire hall Saturday. 25 cents.');
+  prop([[13, 35], [21, 35]], O.BIKE);
+  prop([[16, 35]], O.FLOWER_POT); prop([[18, 35]], O.FLOWER_POT);
+  // General Store
+  prop([[49, 33], [49, 32], [58, 32]], O.MILK_CANS);
+  prop([[55, 35], [56, 35], [51, 35]], O.CAT);
+  prop([[52, 35]], O.FLOWER_POT); prop([[54, 35]], O.FLOWER_POT);
+  prop([[57, 35], [50, 35]], O.TRASH_CAN);
+  // Historical Society
+  prop([[36, 22]], O.FLOWER_POT); prop([[38, 22]], O.FLOWER_POT);
+  prop([[33, 22], [42, 22]], O.CAT);
+  // The houses
+  prop([[13, 47]], O.FLOWER_POT); prop([[15, 47]], O.FLOWER_POT);
+  prop([[17, 47], [16, 47]], O.CAT);
+  prop([[18, 46], [18, 45]], O.BIKE);
+  prop([[25, 49]], O.FLOWER_POT); prop([[27, 49]], O.FLOWER_POT);
+  prop([[30, 48], [30, 47]], O.TRASH_CAN);
+  prop([[23, 48], [23, 47]], O.MILK_CANS);
+  prop([[39, 49]], O.FLOWER_POT); prop([[41, 49]], O.FLOWER_POT);
+  prop([[37, 48], [36, 48]], O.TRASH_CAN);
+  if ([44, 45, 46].every((x) => b.o(x, 46) === O.NONE && b.g(x, 46) === T.GRASS)) b.place(44, 46, O.CLOTHESLINE, 3, 1);
+  // Station: Barney's cat keeps him company.
+  prop([[58, 33], [58, 32], [66, 34]], O.CAT);
 
   return wrap(b, 'PINE_HOLLOW_TOWN', 'Pine Hollow Town', {
     portals: [

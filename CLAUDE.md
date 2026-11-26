@@ -191,6 +191,7 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 - **Decor pass** (`src/data/decor.ts`, run in `getMapDef` before `placeStop`): seasonal wildflowers (`O.FORGET_ME_NOT`..`O.ASTER`), creek stones and trailhead boards; `unblock()` swaps out any solid decor that cuts off ground. New plants belong in `CLEARABLE`/`LINE_CLEARABLE` (handcar.ts).
 - **Rail props** (`railProps` in handcar.ts): crossbucks, whistle posts, mileposts beside the traced line (sign text in `def.signs`).
 - **Art** (`src/graphics/decorSprites.ts`): `DECOR[key][season]` (null = not showing), `PROP`, `DECAL`. Render sets a module-level `season`; winter snow caps and fall colours are cached recolours of existing sprites.
+- **Town buildings** (`src/graphics/townSprites.ts`): `facade(..., wear)` weathers roofs/walls; `ivy()`, `chimneyStack()`, `flowerBox()`, `porchLamp()`. Night variants record glowing windows in `LIT[key]` (`diner`, `store`, `museum`, `house0-2`, `station0/1`), which the renderer turns into small window lights.
 - **Ambient life** (`src/graphics/ambient.ts`): stateless, hash/clock driven; fireflies drawn after lighting.
 
 ## 8. Phased Implementation Plan for Claude Code  

@@ -20,6 +20,7 @@ import { deerKey } from '../graphics/outdoorSprites';
 import { STOPS } from '../data/handcar';
 import { NPCS_BY_ID } from '../data/npcs';
 import { DECOR, PROP, DECAL } from '../graphics/decorSprites';
+import { LIT } from '../graphics/townSprites';
 import { drawAmbient, drawFireflies } from '../graphics/ambient';
 import type { View } from '../graphics/ambient';
 import { SEASONS } from './clock';
@@ -143,7 +144,7 @@ let season = 0;
 /** Things that wear a cap of snow in winter. */
 const SNOWCAP: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.ROCK, O.BOULDER, O.STUMP, O.LOG, O.HEMLOCK_TREE, O.RED_SPRUCE, O.DEAD_TREE,
   O.WILLOW, O.APPLE_TREE, O.RHODODENDRON, O.BRUSH, O.FENCE, O.STONE_WALL, O.SLAG, O.HOLLOW_LOG, O.LUMBER, O.MAILBOX, O.WOODPILE, O.SHIP_BIN,
-  O.STOP_SIGN, O.HANDCAR, O.CROSSBUCK, O.TRAILHEAD, O.HEDGE, O.BENCH]);
+  O.STOP_SIGN, O.HANDCAR, O.CROSSBUCK, O.TRAILHEAD, O.HEDGE, O.BENCH, O.TRASH_CAN, O.NEWS_BOX, O.MILK_CANS, O.FLOWERBED, O.FOUNTAIN]);
 const snowCache = new WeakMap<Canv, Canv>();
 /** A copy of a sprite with snow settled on every upward-facing edge. */
 function snowy(src: Canv): Canv {
@@ -287,6 +288,12 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.CHIMES: return PROP.chimes[Math.floor(time * 2 + h) % 2];
     case O.CLOTHESLINE: return PROP.clothesline[Math.floor(time * 1.1) % 2];
     case O.CREEK_STONE: return PROP.creekstones[0];
+    case O.TRASH_CAN: return PROP.trashcan[0];
+    case O.BIKE: return PROP.bike[0];
+    case O.CAT: { const t = (time * 0.8 + h * 9) % 6; return PROP.cat[t > 5.4 ? 2 : Math.floor(time * 0.9) % 2]; }
+    case O.NEWS_BOX: return PROP.newsbox[0];
+    case O.FLOWER_POT: return pick(PROP.flowerpot, h);
+    case O.MILK_CANS: return PROP.milkcans[0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -568,7 +575,11 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     const simg = winter && !m.def.indoor ? snowy(img) : img;
     const quilt = s.kind === 'shed' ? PROP.barnquilt[0] : null;
     list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
-    if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
+    // Town buildings know exactly which of their windows glow; others use the map's window list.
+    const litKey = s.kind === 'house' ? `house${(s.x + s.y) % 3}` : s.kind === 'station' ? `station${flags.grant ? 1 : 0}` : s.kind;
+    const litList = LIT[litKey];
+    if (night && litList) for (const [wx, wy] of litList) lights.push({ x: dx + wx, y: dy + wy, r: 13 });
+    else if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
   }
   // Townsfolk
   for (const npc of game.townsfolk.on(m.id)) {

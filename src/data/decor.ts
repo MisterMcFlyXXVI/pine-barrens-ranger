@@ -125,7 +125,7 @@ export function decorate(def: MapDef): void {
     }
     if (best >= 0) { def.objects[best] = O.TRAILHEAD; def.signs.set(best, text); }
   }
-  unblock(def, new Set([O.RHODODENDRON, O.TRAILHEAD]), (ob) => (ob === O.RHODODENDRON ? O.FERN : O.NONE));
+  unblock(def, new Set([O.RHODODENDRON, O.TRAILHEAD, O.TRASH_CAN, O.BIKE, O.CAT, O.NEWS_BOX, O.MILK_CANS]), (ob) => (ob === O.RHODODENDRON ? O.FERN : O.NONE));
 }
 
 /**

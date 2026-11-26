@@ -248,25 +248,102 @@ function boothSeat(): Canv {
 
 /* ---------------- buildings ---------------- */
 
-function facade(W: number, H: number, wallTop: number, wall: number, wallSh: number, roof: number, roofSh: number, seed: number): { c: Canv; p: Pen } {
+/** Sprite-space centres of the windows that glow at night, per building variant (read by the renderer). */
+export const LIT: Record<string, Array<[number, number]>> = {};
+/** Windows lit while baking the current night variant. */
+let litNow: Array<[number, number]> | null = null;
+
+function facade(W: number, H: number, wallTop: number, wall: number, wallSh: number, roof: number, roofSh: number, seed: number, wear = 0): { c: Canv; p: Pen } {
   const { c, p } = mk(W, H);
   const r = mulberry32(seed);
   p.rect(2, wallTop, W - 4, H - wallTop, wall);
   for (let y = wallTop + 3; y < H; y += 4) p.hline(2, W - 3, y, wallSh);
+  const inset = (y: number) => Math.round((1 - (y - 4) / (wallTop - 1)) * 8);
   for (let y = 4; y <= wallTop + 3; y++) {
-    const inset = Math.round((1 - (y - 4) / (wallTop - 1)) * 8);
-    for (let x = inset; x < W - inset; x++) p.px(x, y, (y - 4) % 4 === 3 ? roofSh : ((x + (y >> 2) * 3) % 9 === 0 ? roofSh : roof));
+    for (let x = inset(y); x < W - inset(y); x++) p.px(x, y, (y - 4) % 4 === 3 ? roofSh : ((x + (y >> 2) * 3) % 9 === 0 ? roofSh : roof));
   }
   p.hline(8, W - 9, 4, P.SHADOW);
   for (let i = 0; i < 6; i++) p.px(10 + r() * (W - 20), 8 + r() * (wallTop - 8), roofSh);
+  if (wear > 0) {
+    // Moss creeping over the shingles, a few slipped shingles.
+    for (let i = 0; i < Math.round(8 * wear); i++) {
+      const y = Math.round(10 + r() * (wallTop - 10)), x = Math.round(inset(y) + 3 + r() * (W - 2 * inset(y) - 8));
+      p.rect(x, y, 3, 2, P.MOSS); p.px(x + 1, y - 1, P.FOREST); p.px(x + 3, y + 1, P.FERN);
+    }
+    for (let i = 0; i < Math.round(4 * wear); i++) {
+      const y = Math.round(8 + r() * (wallTop - 12)), x = Math.round(inset(y) + 4 + r() * (W - 2 * inset(y) - 10));
+      p.rect(x, y, 4, 2, P.SHADOW);
+    }
+    // Rain streaks under the eaves, a cracked board and a patched one.
+    for (let i = 0; i < Math.round(6 * wear); i++) {
+      const x = Math.round(6 + r() * (W - 12)), len = Math.round(5 + r() * 12);
+      p.vline(x, wallTop + 4, wallTop + 4 + len, wallSh);
+    }
+    for (let i = 0; i < Math.round(3 * wear); i++) {
+      const x = Math.round(6 + r() * (W - 20)), y = wallTop + 6 + Math.round(r() * (H - wallTop - 14) / 4) * 4;
+      p.hline(x, x + 5 + Math.round(r() * 4), y, P.SHADOW);
+    }
+    const px = Math.round(8 + r() * (W - 26)), py = wallTop + 10 + Math.round(r() * (H - wallTop - 22));
+    p.rect(px, py, 10, 4, P.AMBER); p.hline(px, px + 9, py + 3, P.RUST); p.px(px + 1, py + 1, P.SHADOW); p.px(px + 8, py + 1, P.SHADOW);
+  }
   p.hline(0, W - 1, wallTop + 3, P.SHADOW);
   return { c, p };
 }
 
-function window4(p: Pen, x: number, y: number, night: boolean, w = 18, h = 14): void {
-  p.rect(x, y, w, h, P.AMBER); p.rect(x + 2, y + 2, w - 4, h - 4, night ? P.LANTERN : P.MIST);
+/** A window; at night the pane glows and (when lit) is recorded for the lighting. Curtains make it lived-in. */
+function window4(p: Pen, x: number, y: number, night: boolean, w = 18, h = 14, curtain = -1, lit = true): void {
+  const glow = night && lit;
+  p.rect(x, y, w, h, P.AMBER); p.rect(x + 2, y + 2, w - 4, h - 4, glow ? P.LANTERN : night ? P.SHADOW : P.MIST);
   if (!night) { p.px(x + 3, y + 3, P.FOG); p.px(x + 4, y + 3, P.FOG); }
+  if (curtain >= 0) {
+    // Tied-back curtains in the corners.
+    for (let k = 0; k < 3; k++) { p.hline(x + 2, x + 4 - k, y + 2 + k, curtain); p.hline(x + w - 5 + k, x + w - 3, y + 2 + k, curtain); }
+    p.vline(x + 2, y + 2, y + h - 3, curtain); p.vline(x + w - 3, y + 2, y + h - 3, curtain);
+  }
   p.vline(x + (w >> 1), y + 2, y + h - 3, P.RUST);
+  if (glow && litNow) litNow.push([x + (w >> 1), y + (h >> 1)]);
+}
+
+/** A small attic window up in the gable. */
+function atticWindow(p: Pen, cx: number, y: number, night: boolean, lit = true): void {
+  p.rect(cx - 5, y, 10, 9, P.SHADOW); p.rect(cx - 4, y + 1, 8, 7, P.AMBER);
+  p.rect(cx - 3, y + 2, 6, 5, night && lit ? P.LANTERN : night ? P.SHADOW : P.MIST);
+  p.vline(cx, y + 2, y + 6, P.RUST); p.hline(cx - 3, cx + 2, y + 4, P.RUST);
+  if (night && lit && litNow) litNow.push([cx, y + 4]);
+}
+
+/** A brick chimney poking up through the roof. */
+function chimneyStack(p: Pen, x: number, y0: number, y1: number): void {
+  p.rect(x, y0, 7, y1 - y0, P.RUST); p.rect(x - 1, y0, 9, 2, P.SHADOW);
+  for (let y = y0 + 3; y < y1; y += 3) p.hline(x, x + 6, y, P.CRAN);
+  for (let y = y0 + 4; y < y1; y += 6) p.px(x + 3, y, P.CRAN);
+}
+
+/** Window box with geraniums or marigolds. */
+function flowerBox(p: Pen, x: number, y: number, w: number, bloom: number): void {
+  for (let k = 0; k < w; k += 2) { p.px(x + k, y - 1, P.MOSS); p.px(x + k + 1, y - 2, k % 4 ? bloom : P.FERN); }
+  p.rect(x - 1, y, w + 2, 3, P.RUST); p.hline(x - 1, x + w, y, P.AMBER);
+}
+
+/** Ivy climbing from the ground: wandering stems with clusters of leaves. */
+function ivy(p: Pen, x: number, yBottom: number, height: number, spread: number, seed: number, xMin = 1, xMax = 999): void {
+  const r = mulberry32(seed);
+  const stems = 2 + Math.round(spread / 6);
+  for (let s = 0; s < stems; s++) {
+    let cx = x + Math.round((r() - 0.5) * spread);
+    const top = yBottom - Math.round(height * (0.45 + r() * 0.55));
+    for (let y = yBottom; y > top; y--) {
+      if (r() < 0.3) cx += r() < 0.5 ? -1 : 1;
+      cx = Math.max(xMin, Math.min(xMax, cx));
+      p.px(cx, y, P.PINE);
+      if ((y + s) % 2 === 0) {
+        const lx = Math.max(xMin, Math.min(xMax - 1, cx + Math.round((r() - 0.5) * 4)));
+        const c = r() < 0.4 ? P.MOSS : r() < 0.7 ? P.FOREST : P.PINE;
+        p.px(lx, y, c); p.px(lx + 1, y, c); p.px(lx, y - 1, c);
+        if (r() < 0.25) p.px(lx + 1, y - 1, P.FERN);
+      }
+    }
+  }
 }
 
 function door(p: Pen, x: number, y: number, h: number, col: number): void {
@@ -274,69 +351,122 @@ function door(p: Pen, x: number, y: number, h: number, col: number): void {
   p.vline(x + 5, y, y + h - 1, P.SHADOW); p.px(x + 9, y + h / 2, P.LANTERN);
 }
 
+/** A porch lamp beside a door (glows at night). */
+function porchLamp(p: Pen, x: number, y: number, night: boolean): void {
+  p.rect(x, y, 4, 5, P.SHADOW); p.rect(x + 1, y + 1, 2, 3, night ? P.LANTERN : P.MIST); p.px(x + 1, y - 1, P.SHADOW);
+  if (night && litNow) litNow.push([x + 2, y + 3]);
+}
+
 function diner(night: boolean): Canv {
   const W = 128, H = 112;
-  const { c, p } = facade(W, H, 44, P.FOG, P.MIST, P.RED, P.CRAN, 1300);
+  const { c, p } = facade(W, H, 44, P.FOG, P.MIST, P.RED, P.CRAN, 1300, 0.6);
+  chimneyStack(p, 104, 4, 22);
   p.rect(2, 72, W - 4, 4, P.RED); p.rect(2, 80, W - 4, 2, P.RED);
   p.rect(28, 22, 72, 16, P.SHADOW); p.rect(30, 24, 68, 12, night ? P.LANTERN : P.AMBER);
   for (let x = 34; x < 94; x += 8) p.rect(x, 27, 5, 6, night ? P.RED : P.RUST);
-  window4(p, 12, 56, night, 22, 14); window4(p, 92, 56, night, 22, 14);
+  if (night) p.rect(82, 27, 5, 6, P.SHADOW); // one letter of the sign is burnt out
+  window4(p, 12, 56, night, 22, 14, P.RED); window4(p, 92, 56, night, 22, 14, P.RED);
+  flowerBox(p, 13, 71, 20, P.RED); flowerBox(p, 93, 71, 20, P.RED);
   door(p, 52, 84, 28, P.RED);
+  porchLamp(p, 44, 86, night);
+  ivy(p, 6, H - 1, 40, 8, 1301, 2, W - 3);
+  if (night && litNow) litNow.push([64, 30]); // the neon-ish sign
   return outline(c);
 }
 
 function store(night: boolean): Canv {
   const W = 128, H = 112;
-  const { c, p } = facade(W, H, 44, P.AMBER, P.RUST, P.FOREST, P.PINE, 1310);
+  const { c, p } = facade(W, H, 44, P.AMBER, P.RUST, P.FOREST, P.PINE, 1310, 0.8);
+  atticWindow(p, 64, 10, night);
   p.rect(6, 50, W - 12, 6, P.FOREST); for (let x = 6; x < W - 6; x += 8) p.rect(x, 50, 4, 6, P.FOG);
+  p.rect(84, 50, 4, 6, P.RUST); // a faded awning stripe
   p.rect(30, 26, 68, 12, P.LANTERN); p.hline(34, 92, 31, P.RUST); p.hline(36, 88, 33, P.RUST);
   window4(p, 12, 60, night, 24, 18); window4(p, 92, 60, night, 24, 18);
   door(p, 52, 82, 30, P.FOREST);
   p.rect(100, 84, 12, 10, P.RUST); p.rect(102, 86, 8, 4, P.MIST);
+  porchLamp(p, 70, 84, night);
+  ivy(p, W - 8, H - 1, 62, 12, 1311, 2, W - 3);
   return outline(c);
 }
 
 function museum(night: boolean): Canv {
   const W = 192, H = 144;
   const { c, p } = mk(W, H);
+  const r = mulberry32(1340);
   p.rect(4, 54, W - 8, H - 54, P.FOG);
   for (let y = 58; y < H; y += 6) p.hline(4, W - 5, y, P.MOON);
   for (let y = 10; y < 54; y++) {
     const half = Math.round(((y - 10) / 44) * (W / 2 - 4));
     p.hline(W / 2 - half, W / 2 + half - 1, y, (y % 6 === 0) ? P.MIST : P.MOON);
   }
+  // Weathered pediment: moss in the corners, streaks down the walls.
+  for (let i = 0; i < 7; i++) { const y = 30 + Math.round(r() * 20), half = Math.round(((y - 10) / 44) * (W / 2 - 4)); const x = W / 2 - half + 4 + Math.round(r() * (half * 2 - 8)); p.rect(x, y, 3, 2, P.MOSS); p.px(x + 1, y - 1, P.FERN); }
+  for (let i = 0; i < 9; i++) { const x = 8 + Math.round(r() * (W - 16)); p.vline(x, 56, 60 + Math.round(r() * 14), P.MIST); }
   p.hline(0, W - 1, 52, P.MIST); p.hline(0, W - 1, 53, P.TWILIGHT);
   p.ellipse(W / 2, 36, 7, 7, P.AMBER); p.ellipse(W / 2, 36, 5, 5, P.LANTERN);
+  if (night && litNow) litNow.push([W / 2, 36]);
   for (let x = 14; x < W - 10; x += 24) { p.rect(x, 58, 8, H - 66, P.MOON); p.vline(x + 7, 58, H - 9, P.MIST); p.rect(x - 2, 56, 12, 3, P.FOG); }
-  window4(p, 22, 88, night, 18, 24); window4(p, W - 40, 88, night, 18, 24);
+  // Two storeys of tall windows; Agnes's office upstairs stays lit late, a couple of rooms are dark.
+  for (const [x, y, lit] of [[23, 64, false], [47, 64, true], [127, 64, true], [151, 64, false], [22, 88, true], [46, 92, true], [128, 92, true], [W - 40, 88, true]] as Array<[number, number, boolean]>) {
+    window4(p, x, y, night, x === 22 || x === W - 40 ? 18 : 14, x === 22 || x === W - 40 ? 24 : 18, y < 80 ? P.VIOLET : -1, lit);
+  }
   door(p, 86, 104, 40, P.RUST);
   p.rect(70, 62, 52, 10, P.SHADOW); p.rect(72, 64, 48, 6, P.AMBER);
+  porchLamp(p, 74, 106, night); porchLamp(p, 114, 106, night);
+  ivy(p, 8, H - 1, 80, 10, 1341, 4, W - 5);
+  ivy(p, W - 10, H - 1, 50, 8, 1342, 4, W - 5);
   return outline(c);
 }
 
 function house(night: boolean, seed: number): Canv {
   const W = 96, H = 96;
   const roofs = [[P.TWILIGHT, P.SHADOW], [P.CRAN, P.SHADOW], [P.FOREST, P.PINE]];
+  const walls = [[P.MOON, P.VIOLET], [P.FOG, P.MIST], [P.LANTERN, P.AMBER]];
   const [rf, rs] = roofs[seed % 3];
-  const { c, p } = facade(W, H, 44, P.MOON, P.VIOLET, rf, rs, 1320 + seed);
-  window4(p, 12, 60, night, 18, 14);
-  door(p, 38, 66, 30, P.RUST);
+  const [wl, ws] = walls[seed % 3];
+  const { c, p } = facade(W, H, 44, wl, ws, rf, rs, 1320 + seed, 0.5 + seed * 0.25);
+  chimneyStack(p, seed === 1 ? 18 : 70, 2, 20);
+  atticWindow(p, 48, 18, night, seed !== 2);
+  const curtain = [P.CRAN, P.TWILIGHT, P.RED][seed % 3];
+  window4(p, 12, 60, night, 18, 14, curtain);
+  flowerBox(p, 13, 75, 16, [P.RED, P.LANTERN, P.VIOLET][seed % 3]);
+  door(p, 38, 66, 30, [P.RUST, P.FOREST, P.TWILIGHT][seed % 3]);
   p.rect(70, 60, 14, 14, P.AMBER); p.rect(72, 62, 10, 10, night ? P.LANTERN : P.MIST);
+  if (curtain >= 0) { p.vline(72, 62, 71, curtain); p.vline(81, 62, 71, curtain); }
+  if (night && litNow) litNow.push([77, 67]);
+  porchLamp(p, 54, 68, night);
+  if (seed === 0) ivy(p, 6, H - 1, 50, 8, 1325, 2, W - 3);
+  if (seed === 1) { ivy(p, W - 8, H - 1, 70, 14, 1326, 2, W - 3); ivy(p, 30, H - 1, 22, 4, 1327, 2, W - 3); }
+  if (seed === 2) ivy(p, 88, H - 1, 36, 6, 1328, 2, W - 3);
   return outline(c);
 }
 
 function station(night: boolean, restored: boolean): Canv {
   const W = 112, H = 112;
-  const { c, p } = facade(W, H, 48, restored ? P.CRAN : P.RUST, P.SHADOW, restored ? P.FOREST : P.TWILIGHT, P.SHADOW, 1330);
+  const { c, p } = facade(W, H, 48, restored ? P.CRAN : P.RUST, P.SHADOW, restored ? P.FOREST : P.TWILIGHT, P.SHADOW, 1330, restored ? 0.3 : 1);
   p.rect(20, 28, 72, 12, P.LANTERN); p.hline(24, 88, 33, P.RUST);
-  window4(p, 10, 60, night && restored, 20, 16); window4(p, 82, 60, night && restored, 20, 16);
+  window4(p, 10, 60, night, 20, 16, -1, restored); window4(p, 82, 60, night, 20, 16, -1, restored);
   if (!restored) {
     for (const x of [10, 82]) { p.line(x, 60, x + 20, 76, P.AMBER); p.line(x + 20, 60, x, 76, P.AMBER); }
     p.line(40, 70, 72, 100, P.AMBER); p.line(72, 70, 40, 100, P.AMBER);
   }
   door(p, 50, 72, 40, restored ? P.FOREST : P.SHADOW);
+  // Barney keeps a lantern hung by the door, boarded up or not.
+  porchLamp(p, 42, 74, night);
   p.ellipse(56, 18, 6, 6, P.FOG); p.px(56, 15, P.SHADOW); p.px(56, 16, P.SHADOW); p.px(57, 18, P.SHADOW);
+  ivy(p, 6, H - 1, restored ? 30 : 70, 12, 1331, 2, W - 3);
+  ivy(p, W - 8, H - 1, restored ? 20 : 58, 10, 1332, 2, W - 3);
   return outline(c);
+}
+
+/** Bake a building's day and night looks, recording which night windows glow. */
+function lit(key: string, day: () => Canv, night: () => Canv): Canv[] {
+  const d = day();
+  litNow = [];
+  const n = night();
+  LIT[key] = litNow;
+  litNow = null;
+  return [d, n];
 }
 
 function mineBoarded(): Canv {
@@ -485,11 +615,11 @@ export function bakeTown(): void {
   OBJ.hedge = [hedge()];
   OBJ.boothseat = [boothSeat()];
 
-  STRUCT.diner = [diner(false), diner(true)];
-  STRUCT.store = [store(false), store(true)];
-  STRUCT.museum = [museum(false), museum(true)];
-  STRUCT.house = [house(false, 0), house(true, 0), house(false, 1), house(true, 1), house(false, 2), house(true, 2)];
-  STRUCT.station = [station(false, false), station(true, false), station(false, true), station(true, true)];
+  STRUCT.diner = lit('diner', () => diner(false), () => diner(true));
+  STRUCT.store = lit('store', () => store(false), () => store(true));
+  STRUCT.museum = lit('museum', () => museum(false), () => museum(true));
+  STRUCT.house = [0, 1, 2].flatMap((k) => lit(`house${k}`, () => house(false, k), () => house(true, k)));
+  STRUCT.station = [...lit('station0', () => station(false, false), () => station(true, false)), ...lit('station1', () => station(false, true), () => station(true, true))];
   STRUCT.mineBoarded = [mineBoarded()];
   STRUCT.mineOpen = [mineOpen()];
 

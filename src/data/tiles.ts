@@ -165,6 +165,13 @@ export const O = {
   CHIMES: 94,
   CLOTHESLINE: 95,
   CREEK_STONE: 96,
+  // ---- Lived-in town props ----
+  TRASH_CAN: 97,
+  BIKE: 98,
+  CAT: 99,
+  NEWS_BOX: 100,
+  FLOWER_POT: 101,
+  MILK_CANS: 102,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -180,7 +187,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'snare' | 'handcar' | 'rocker' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'handcar' | 'rocker' | 'cat' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -277,6 +284,12 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.CHIMES]: { name: 'Wind Chimes', solid: false },
   [O.CLOTHESLINE]: { name: 'Clothesline', solid: true, fw: 3 },
   [O.CREEK_STONE]: { name: 'Creek Stones', solid: false },
+  [O.TRASH_CAN]: { name: 'Trash Can', solid: true },
+  [O.BIKE]: { name: 'Bicycle', solid: true },
+  [O.CAT]: { name: 'Porch Cat', solid: true, interact: 'cat' },
+  [O.NEWS_BOX]: { name: 'Newspaper Box', solid: true, interact: 'sign' },
+  [O.FLOWER_POT]: { name: 'Flower Pot', solid: false },
+  [O.MILK_CANS]: { name: 'Milk Cans', solid: true },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

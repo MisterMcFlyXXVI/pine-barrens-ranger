@@ -71,6 +71,10 @@ No environment variables or API keys are needed.
   Placement is deterministic and never walls off ground; creek stones line the shallows.
 - **Trail details**: painted blazes on trailside trees (a colour per region), trailhead boards at region entrances,
   and old Pine Hollow Coal & Coke Co. signs at the company store and the mine.
+- **Lived-in town**: weathered buildings (moss on the shingles, rain streaks, cracked and patched boards, a burnt-out
+  letter in the diner sign) with ivy climbing the walls, chimneys that smoke, curtains and window boxes, attic
+  windows and porch lamps. At night each lit window glows on its own (a couple of museum rooms stay dark). By the
+  doors: porch cats you can pet, flower pots, trash cans, a bicycle, milk cans, a clothesline and the Gazette box.
 - **Homestead**: porch rocking chair (sit a spell), wind chimes that ring when you're near, a clothesline of laundry
   and a barn quilt on the shed.
 - **Little life** (`src/graphics/ambient.ts`): butterflies over meadows by day, fireflies on summer evenings,
