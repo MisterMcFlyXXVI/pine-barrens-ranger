@@ -84,7 +84,7 @@ const base: ItemDef[] = [
   { id: 'iron_nail', name: 'Iron Nail', kind: 'material', price: 8, stack: 99, desc: 'Square-cut sawmill nail. Lure: Snarly Yow.' },
 
   // ---- Crafted lures (mail-order until the Phase 3 workbench) ----
-  { id: 'smoked_venison', name: 'Smoked Venison', kind: 'bait', price: 60, stack: 99, desc: 'Predator lure. Howler, Yow, Dwayyo, Wendigo...' },
+  { id: 'smoked_venison', name: 'Smoked Venison', kind: 'bait', price: 60, stack: 99, desc: 'Predator lure. Favored by the Snarly Yow, Ozark Howler, Jersey Devil, Dwayyo, Beast of Bray Road, Wendigo and The Awful.' },
   { id: 'fermented_mash', name: 'Fermented Berry Mash', kind: 'bait', price: 45, stack: 99, desc: 'Lure: Skunk Ape, Snallygaster, Pigman.' },
   { id: 'sulfur_egg', name: 'Sulfur Rotten Egg', kind: 'bait', price: 40, stack: 99, desc: 'Lure: Ole Slippery Skin. Pinch your nose.' },
   { id: 'battery_pack', name: 'Ionized Battery Pack', kind: 'bait', price: 80, stack: 99, desc: 'Lure: Goblins, Flatwoods Monster, Indrid Cold.' },
@@ -105,7 +105,7 @@ const base: ItemDef[] = [
   { id: 'chronos_shutter', name: 'Chronos Shutter Mod', kind: 'gear', price: 0, stack: 1, desc: 'Flash Photo causes no Startle and always yields Gold.' },
 
   // ---- Placeable lure mounts ----
-  { id: 'lure_totem', name: 'Wooden Lure Totem', kind: 'placeable', price: 0, stack: 9, desc: 'Place 3 in the Old Growth and visit at dusk...' },
+  { id: 'lure_totem', name: 'Wooden Lure Totem', kind: 'placeable', price: 0, stack: 9, desc: 'Place 3 in the Old Growth, then visit at dusk. Something very large answers.' },
   { id: 'lightning_rod', name: 'Copper Lightning Rod', kind: 'placeable', price: 0, stack: 9, desc: 'Place on Radio Ridge. Calls down storms\' guardian.' },
   { id: 'antler_chime', name: 'Bone & Antler Chime', kind: 'placeable', price: 0, stack: 9, desc: 'Place in the Old Growth. Rings in the witching fog.' },
   { id: 'tesla_pylon', name: 'Tesla Coil Pylon', kind: 'placeable', price: 0, stack: 9, desc: 'Forces Static-Charged variants and draws electric cryptids nearby.' },

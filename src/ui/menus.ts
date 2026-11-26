@@ -22,6 +22,7 @@ import { drawItemSlot } from './hud';
 import type { Dir } from '../util';
 import { touchOn } from '../util';
 import { accountEmail } from '../engine/account';
+import { drawClipped, More, tapMore } from './readMore';
 
 function anyConfirm(game: Game): boolean {
   return game.input.pressed('a') || game.input.taps.length > 0;
@@ -133,6 +134,7 @@ export class Dialog implements Overlay {
 
 export class BagMenu implements Overlay {
   closed = false;
+  private mores: Array<More | null> = [];
   private cursor = 0;
   private held: number | null = null;
 
@@ -165,6 +167,7 @@ export class BagMenu implements Overlay {
     let act = inp.pressed('a');
     const L = this.layout(game);
     for (const t of inp.taps) {
+      if (tapMore(game, this.mores, t)) return;
       const hit = L.slots.findIndex((r) => inRect(r, t.x, t.y));
       if (hit >= 0) { this.cursor = hit; act = true; }
       else if (!inRect(L, t.x, t.y)) { this.close(game); return; }
@@ -213,8 +216,9 @@ export class BagMenu implements Overlay {
       const def = ITEMS[st.id];
       drawText(g, def.name, L.x + 5, iy, P.LANTERN);
       if (def.price > 0 && def.kind !== 'tool') drawTextRight(g, `SELLS ${def.price}G`, L.x + L.w - 5, iy, P.AMBER);
-      wrapText(def.desc, L.w - 10).slice(0, 3).forEach((l, k) => drawText(g, l, L.x + 5, iy + 8 + k * 7, P.MIST));
+      this.mores = [drawClipped(g, def.desc, L.x + 5, iy + 8, L.w - 10, 3, 7, P.MIST, def.name, [P.FOREST, P.LANTERN])];
     } else {
+      this.mores = [];
       drawText(g, this.held !== null ? 'A: PLACE  B: CANCEL' : 'A: PICK UP / SWAP  B: CLOSE', L.x + 5, iy, P.MIST);
     }
   }
@@ -226,6 +230,7 @@ export class BagMenu implements Overlay {
 
 export class CatalogMenu implements Overlay {
   closed = false;
+  private mores: Array<More | null> = [];
   private tab = 0;
   private cursor = 0;
   private scroll = 0;
@@ -254,6 +259,7 @@ export class CatalogMenu implements Overlay {
     let buy = inp.repeat('a');
     const L = this.layout(game);
     for (const t of inp.taps) {
+      if (tapMore(game, this.mores, t)) return;
       const th = L.tabs.findIndex((r) => inRect(r, t.x, t.y));
       if (th >= 0) { this.tab = th; this.cursor = 0; this.scroll = 0; sfx.blip(); return; }
       const hit = L.rows.findIndex((r) => inRect(r, t.x, t.y));
@@ -303,7 +309,7 @@ export class CatalogMenu implements Overlay {
     if (entries.length > L.visible) drawTextRight(g, `${this.cursor + 1}/${entries.length}`, L.x + L.w - 5, L.y + L.h - 11, P.RUST);
     const def = ITEMS[entries[this.cursor].id];
     const desc = def.crop ? CROP_BY_ID[def.crop]?.lore ?? def.desc : def.desc;
-    wrapText(desc, L.w - 10).slice(0, 2).forEach((l, k) => drawText(g, l, L.x + 5, L.y + L.h - 28 + k * 7, P.CRAN));
+    this.mores = [drawClipped(g, desc, L.x + 5, L.y + L.h - 28, L.w - 10, 2, 7, P.CRAN, def.crop ? CROP_BY_ID[def.crop]?.name ?? def.name : def.name)];
     drawText(g, 'L/R: TAB  A: BUY (HOLD)  B: CLOSE', L.x + 5, L.y + L.h - 11, P.RUST);
   }
 }
@@ -314,6 +320,7 @@ export class CatalogMenu implements Overlay {
 
 export class DresserMenu implements Overlay {
   closed = false;
+  private mores: Array<More | null> = [];
   private row = 0;
   private outfits: string[];
   private hats: string[];
@@ -325,6 +332,7 @@ export class DresserMenu implements Overlay {
 
   update(game: Game): void {
     const inp = game.input;
+    for (const t of inp.taps) if (tapMore(game, this.mores, t)) return;
     if (inp.repeat('up') || inp.repeat('down')) { this.row ^= 1; sfx.blip(); }
     let delta = 0;
     if (inp.repeat('left')) delta = -1;
@@ -366,7 +374,7 @@ export class DresserMenu implements Overlay {
       drawText(g, (sel ? '< ' : '  ') + lines[0] + (sel ? ' >' : ''), x + 64, ry + 8, sel ? P.LANTERN : P.FOG);
     });
     const perk = OUTFIT_PERKS[o.id] ?? OUTFIT_PERKS[hh.id];
-    if (perk) wrapText(`PERK: ${perk}`, w - 70).slice(0, 2).forEach((l, k) => drawText(g, l, x + 64, y + 56 + k * 7, P.FERN));
+    this.mores = perk ? [drawClipped(g, `PERK: ${perk}`, x + 64, y + 56, w - 70, 2, 7, P.FERN, 'Outfit perk', [P.FOREST, P.LANTERN])] : [];
     const lockedO = OUTFITS.length - this.outfits.length, lockedH = HATS.length - this.hats.length;
     const lockNote = lockedO + lockedH > 0 ? `${lockedO + lockedH} LOOKS LOCKED: HISTORICAL SOCIETY REWARDS` : 'ALL LOOKS UNLOCKED!';
     wrapText(lockNote, w - 10).forEach((l, k) => drawText(g, l, x + 5, y + 70 + k * 7, P.VIOLET));
@@ -380,12 +388,14 @@ export class DresserMenu implements Overlay {
 
 export class JournalMenu implements Overlay {
   closed = false;
+  private mores: Array<More | null> = [];
   private page = 0;
   private static readonly PAGES = 5;
 
   update(game: Game): void {
     const inp = game.input;
     const n = JournalMenu.PAGES;
+    for (const t of inp.taps) if (tapMore(game, this.mores, t)) return;
     if (inp.repeat('left')) { this.page = (this.page + n - 1) % n; sfx.blip(); }
     if (inp.repeat('right') || inp.pressed('a') || inp.taps.length) { this.page = (this.page + 1) % n; sfx.blip(); }
     if (inp.pressed('b') || inp.pressed('dex')) { this.closed = true; sfx.cancel(); }
@@ -395,6 +405,7 @@ export class JournalMenu implements Overlay {
     const w = Math.min(game.w - 8, 236), h = Math.min(game.h - 30, 140);
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
+    this.mores = [];
     const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
@@ -408,16 +419,10 @@ export class JournalMenu implements Overlay {
       line(`${num}: ${title.toUpperCase()}`, P.CRAN);
       line(act >= 5 ? 'POST-GAME: THE VALLEY IS YOURS' : '"THE SIGNAL ON RADIO RIDGE"', P.AMBER);
       for (const o of objectives(game, act)) {
-        const lines = wrapText(o.text, w - 22);
-        lines.slice(0, 2).forEach((l, k) => {
-          if (k === 0) {
-            g.fillStyle = hex(o.done ? P.FOREST : P.RUST); g.fillRect(lx, ly, 5, 5);
-            if (!o.done) { g.fillStyle = hex(P.LANTERN); g.fillRect(lx + 1, ly + 1, 3, 3); }
-          }
-          drawText(g, l, lx + 9, ly, o.done ? P.FOREST : P.RUST);
-          ly += 7;
-        });
-        ly += 1;
+        g.fillStyle = hex(o.done ? P.FOREST : P.RUST); g.fillRect(lx, ly, 5, 5);
+        if (!o.done) { g.fillStyle = hex(P.LANTERN); g.fillRect(lx + 1, ly + 1, 3, 3); }
+        this.mores.push(drawClipped(g, o.text, lx + 9, ly, w - 22, 2, 7, o.done ? P.FOREST : P.RUST, 'Objective'));
+        ly += 7 * Math.min(2, wrapText(o.text, w - 22).length) + 1;
       }
       const pages = [...game.progress.pages].filter((x) => x > 0).length;
       drawText(g, `VANCE JOURNAL PAGES: ${pages}/${JOURNAL_PAGES.length - 1}`, lx, y + h - 10, P.CRAN);
@@ -441,7 +446,9 @@ export class JournalMenu implements Overlay {
       if (!active.length) line('No active quests. Talk to the townsfolk!', P.CRAN);
       for (const q of active) {
         line(q.title.toUpperCase(), P.CRAN);
-        wrapText(`- ${q.steps[Math.max(0, pr.stage(q.id) - 1)]}`, w - 12).slice(0, 2).forEach((l) => line(l));
+        const step = `- ${q.steps[Math.max(0, pr.stage(q.id) - 1)]}`;
+        this.mores.push(drawClipped(g, step, lx, ly, w - 12, 2, 8, P.RUST, q.title));
+        ly += 8 * Math.min(2, wrapText(step, w - 12).length);
       }
       ly += 2;
       line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/${CRYPTIDS.length}`, P.FOREST);
@@ -465,6 +472,7 @@ export class JournalMenu implements Overlay {
         'MOVE: D-PAD (SLIDE YOUR THUMB TO TURN)', 'A: USE, TALK, PICK   B: CANCEL, HOLD TO RUN',
         'TAP A HOTBAR SLOT TO HOLD THAT ITEM', 'BAG: INVENTORY   DEX: CRYPTID-DEX', 'TAP DEX TWICE: THIS JOURNAL',
         'SND: MUTE   PAD: HIDE TOUCH CONTROLS', 'TAP TEXT BOXES, MENU ROWS & BATTLE MOVES',
+        'TAP A DESCRIPTION (OR MORE) TO READ IT ALL',
         'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',
         'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
       ] : [

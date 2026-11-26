@@ -18,6 +18,7 @@ import { panel, bar, inRect, Rect } from '../ui/panel';
 import { sfx } from '../audio/sfx';
 import { DOCUMENTS, Kit, MOVE_DESC, MOVE_NAMES, SIGNALS, SIGNAL_GEAR, STEALTHS, stars } from './dex';
 import { clamp } from '../util';
+import { drawClipped, More, tapMore } from '../ui/readMore';
 
 export interface EncounterSetup {
   def: CryptidDef;
@@ -82,6 +83,8 @@ export class Encounter implements Overlay {
   private kitCat = 0;
   private kitIdx = 0;
   private kitScroll = 0;
+  /** Clipped move descriptions in the Field Kit screens (tap to read all). */
+  private mores: Array<More | null> = [];
   private flash = 0;
   private shake = 0;
   private outcome: Outcome | null = null;
@@ -516,6 +519,7 @@ export class Encounter implements Overlay {
         if (inp.repeat('down')) { this.kitCat = (this.kitCat + 1) % 4; sfx.blip(); }
         let go = inp.pressed('a');
         for (const t of inp.taps) {
+          if (tapMore(this.game, this.mores, t)) return;
           const r = this.kitRects();
           const hit = r.findIndex((rr) => inRect(rr, t.x, t.y));
           if (hit >= 0) { this.kitCat = hit; go = true; }
@@ -539,6 +543,7 @@ export class Encounter implements Overlay {
         if (inp.repeat('down')) { this.kitIdx = (this.kitIdx + 1) % n; sfx.blip(); }
         let go = inp.pressed('a');
         for (const t of inp.taps) {
+          if (tapMore(this.game, this.mores, t)) return;
           const hit = this.pickRects(n).findIndex((rr) => inRect(rr, t.x, t.y));
           if (hit >= 0) { this.kitIdx = hit + this.kitScroll; go = true; }
         }
@@ -750,7 +755,7 @@ export class Encounter implements Overlay {
     if (this.phase !== 'kitPick') {
       const id = game.kit[CATS[this.kitCat]];
       const desc = MOVE_DESC[id] ?? ITEMS[id]?.desc ?? '';
-      wrapText(desc, W - 14).slice(0, 4).forEach((l, k) => drawText(g, l, 7, L.boxY + 6 + k * 8, P.MIST));
+      this.mores = [drawClipped(g, desc, 7, L.boxY + 6, W - 14, 4, 8, P.MIST, moveName(id), [P.FOREST, P.LANTERN])];
       return;
     }
     const cat = CATS[this.kitCat];
@@ -775,7 +780,7 @@ export class Encounter implements Overlay {
     const id = opts[this.kitIdx];
     const desc = MOVE_DESC[id] ?? ITEMS[id]?.desc ?? '';
     panel(g, 0, L.boxY, W, L.boxH);
-    wrapText(desc, W - 14).slice(0, 4).forEach((l, k) => drawText(g, l, 7, L.boxY + 6 + k * 8, P.MIST));
+    this.mores = [drawClipped(g, desc, 7, L.boxY + 6, W - 14, 4, 8, P.MIST, moveName(id), [P.FOREST, P.LANTERN])];
   }
 }
 

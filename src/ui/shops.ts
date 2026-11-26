@@ -13,6 +13,7 @@ import { ITEMS, CATALOG_SEEDS, CROP_BY_ID } from '../data/items';
 import { BLUEPRINTS, MERCHANT_GOODS, MILESTONES, RECIPES, ShopEntry, TOOL_LINES, UPGRADES, Recipe } from '../data/economy';
 import { CRYPTIDS } from '../data/cryptids';
 import { inRect, panel, Rect } from './panel';
+import { drawMoreTag, TextPopup } from './readMore';
 
 export interface Row {
   icon?: string;
@@ -54,7 +55,7 @@ export abstract class ListMenu implements Overlay {
     return out;
   }
 
-  private layout(game: Game): Rect & { rows: Rect[]; tabs: Rect[]; visible: number; rowH: number; detailLines: number } {
+  private layout(game: Game): Rect & { rows: Rect[]; tabs: Rect[]; visible: number; rowH: number; detailLines: number; detailRect: Rect } {
     const w = Math.min(game.w - 8, 250);
     const rowH = 18;
     const hasTabs = this.tabs().length > 0;
@@ -70,7 +71,8 @@ export abstract class ListMenu implements Overlay {
     const tl = this.tabs();
     const tw = tl.length ? Math.floor((w - 8) / tl.length) : 0;
     const tabs = tl.map((_, i) => ({ x: x + 4 + i * tw, y: y + 13, w: tw - 2, h: 10 }));
-    return { x, y, w, h, rows, tabs, visible, rowH, detailLines };
+    const detailRect = { x: x + 4, y: y + h - 17 - detailLines * 7, w: w - 8, h: detailLines * 7 + 3 };
+    return { x, y, w, h, rows, tabs, visible, rowH, detailLines, detailRect };
   }
 
   update(game: Game): void {
@@ -85,6 +87,12 @@ export abstract class ListMenu implements Overlay {
     let go = inp.pressed('a');
     const L = this.layout(game);
     for (const t of inp.taps) {
+      // Tap the description box: open the selected entry's full text.
+      const cur = rows[this.cursor];
+      if (cur && inRect(L.detailRect, t.x, t.y)) {
+        const body = [{ text: cur.sub ?? '', color: P.RUST }, { text: cur.desc ?? '', color: P.SHADOW }].filter((b) => b.text);
+        if (body.length) { sfx.open(); game.openOverlay(new TextPopup(cur.label, body)); return; }
+      }
       const th = L.tabs.findIndex((r) => inRect(r, t.x, t.y));
       if (th >= 0) { this.tab = th; this.cursor = 0; this.scroll = 0; sfx.blip(); return; }
       const hit = L.rows.findIndex((r) => inRect(r, t.x, t.y));
@@ -133,7 +141,9 @@ export abstract class ListMenu implements Overlay {
     if (rows.length > L.visible) drawTextRight(g, `${this.cursor + 1}/${rows.length}`, L.x + L.w - 5, L.y + L.h - 11, P.RUST);
     const dy = L.y + L.h - 14 - L.detailLines * 7;
     g.fillStyle = hex(P.AMBER); g.fillRect(L.x + 4, dy - 3, L.w - 8, 1);
-    this.detail(L.w, rows[this.cursor]).slice(0, L.detailLines).forEach((l, k) => drawText(g, l.text, L.x + 5, dy + k * 7, l.color));
+    const lines = this.detail(L.w, rows[this.cursor]);
+    lines.slice(0, L.detailLines).forEach((l, k) => drawText(g, l.text, L.x + 5, dy + k * 7, l.color));
+    if (lines.length > L.detailLines) drawMoreTag(g, L.x + L.w - 5, dy + (L.detailLines - 1) * 7);
     drawText(g, this.footer(), L.x + 5, L.y + L.h - 11, P.RUST);
   }
 }

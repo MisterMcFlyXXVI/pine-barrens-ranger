@@ -7,10 +7,12 @@ import { drawText, drawTextCentered, drawTextRight, wrapText } from '../graphics
 import { hex, P } from '../graphics/palette';
 import { sfx } from '../audio/sfx';
 import { panel } from './panel';
+import { drawClipped, More, tapMore } from './readMore';
 
 export class VanceJournal implements Overlay {
   closed = false;
   private page = 0;
+  private more: More | null = null;
 
   update(game: Game): void {
     const inp = game.input;
@@ -18,7 +20,7 @@ export class VanceJournal implements Overlay {
     let d = 0;
     if (inp.repeat('left') || inp.repeat('up')) d = -1;
     if (inp.repeat('right') || inp.repeat('down') || inp.pressed('a')) d = 1;
-    for (const t of inp.taps) d = t.x < game.w / 2 ? -1 : 1;
+    for (const t of inp.taps) { if (tapMore(game, [this.more], t)) return; d = t.x < game.w / 2 ? -1 : 1; }
     if (d) { this.page = (this.page + d + n) % n; sfx.blip(); }
     if (inp.pressed('b') || inp.pressed('dex')) { this.closed = true; sfx.cancel(); }
   }
@@ -38,8 +40,9 @@ export class VanceJournal implements Overlay {
     g.fillStyle = hex(P.RUST); g.fillRect(x + 4, y + 13, w - 8, 1);
     if (found) {
       drawText(g, pg.title.toUpperCase().slice(0, Math.floor((w - 10) / 4)), x + 5, y + 17, P.CRAN);
-      wrapText(pg.text, w - 12).slice(0, Math.floor((h - 44) / 7)).forEach((l, i) => drawText(g, l, x + 6, y + 27 + i * 7, P.SHADOW));
+      this.more = drawClipped(g, pg.text, x + 6, y + 27, w - 12, Math.floor((h - 44) / 7), 7, P.SHADOW, pg.title, undefined, true);
     } else {
+      this.more = null;
       drawTextCentered(g, '[ PAGE TORN OUT ]', x + w / 2, y + h / 2 - 12, P.RUST);
       const hint = pg.map ? `Somewhere in ${MAP_NAMES[pg.map]}. Look for a fluttering scrap of paper.` : '';
       wrapText(hint, w - 20).forEach((l, i) => drawTextCentered(g, l, x + w / 2, y + h / 2 + i * 7, P.AMBER));
