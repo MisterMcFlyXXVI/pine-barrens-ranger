@@ -14,7 +14,7 @@ import { Inventory, Stack, HOTBAR_SIZE } from './inventory';
 import { MapRuntime } from './world';
 import { Player, TOOL_DURATION } from './player';
 import { SaveData, Stats, writeSave, SAVE_VERSION, MapSave } from './save';
-import { cloudBackup, cloudCode } from './cloud';
+import { accountEmail, uploadSave } from './account';
 import { BUILT_MAPS, BED_SPAWN, MapId, MAP_NAMES } from '../data/maps';
 import { O, T, objProps, Interact, SLOW_GROUND, WADE_GROUND, COVER_OBJECTS, MOUNT_OBJECT } from '../data/tiles';
 import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind } from '../data/items';
@@ -96,6 +96,8 @@ export class Game {
   private smokeT = 0;
   private lowStaminaWarned = false;
   private title = new TitleScreen();
+  /** An account sign-in replaced the device save: refresh the title screen's summary. */
+  reloadTitleSave(): void { this.title.reload(); }
   // ---- Phase 2: weather, Dex, Field Kit, encounters ----
   dayWeather: DayWeather = { morning: 'CLEAR', evening: 'CLEAR' };
   dex: Dex = newDex();
@@ -260,9 +262,9 @@ export class Game {
 
   saveGame(): boolean {
     const ok = writeSave(this.toSave());
-    if (ok && cloudCode()) {
-      // Off-device copy (see api/save.ts). Runs in the background; the local save already succeeded.
-      void cloudBackup().then((r) => this.toast(r.ok ? 'Cloud backup saved.' : 'Cloud backup failed. It will retry at your next save.'));
+    if (ok && accountEmail()) {
+      // Off-device copy to the player's account. Runs in the background; the device save already succeeded.
+      void uploadSave().then((r) => this.toast(r.ok ? 'Saved to your account.' : 'Cloud save failed. It will retry at your next save.'));
     }
     return ok;
   }

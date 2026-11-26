@@ -17,15 +17,17 @@ npm run build    # type-checks (strict) and outputs to dist/
 3. Vercel reads `vercel.json` (framework `vite`, build `npm run build`, output `dist`). Leave the defaults and click **Deploy**.
 No environment variables or API keys are needed.
 
-## Saves & backups
+## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
-- **Cloud backup** (title screen → CLOUD BACKUP → TURN ON): every save is also uploaded to a Redis database
-  attached to the Vercel project, under a recovery code like `HOLLER-ABCD-EFGH-JKLM`. On a new device or after
-  deleting the app, choose RESTORE FROM CODE. No accounts; the server stores saves under a hash of the code and keeps
-  the previous upload as a spare. Server code: `api/save.ts`.
-- **One-time setup:** in the Vercel dashboard open the project → **Storage** → create an **Upstash for Redis**
-  database (free plan) and connect it to the project, then redeploy. Check it at `https://<your-site>/api/save`:
-  it should show `{"cloud":true}`.
+- **Accounts** (title screen → ACCOUNT): Continue with Google, or email + password (with password reset).
+  While signed in, every save also uploads to the player's account, and signing in on another device (or after
+  deleting the app) brings the save back. If the device and the account disagree, the player chooses which to keep.
+  The database keeps the previous upload as a spare ("Restore the previous cloud save").
+- Built on **Supabase** (Auth + a `saves` table with Row Level Security, so each player can only read their own
+  row). Client code: `src/engine/account.ts`, `src/ui/accountModal.ts`. Database setup: `supabase/schema.sql`.
+- Configuration: `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (the names Vercel's Supabase integration sets
+  are accepted too). Only the public key is ever used; the build refuses a secret/service_role key.
+  Without these, the game runs normally and ACCOUNT explains accounts aren't set up. See `.env.example`.
 - **EXPORT SAVE** opens the Share sheet on phones (save to Files / iCloud Drive, AirDrop, email) or downloads a file.
 
 ## Controls

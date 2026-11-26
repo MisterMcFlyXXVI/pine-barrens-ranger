@@ -357,3 +357,87 @@ body {
     display: none;
   }
 }
+
+/* ---------- Account panel (HTML form over the canvas) ---------- */
+.acct-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+  background: rgba(11, 19, 22, 0.86);
+}
+.acct {
+  box-sizing: border-box;
+  width: min(92vw, 360px);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding: 16px;
+  background: var(--shadow);
+  border: 3px solid var(--forest);
+  border-radius: 12px;
+  color: var(--fog);
+  font: 14px/1.45 ui-monospace, 'Courier New', monospace;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+.acct h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--fern);
+  text-align: center;
+}
+.acct p { margin: 8px 0; }
+.acct b { color: var(--lantern); word-break: break-all; }
+.acct-small { font-size: 12px; color: var(--mist); }
+.acct-center { text-align: center; }
+.acct-form { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.acct input {
+  box-sizing: border-box;
+  width: 100%;
+  font: 16px ui-monospace, 'Courier New', monospace; /* 16px stops iOS zooming in on focus */
+  padding: 10px;
+  color: var(--void);
+  background: var(--fog);
+  border: 2px solid var(--pine);
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+.acct-btn {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 8px 0 0;
+  min-height: 44px;
+  padding: 10px;
+  font: bold 14px ui-monospace, 'Courier New', monospace;
+  border-radius: 8px;
+  border: 2px solid var(--void);
+  white-space: pre-line;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.acct-btn.primary { background: var(--forest); color: var(--lantern); }
+.acct-btn.ghost { background: transparent; color: var(--fern); border-color: var(--pine); }
+.acct-btn.google { background: var(--fog); color: var(--void); }
+.acct-btn.tall { min-height: 60px; }
+.acct-btn:active { filter: brightness(1.2); }
+.acct-or { margin: 12px 0 8px; text-align: center; font-size: 12px; color: var(--mist); }
+.acct-link {
+  display: block;
+  margin: 8px auto 0;
+  background: none;
+  border: none;
+  color: var(--mist);
+  font: 12px ui-monospace, 'Courier New', monospace;
+  text-decoration: underline;
+  min-height: 32px;
+  cursor: pointer;
+}
+.acct-note { padding: 8px; border-radius: 6px; background: var(--pine); color: var(--lantern); font-size: 13px; }
+.acct-note.bad { background: var(--cran); color: var(--fog); }

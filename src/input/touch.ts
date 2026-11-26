@@ -51,7 +51,8 @@ export class TouchControls {
     document.addEventListener('gesturechange', stop);
     document.addEventListener('dblclick', stop);
     document.addEventListener('contextmenu', stop);
-    document.addEventListener('touchmove', stop, { passive: false });
+    // ...but let the account panel scroll.
+    document.addEventListener('touchmove', (e) => { if (!(e.target instanceof Element && e.target.closest('.acct'))) stop(e); }, { passive: false });
     this.deck.addEventListener('touchstart', stop, { passive: false });
   }
 

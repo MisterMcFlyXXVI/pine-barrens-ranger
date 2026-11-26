@@ -5,6 +5,7 @@ import { Game } from './engine/game';
 import { bindKeyboard } from './input/keyboard';
 import { TouchControls, bindCanvasTaps } from './input/touch';
 import { sfx } from './audio/sfx';
+import { startAccounts } from './ui/accountModal';
 
 function must<T extends HTMLElement>(id: string): T {
   const e = document.getElementById(id);
@@ -49,6 +50,7 @@ function layout(): void {
 }
 
 bindKeyboard(game.input, gesture);
+startAccounts(() => game.reloadTitleSave());
 bindCanvasTaps(canvas, game.input, gesture);
 new TouchControls(deck, padBtn, game.input, gesture, () => requestAnimationFrame(layout));
 muteBtn.classList.toggle('on', !sfx.muted);

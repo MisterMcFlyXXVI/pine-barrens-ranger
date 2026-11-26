@@ -14,7 +14,10 @@ const KEYMAP: Record<string, Action> = {
 
 /** Binds WASD/Arrows, Space/E interact, Shift/Esc cancel+sprint, 1-9 hotbar, Tab dex, M mute. */
 export function bindKeyboard(input: Input, onGesture: () => void): void {
+  // Let text fields (the account sign-in form) receive their keys untouched.
+  const typing = (e: KeyboardEvent) => e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
   window.addEventListener('keydown', (e) => {
+    if (typing(e)) return;
     onGesture();
     if (e.code.startsWith('Digit') && e.code.length === 6) {
       const n = Number(e.code.slice(5));
@@ -26,6 +29,7 @@ export function bindKeyboard(input: Input, onGesture: () => void): void {
     input.press(a, `k:${e.code}`);
   });
   window.addEventListener('keyup', (e) => {
+    if (typing(e)) return;
     const a = KEYMAP[e.code];
     if (a) input.release(a, `k:${e.code}`);
   });
