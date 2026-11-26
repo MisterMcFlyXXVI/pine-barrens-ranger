@@ -180,6 +180,10 @@ export const O = {
   MINE_CART: 108,
   LAMP_HOUSE: 109,
   DOG: 110,
+  // ---- Home interiors ----
+  WALL_FRAME: 111,
+  MODEL_TRAIN: 112,
+  RADIO_RIG: 113,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -306,6 +310,9 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.MINE_CART]: { name: 'Mine Cart', solid: true, interact: 'sign' },
   [O.LAMP_HOUSE]: { name: 'Lamp House', solid: true, interact: 'sign', fw: 2, fh: 2 },
   [O.DOG]: { name: 'Old Hound', solid: true, interact: 'dog' },
+  [O.WALL_FRAME]: { name: 'Picture', solid: true },
+  [O.MODEL_TRAIN]: { name: 'Model Railroad', solid: true, interact: 'sign', fw: 2 },
+  [O.RADIO_RIG]: { name: 'Radio Rig', solid: true, interact: 'sign', fw: 2 },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

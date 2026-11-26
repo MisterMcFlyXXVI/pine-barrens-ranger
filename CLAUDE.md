@@ -187,6 +187,11 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 
 ---
 
+### Town life & homes
+- **Homes** (`src/data/homes.ts`): `HOMES` (residents, friends who can invite you at 4 hearts, knock/welcome text), `HOME_SPOTS` (sit/morning/bed per NPC), and the 7 furnished interiors (`HOUSE_*`, `STORE_LOFT`, `DINER_ROOM`; map `home: true`, every object's description in `signs`). Doors use `requires: 'home'`, checked by `Game.homeClosed`.
+- **Schedules** (`src/data/npcs.ts`): `where(ctx)` returns a `Stop` (`sleep`/`bed` for bedtime, `tag` for situational `lines` and effects); ctx has `weekday` and `wet`. Never return null for townsfolk who live in town -- they should be home or in bed.
+- **Movement** (`src/engine/townsfolk.ts`): NPCs route between maps through portals (`hop`), walk to the door on the visible map, take `HOP_SECONDS` per map off-screen, and climb into bed (`inBed`). Town windows light per group from `TOWN_ART` (`litGroups` in render.ts).
+
 ### Small details & seasons
 - **Decor pass** (`src/data/decor.ts`, run in `getMapDef` before `placeStop`): seasonal wildflowers (`O.FORGET_ME_NOT`..`O.ASTER`), creek stones and trailhead boards; `unblock()` swaps out any solid decor that cuts off ground. New plants belong in `CLEARABLE`/`LINE_CLEARABLE` (handcar.ts).
 - **Rail props** (`railProps` in handcar.ts): crossbucks, whistle posts, mileposts beside the traced line (sign text in `def.signs`).

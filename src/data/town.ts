@@ -17,7 +17,7 @@ import { P } from '../graphics/palette';
 export const MUSEUM_CASE_COLS = [3, 5, 7, 18, 20, 22];
 export const MUSEUM_CASE_ROWS = [4, 6, 8, 10, 12, 14];
 
-function wrap(b: Builder, id: MapId, name: string, extra: Partial<MapDef>): MapDef {
+export function wrap(b: Builder, id: MapId, name: string, extra: Partial<MapDef>): MapDef {
   return {
     id, name, w: b.w, h: b.h, indoor: false, wild: false, plots: [], forage: [], portals: [],
     ground: b.ground, objects: b.objects, anchors: b.anchors, structAt: b.structAt, structures: b.structures,
@@ -99,11 +99,19 @@ export function buildTown(): MapDef {
   b.structure({ kind: 'museum', x: 32, y: 14, w: 12, h: 8, door: { x: 37, y: 21 }, open: true, windows: [[28, 98], [164, 98]] });
   b.structure({ kind: 'diner', x: 14, y: 29, w: 8, h: 6, door: { x: 17, y: 34 }, open: true, windows: [[20, 70], [100, 70]], chimney: [107, -14] });
   b.structure({ kind: 'store', x: 50, y: 29, w: 8, h: 6, door: { x: 53, y: 34 }, open: true, windows: [[20, 70], [100, 70]] });
-  const house = (x: number, y: number, msg: string) =>
-    b.structure({ kind: 'house', x, y, w: 6, h: 5, door: { x: x + 2, y: y + 4 }, open: false, windows: [[20, 54]], lockedMsg: msg, chimney: [(x + y) % 3 === 1 ? 21 : 73, -16] });
-  house(12, 42, "Agnes Vance's cottage. A note on the door: \"At the Historical Society. -A.V.\"");
-  house(24, 44, "Barnaby Finch's house. A dog bowl sits by the door, labeled BUSTER.");
-  house(38, 44, 'The Miller-Thorne house. You smell pie... and hot iron.');
+  // Homes: each front door opens onto its interior (you're invited in at 4 hearts with someone who lives there).
+  const house = (x: number, y: number, variant: number, msg: string) =>
+    b.structure({ kind: 'house', x, y, w: 6, h: 5, door: { x: x + 2, y: y + 4 }, open: true, windows: [[20, 54]], lockedMsg: msg, variant, chimney: [variant === 1 || variant === 4 ? 21 : 73, -16] });
+  house(12, 42, 0, "Agnes Vance's cottage.");
+  house(24, 44, 2, "Barnaby Finch's house. A dog bowl sits by the door, labeled BUSTER.");
+  house(38, 44, 1, 'The Miller-Thorne house. You smell pie... and hot iron.');
+  // Pippa's family, up the east lane; Grandma Ruth and Sam, down the south lane.
+  for (let y = 42; y <= 46; y++) for (let x = 49; x <= 54; x++) b.setO(x, y, O.NONE);
+  house(49, 42, 3, 'The Calloway house. A sticker on the door: "JUNIOR CRYPTID CLUB -- MEMBERS ONLY."');
+  for (let y = 51; y <= 55; y++) for (let x = 31; x <= 36; x++) b.setO(x, y, O.NONE);
+  house(31, 51, 4, "Ruth Haddix's house. Chickens complain from somewhere behind it.");
+  b.trail([[55, 37], [55, 44], [54, 47], [51, 47]], 1);
+  b.trail([[27, 49], [27, 53], [28, 57], [33, 57], [33, 56]], 1);
   for (const [x, y] of [[20, 38], [27, 38], [41, 38], [57, 38], [10, 38], [47, 38]]) if (b.g(x, y) !== T.PATH) b.setO(x, y, O.LAMP);
   b.setO(23, 34, O.LAMP); b.setO(49, 34, O.LAMP);
 
@@ -161,7 +169,11 @@ export function buildTown(): MapDef {
   prop([[23, 48], [23, 47]], O.MILK_CANS);
   prop([[39, 49]], O.FLOWER_POT); prop([[41, 49]], O.FLOWER_POT);
   prop([[37, 48], [36, 48]], O.TRASH_CAN);
-  if ([44, 45, 46].every((x) => b.o(x, 46) === O.NONE && b.g(x, 46) === T.GRASS)) b.place(44, 46, O.CLOTHESLINE, 3, 1);
+  for (const [lx, ly] of [[44, 46], [56, 46], [37, 54], [17, 50]] as Array<[number, number]>) {
+    if ([0, 1, 2].every((k) => b.o(lx + k, ly) === O.NONE && b.g(lx + k, ly) === T.GRASS)) { b.place(lx, ly, O.CLOTHESLINE, 3, 1); break; }
+  }
+  // Gideon's open-air anvil beside the store, where he works late afternoons.
+  b.setO(48, 31, O.NONE); b.setO(48, 30, O.ANVIL);
   // Station: Barney's cat keeps him company.
   prop([[58, 33], [58, 32], [66, 34]], O.CAT);
   prop([[42, 48], [42, 49], [37, 49]], O.DOG);
@@ -195,6 +207,11 @@ export function buildTown(): MapDef {
       { x: 17, y: 34, w: 1, h: 1, to: 'DINER_INT', tx: 10, ty: 12, dir: 'up', closedMsg: '' },
       { x: 53, y: 34, w: 1, h: 1, to: 'STORE_INT', tx: 10, ty: 12, dir: 'up', closedMsg: '' },
       { x: 37, y: 21, w: 1, h: 1, to: 'MUSEUM_INT', tx: 13, ty: 18, dir: 'up', closedMsg: '' },
+      { x: 14, y: 46, w: 1, h: 1, to: 'HOUSE_VANCE', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
+      { x: 26, y: 48, w: 1, h: 1, to: 'HOUSE_FINCH', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
+      { x: 40, y: 48, w: 1, h: 1, to: 'HOUSE_MILLER', tx: 9, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
+      { x: 51, y: 46, w: 1, h: 1, to: 'HOUSE_CALLOWAY', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
+      { x: 33, y: 55, w: 1, h: 1, to: 'HOUSE_RUTH', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
       // MINE_ENTRANCE_PORTAL — stub for the future underground dungeon.
       { x: 54, y: 6, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up',
         closedMsg: 'Planks are nailed across the mine adit. Gideon says the Restoration Grant could pay to reopen it.',
@@ -212,7 +229,7 @@ export function buildTown(): MapDef {
 /* Interiors                                                           */
 /* ================================================================== */
 
-function shell(W: number, H: number, floor: number, doorX: number): Builder {
+export function shell(W: number, H: number, floor: number, doorX: number): Builder {
   const b = new Builder(W, H, T.VOID);
   for (let x = 0; x < W; x++) { b.setG(x, 0, T.WALL_TOP); b.setG(x, 1, T.WALL_FACE); b.setG(x, 2, T.WALL_BASE); }
   for (let y = 0; y < H; y++) { b.setG(0, y, T.WALL_SIDE); b.setG(W - 1, y, T.WALL_SIDE); }
@@ -234,9 +251,13 @@ export function buildDiner(): MapDef {
   for (const x of [4, 6, 8, 10]) b.setO(x, 7, O.STOOL);
   for (const y of [5, 8, 11]) { b.setO(15, y, O.BOOTH_SEAT); b.setO(16, y, O.TABLE); b.setO(17, y, O.BOOTH_SEAT); }
   b.setO(1, 11, O.JUKEBOX); b.setO(18, 3, O.PLANT); b.setO(1, 5, O.PLANT);
+  b.setG(18, 12, T.STAIRS); // up to Dr. Okafor's room
   return wrap(b, 'DINER_INT', 'Whistle-Stop Diner', {
     indoor: true, battleColors: [P.AMBER, P.RUST],
-    portals: [{ x: 10, y: 13, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: 17, ty: 35, dir: 'down', closedMsg: '' }],
+    portals: [
+      { x: 10, y: 13, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: 17, ty: 35, dir: 'down', closedMsg: '' },
+      { x: 18, y: 12, w: 1, h: 1, to: 'DINER_ROOM', tx: 2, ty: 6, dir: 'right', closedMsg: '', requires: 'home' },
+    ],
   });
 }
 
@@ -250,9 +271,13 @@ export function buildStore(): MapDef {
   b.setO(9, 6, O.REGISTER);
   b.setO(16, 4, O.ANVIL); b.setO(17, 3, O.FORGE); b.setO(18, 6, O.CRATE); b.setO(18, 7, O.CRATE); b.setO(15, 9, O.LUMBER);
   b.setO(13, 3, O.POSTER);
+  b.setG(18, 11, T.STAIRS); // up to Toby's loft
   return wrap(b, 'STORE_INT', 'General Store & Outfitter', {
     indoor: true, battleColors: [P.AMBER, P.RUST],
-    portals: [{ x: 10, y: 13, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: 53, ty: 35, dir: 'down', closedMsg: '' }],
+    portals: [
+      { x: 10, y: 13, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: 53, ty: 35, dir: 'down', closedMsg: '' },
+      { x: 18, y: 11, w: 1, h: 1, to: 'STORE_LOFT', tx: 2, ty: 6, dir: 'right', closedMsg: '', requires: 'home' },
+    ],
   });
 }
 

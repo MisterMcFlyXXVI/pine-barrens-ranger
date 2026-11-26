@@ -353,6 +353,51 @@ function dog(frame: number): Canv {
   }, 16, 16, true);
 }
 
+/* ---------------------------- home interiors ---------------------------- */
+
+/** Things hung on a wall: drawn on the wall-face tile. */
+function wallFrame(kind: string): Canv {
+  return art((p) => {
+    const box = (x: number, y: number, w: number, h: number, wood: number = RUST) => { p.rect(x, y, w, h, wood); p.rect(x + 1, y + 1, w - 2, h - 2, FOG); };
+    switch (kind) {
+      case 'photo': box(3, 3, 10, 9, AMBER); p.rect(4, 4, 8, 7, MIST); p.rect(5, 7, 2, 4, SHADOW); p.rect(9, 6, 2, 5, SHADOW); p.px(6, 6, AMBER); p.px(10, 5, AMBER); break;
+      case 'clock': p.ellipse(8, 7, 5, 5, RUST); p.ellipse(8, 7, 4, 4, FOG); p.vline(8, 4, 7, SHADOW); p.hline(8, 10, 7, SHADOW); p.rect(7, 12, 3, 3, AMBER); break;
+      case 'sampler': box(2, 3, 12, 9, AMBER); p.hline(4, 11, 5, RED); p.hline(4, 9, 7, FOREST); p.hline(5, 11, 9, RED); p.px(3, 4, CRAN); p.px(12, 10, CRAN); break;
+      case 'map': box(2, 3, 12, 10, SHADOW); p.rect(3, 4, 10, 8, LANTERN); p.line(4, 10, 8, 6, RED); p.line(8, 6, 12, 8, RED); p.px(6, 5, FOREST); p.px(10, 10, FOREST); p.px(9, 9, TWILIGHT); break;
+      case 'rods': p.line(2, 13, 13, 3, RUST); p.line(3, 14, 14, 5, AMBER); p.rect(1, 6, 2, 2, SHADOW); p.rect(13, 6, 2, 2, SHADOW); p.px(13, 9, RED); break;
+      case 'drawing': p.rect(3, 3, 10, 10, FOG); p.px(3, 3, RED); p.px(12, 3, RED); p.ellipse(8, 8, 3, 2, AMBER); p.px(6, 6, RED); p.px(10, 6, RED); p.line(5, 11, 11, 11, FOREST); break;
+      case 'poster': p.rect(3, 2, 10, 12, TWILIGHT); p.ellipse(8, 7, 3, 3, FOG); p.px(7, 7, RED); p.px(9, 7, RED); p.hline(4, 11, 11, LANTERN); break;
+      case 'quilt': box(2, 2, 12, 12, AMBER); for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if ((x + y) % 4 === 0 || (x - y + 10) % 4 === 0) p.px(3 + x, 3 + y, (x < 5) === (y < 5) ? RED : TWILIGHT); break;
+      case 'window': p.ellipse(8, 8, 5, 5, AMBER); p.ellipse(8, 8, 4, 4, MIST); p.vline(8, 4, 12, RUST); p.hline(4, 12, 8, RUST); p.px(6, 6, FOG); break;
+      default: box(3, 3, 10, 9);
+    }
+  });
+}
+
+/** Barney's HO-scale Pine Hollow branch on a table, the little engine making its rounds. */
+function modelTrain(f: number): Canv {
+  return art((p) => {
+    p.rect(1, 6, 30, 8, AMBER); p.hline(1, 30, 6, LANTERN); p.vline(2, 14, 15, RUST); p.vline(29, 14, 15, RUST);
+    p.rect(2, 7, 28, 6, MOSS); p.rect(20, 7, 4, 3, FOREST); p.px(26, 8, TWILIGHT); // hills, pond
+    p.ellipse(16, 10, 12, 2.5, RUST); p.ellipse(16, 10, 10, 1.5, MOSS); // oval of track
+    const pos = [[6, 10], [10, 8], [16, 7.5], [22, 8], [26, 10], [22, 12], [16, 12.5], [10, 12]][f % 8];
+    p.rect(pos[0] - 2, pos[1] - 2, 4, 2, SHADOW); p.px(pos[0] - 2, pos[1] - 3, SHADOW); p.px(pos[0] + 1, pos[1] - 2, RED);
+    p.rect(13, 3, 3, 3, RUST); p.rect(14, 1, 2, 2, FOG); // tiny water tower
+  }, 32, 16, true);
+}
+
+/** Clara's ham rig: dials, a reel-to-reel and blinking lights. */
+function radioRig(f: number): Canv {
+  return art((p) => {
+    p.rect(0, 6, 32, 10, RUST); p.hline(0, 31, 6, AMBER);
+    p.rect(2, 1, 12, 8, SHADOW); p.rect(3, 2, 10, 4, TWILIGHT); p.hline(4, 11, 4, f ? MIST : FOG);
+    for (const x of [4, 7, 10]) p.px(x, 7, f && x === 7 ? RED : LANTERN);
+    p.ellipse(19, 4, 2.5, 2.5, SHADOW); p.ellipse(25, 4, 2.5, 2.5, SHADOW); p.px(19, 4, f ? FOG : MIST); p.px(25, 4, f ? MIST : FOG);
+    p.rect(17, 7, 10, 2, SHADOW);
+    p.vline(29, 0, 6, MIST); p.px(29, 0, f ? RED : CRAN); // mic stand
+  }, 32, 16, true);
+}
+
 /* ------------------------------ decals ------------------------------ */
 
 function puddle(seed: number): Canv {
@@ -445,6 +490,9 @@ export function bakeDecor(): void {
   PROP.minecart = [mineCart()];
   PROP.lamphouse = [lampHouse(false), lampHouse(true)];
   PROP.dog = [dog(0), dog(1)];
+  for (const k of ['photo', 'clock', 'sampler', 'map', 'rods', 'drawing', 'poster', 'quilt', 'window']) PROP[`frame_${k}`] = [wallFrame(k)];
+  PROP.modeltrain = [0, 1, 2, 3, 4, 5, 6, 7].map(modelTrain);
+  PROP.radiorig = [radioRig(0), radioRig(1)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];
   DECAL.snowLight = [snowLight(7), snowLight(19), snowLight(41)];

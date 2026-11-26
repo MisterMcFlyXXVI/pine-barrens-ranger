@@ -46,6 +46,7 @@ export const NPC_OUTFITS: readonly OutfitDef[] = [
   { id: 'npc_kid_amber', name: 'Club Jacket', style: 'jacket', main: 8, shade: 9, trim: 7, accent: 6, starter: false, source: 'npc' },
   { id: 'npc_apprentice', name: 'Work Shirt', style: 'flannel', main: 12, shade: 1, trim: 0, accent: 6, starter: false, source: 'npc' },
   { id: 'npc_ezri', name: 'Apothecary Robe', style: 'cloak', main: 14, shade: 2, trim: 15, accent: 7, starter: false, source: 'npc' },
+  { id: 'npc_housecoat', name: 'Housecoat', style: 'apron', main: 13, shade: 12, trim: 7, accent: 11, starter: false, source: 'npc' },
   { id: 'npc_pike', name: 'Machinist Coat', style: 'slicker', main: 12, shade: 1, trim: 8, accent: 7, starter: false, source: 'npc' },
 ];
 

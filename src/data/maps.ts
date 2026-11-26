@@ -13,6 +13,7 @@ import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } fr
 import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
 import { placeStop } from './handcar';
 import { decorate } from './decor';
+import { buildVance, buildFinch, buildMiller, buildCalloway, buildRuth, buildLoft, buildDinerRoom } from './homes';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
@@ -20,6 +21,7 @@ export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup }
 export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>([
   'CABIN_YARD', 'CABIN_INTERIOR', 'PINE_TRAIL_AND_ORCHARD', 'CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL', 'RADIO_RIDGE_AND_CROSSROADS',
   'PINE_HOLLOW_TOWN', 'DINER_INT', 'STORE_INT', 'MUSEUM_INT', 'MUSEUM_BASEMENT',
+  'HOUSE_VANCE', 'HOUSE_FINCH', 'HOUSE_MILLER', 'HOUSE_CALLOWAY', 'HOUSE_RUTH', 'STORE_LOFT', 'DINER_ROOM',
 ]);
 
 export const MAP_NAMES: Record<MapId, string> = {
@@ -35,6 +37,13 @@ export const MAP_NAMES: Record<MapId, string> = {
   STORE_INT: 'General Store & Outfitter',
   MUSEUM_INT: 'Pine Hollow Historical Society',
   MUSEUM_BASEMENT: 'Archive Basement',
+  HOUSE_VANCE: "Agnes Vance's Cottage",
+  HOUSE_FINCH: "Barney Finch's House",
+  HOUSE_MILLER: 'The Miller-Thorne House',
+  HOUSE_CALLOWAY: 'The Calloway House',
+  HOUSE_RUTH: "Ruth Haddix's House",
+  STORE_LOFT: "Toby's Loft",
+  DINER_ROOM: "Dr. Okafor's Room",
   EXPANSION_RAIL: 'Rail Line',
 };
 
@@ -279,6 +288,13 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'STORE_INT') m = buildStore();
     else if (id === 'MUSEUM_INT') m = buildMuseum();
     else if (id === 'MUSEUM_BASEMENT') m = buildBasement();
+    else if (id === 'HOUSE_VANCE') m = buildVance();
+    else if (id === 'HOUSE_FINCH') m = buildFinch();
+    else if (id === 'HOUSE_MILLER') m = buildMiller();
+    else if (id === 'HOUSE_CALLOWAY') m = buildCalloway();
+    else if (id === 'HOUSE_RUTH') m = buildRuth();
+    else if (id === 'STORE_LOFT') m = buildLoft();
+    else if (id === 'DINER_ROOM') m = buildDinerRoom();
     else throw new Error(`Region ${id} is not built yet`);
     decorate(m);
     placeStop(m);

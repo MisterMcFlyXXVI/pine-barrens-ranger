@@ -116,6 +116,8 @@ class Sfx {
     }
   }
 
+  /** Knock knock. */
+  knock(): void { this.noise(0.05, 0.12, 'lowpass', 400, 200, 3); this.noise(0.05, 0.12, 'lowpass', 400, 200, 3, 0.16); }
   /** A frog hopping into the water. */
   plop(): void { this.tone('triangle', 620, 180, 0.09, 0.07); this.noise(0.08, 0.05, 'bandpass', 900, 400, 2, 0.03); }
   /** Porch wind chimes. */

@@ -90,6 +90,14 @@ function completeQuest(game: Game, q: QuestDef): string[] {
 export function talkTo(game: Game, npc: NpcRT): void {
   const d = npc.def;
   const p = game.progress;
+  if (npc.inBed) {
+    sfx.blip();
+    const first = d.name.split(' ')[0].replace(/"/g, '');
+    game.openOverlay(new Dialog([d.kind === 'dog'
+      ? 'Buster is curled up asleep, paws twitching. He\'s chasing something in his dreams.'
+      : [`${first} is fast asleep. Better let them be.`, `${first} snores softly and mumbles something about ${d.id === 'mabel' ? 'biscuits' : d.id === 'gideon' ? 'hinges' : d.id === 'barnaby' ? 'the 4:15' : d.id === 'agnes' ? 'accession numbers' : 'Mothman'}.`][game.clock.day % 2]]));
+    return;
+  }
   // face the player
   const dx = game.player.tx - npc.tx, dy = game.player.ty - npc.ty;
   npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
@@ -139,7 +147,11 @@ export function talkTo(game: Game, npc: NpcRT): void {
     return;
   }
 
-  const greet = d.greet[Math.floor(hash2(game.clock.day, d.name.length, 7) * d.greet.length)];
+  // What they say first depends on what they're up to (at home, on a break, fishing your pond, rain...).
+  const w = game.weatherNow();
+  const tag = npc.map === npc.stop?.map ? npc.stop?.tag : undefined;
+  const pool = (tag && d.lines?.[tag]) || ((w === 'RAIN' || w === 'STORM') && d.lines?.rain) || d.greet;
+  const greet = pool[Math.floor(hash2(game.clock.day, d.name.length + game.talkCount(d.id), 7) * pool.length)];
   const active = QUESTS.find((q) => giverMatches(q, d.id) && p.active(q.id));
   const pages = [`${d.name}: "${greet.replace(/^"|"$/g, '')}"`];
   if (active) pages.push(`(Quest: ${active.steps[Math.max(0, p.stage(active.id) - 1)]})`);
@@ -156,11 +168,14 @@ export function talkTo(game: Game, npc: NpcRT): void {
       choices.push({ label: 'Donate', fn: () => game.openOverlay(new DonateMenu()) });
       break;
     case 'mabel':
-      // 4 hearts with Mabel: family prices.
-      choices.push({ label: 'Menu', fn: () => game.openOverlay(new ShopMenu('WHISTLE-STOP DINER', () => p.flags.has('diner_discount') ? DINER_MENU.map((e) => ({ ...e, cost: Math.round(e.cost * 0.75) })) : DINER_MENU)) });
+      // 4 hearts with Mabel: family prices. The kitchen's only open while she's in it.
+      if (npc.map === 'DINER_INT') choices.push({ label: 'Menu', fn: () => game.openOverlay(new ShopMenu('WHISTLE-STOP DINER', () => p.flags.has('diner_discount') ? DINER_MENU.map((e) => ({ ...e, cost: Math.round(e.cost * 0.75) })) : DINER_MENU)) });
+      else pages.push(tag === 'break' ? '(Mabel\'s on her break. The kitchen opens back up at 2:30.)' : '(The diner\'s closed. Mabel cooks from 6:15 in the morning till 9 at night.)');
       break;
     case 'gideon':
-      choices.push({ label: 'Shop', fn: () => game.openOverlay(new StoreMenu(STORE_STOCK)) });
+      // Shop at the counter, or while he's working the anvil out by the store.
+      if (npc.map === 'STORE_INT' || tag === 'anvil') choices.push({ label: 'Shop', fn: () => game.openOverlay(new StoreMenu(STORE_STOCK)) });
+      else pages.push(tag === 'lunch' ? '(The Outfitter\'s closed for lunch till 1.)' : tag === 'fishing' ? '(The Outfitter closes Sunday afternoons.)' : '(The Outfitter is open 8 to 5, lunch 12 to 1. Late afternoons, Gideon works his anvil outside the store.)');
       break;
     case 'ezri':
     case 'pike':

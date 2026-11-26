@@ -1,17 +1,33 @@
 /**
- * NPC runtime: follows each townsperson's schedule. On the player's current
- * map NPCs walk tile-by-tile (BFS) and idle-wander; elsewhere they simply
- * appear at their scheduled spot. NPCs occupy tiles and block the player.
+ * NPC runtime: follows each townsperson's schedule.
+ *
+ * Townsfolk really go places. When their schedule moves them to another map
+ * they walk to the right door (or trail exit) and go through it, and come out of
+ * the matching door on the other side. While you can't see them they still take
+ * a few seconds per map to get anywhere, so someone heading home appears at the
+ * end of the street a little later, not instantly at their armchair.
+ *
+ * At night they walk to their bedside and climb in (drawn tucked up in bed).
+ * NPCs occupy tiles and block the player.
  */
 import type { Game } from './game';
 import type { MapRuntime } from './world';
-import type { MapId } from '../data/mapgen';
+import type { MapId, Portal } from '../data/mapgen';
 import { NPCS, NpcDef, ScheduleCtx, Stop } from '../data/npcs';
+import { getMapDef, BUILT_MAPS } from '../data/maps';
 import { moonPhase } from '../data/weather';
 import type { Dir } from '../util';
 import { DIR_VEC } from '../util';
+import { sfx } from '../audio/sfx';
+import { P } from '../graphics/palette';
 
 const STEP = 0.3;
+/** Seconds an off-screen townsperson takes to cross a map before coming through the next door. */
+const HOP_SECONDS = 4;
+/** Give up on a blocked path after this long and just slip past. */
+const STUCK_SECONDS = 6;
+/** Maps nobody passes through on the way somewhere else. */
+const NO_THROUGH = new Set<MapId>(['CABIN_INTERIOR', 'MUSEUM_BASEMENT']);
 
 export class NpcRT {
   map: MapId | null = null;
@@ -29,6 +45,14 @@ export class NpcRT {
   private wanderT = 2;
   /** Seconds remaining facing the player after a chat. */
   talkT = 0;
+  /** Tucked up in bed (tx, ty is the bed tile). */
+  inBed = false;
+  /** The tile they got into bed from (where they climb back out). */
+  side: [number, number] | null = null;
+  /** Off-screen travel timer, stuck timer, and little-effects timer. */
+  hopT = 0;
+  stuckT = 0;
+  fxT = 0;
 
   constructor(readonly def: NpcDef) {}
 
@@ -67,14 +91,17 @@ export class NpcRT {
 export class Townsfolk {
   readonly npcs: NpcRT[] = NPCS.map((d) => new NpcRT(d));
   private resolved = new Map<string, [number, number]>();
+  private routes = new Map<string, Portal | null>();
 
   ctx(game: Game): ScheduleCtx {
     const c = game.clock;
+    const w = game.weatherNow();
     return {
       minutes: c.minutes,
       weekday: c.weekday,
       festival: game.isFestival(),
       foggyNight: game.dayWeather.evening === 'FOG' && c.minutes >= 1080,
+      wet: w === 'RAIN' || w === 'STORM',
       questStage: (id) => game.progress.stage(id),
       questDone: (id) => game.progress.done(id),
       campaignDone: game.progress.flags.has('finale'),
@@ -107,6 +134,30 @@ export class Townsfolk {
     return best;
   }
 
+  /** The door (portal) on `from` that leads toward `to`, by the fewest maps. */
+  private hop(from: MapId, to: MapId): Portal | null {
+    const key = `${from}>${to}`;
+    if (this.routes.has(key)) return this.routes.get(key)!;
+    const first = new Map<MapId, Portal>();
+    const seen = new Set<MapId>([from]);
+    const q: MapId[] = [from];
+    let found: Portal | null = null;
+    search: while (q.length) {
+      const cur = q.shift()!;
+      if (!BUILT_MAPS.has(cur)) continue;
+      for (const p of getMapDef(cur).portals) {
+        if (!BUILT_MAPS.has(p.to) || p.requires === 'archive' || seen.has(p.to)) continue;
+        if (NO_THROUGH.has(p.to) && p.to !== to) continue;
+        seen.add(p.to);
+        first.set(p.to, cur === from ? p : first.get(cur)!);
+        if (p.to === to) { found = first.get(p.to)!; break search; }
+        q.push(p.to);
+      }
+    }
+    this.routes.set(key, found);
+    return found;
+  }
+
   update(game: Game, dt: number): void {
     const ctx = this.ctx(game);
     const curId = game.cur.id;
@@ -114,10 +165,13 @@ export class Townsfolk {
       const stop = this.whereFor(game, npc, ctx);
       npc.stop = stop;
       npc.talkT = Math.max(0, npc.talkT - dt);
-      if (!stop) { npc.map = null; continue; }
+      if (!stop) { npc.map = null; npc.inBed = false; continue; }
+      if (npc.map === null) { this.settle(game, npc, stop); continue; }
+      if (npc.map !== stop.map) { this.travel(game, npc, stop, curId, dt); continue; }
       const m = game.getMap(stop.map);
+      if (stop.sleep) { this.toBed(game, m, npc, stop, curId, dt); continue; }
+      if (npc.inBed) this.wake(npc);
       const [gx, gy] = this.resolve(m, stop);
-      if (npc.map !== stop.map) { npc.place(stop.map, gx, gy, stop.dir); continue; }
       if (npc.map !== curId) { if (npc.tx !== gx || npc.ty !== gy) npc.place(stop.map, gx, gy, stop.dir); continue; }
       npc.advance(dt);
       if (npc.moving || npc.talkT > 0) continue;
@@ -125,8 +179,8 @@ export class Townsfolk {
       const wander = stop.wander ?? 0;
       if (dist > wander) {
         const next = this.nextStep(game, m, npc, gx, gy);
-        if (next) npc.step(next[0], next[1]);
-        else if (dist > 12) npc.place(stop.map, gx, gy, stop.dir);
+        if (next) { npc.step(next[0], next[1]); npc.stuckT = 0; }
+        else if (dist > 12 || (npc.stuckT += dt) > STUCK_SECONDS) { npc.place(stop.map, gx, gy, stop.dir); npc.stuckT = 0; }
       } else if (wander > 0 && npc.tickWander(dt)) {
         const dirs: Dir[] = ['up', 'down', 'left', 'right'];
         const d = dirs[Math.floor(Math.random() * 4)];
@@ -135,6 +189,93 @@ export class Townsfolk {
         if (Math.abs(nx - gx) + Math.abs(ny - gy) <= wander && this.free(game, m, nx, ny, npc)) npc.step(nx, ny);
         else npc.dir = d;
       } else if (dist === 0 && wander === 0) npc.dir = stop.dir;
+      if (dist <= wander) this.effects(game, npc, stop, dt);
+    }
+  }
+
+  /** Put someone straight at their spot (first appearance, or out of sight). */
+  private settle(game: Game, npc: NpcRT, stop: Stop): void {
+    if (stop.sleep && stop.bed) {
+      npc.place(stop.map, stop.bed[0], stop.bed[1], 'down');
+      npc.inBed = true;
+      npc.side = [stop.x, stop.y];
+      return;
+    }
+    npc.inBed = false;
+    const [gx, gy] = this.resolve(game.getMap(stop.map), stop);
+    npc.place(stop.map, gx, gy, stop.dir);
+  }
+
+  private wake(npc: NpcRT): void {
+    if (!npc.inBed || !npc.map) return;
+    npc.inBed = false;
+    const [sx, sy] = npc.side ?? [npc.tx, npc.ty + 1];
+    npc.place(npc.map, sx, sy, 'down');
+  }
+
+  /** Walk to the bedside, then climb in. */
+  private toBed(game: Game, m: MapRuntime, npc: NpcRT, stop: Stop, curId: MapId, dt: number): void {
+    if (npc.inBed) return;
+    if (npc.map !== curId) { this.settle(game, npc, stop); return; }
+    npc.advance(dt);
+    if (npc.moving) return;
+    if (npc.tx === stop.x && npc.ty === stop.y) { this.settle(game, npc, stop); return; }
+    const next = this.nextStep(game, m, npc, stop.x, stop.y);
+    if (next) { npc.step(next[0], next[1]); npc.stuckT = 0; }
+    else if ((npc.stuckT += dt) > STUCK_SECONDS) { npc.stuckT = 0; this.settle(game, npc, stop); }
+  }
+
+  /** Head for the next door toward the scheduled map (walking it if you can see them). */
+  private travel(game: Game, npc: NpcRT, stop: Stop, curId: MapId, dt: number): void {
+    if (npc.inBed) this.wake(npc);
+    const from = npc.map!;
+    const hop = this.hop(from, stop.map);
+    if (!hop) { this.settle(game, npc, stop); return; }
+    if (from === curId) {
+      npc.advance(dt);
+      if (npc.moving) return;
+      const m = game.getMap(from);
+      // The tile of the doorway (or wide trail exit) nearest them.
+      let best: [number, number] = [hop.x, hop.y], bd = Infinity;
+      for (let y = hop.y; y < hop.y + hop.h; y++) for (let x = hop.x; x < hop.x + hop.w; x++) {
+        const d = Math.abs(x - npc.tx) + Math.abs(y - npc.ty);
+        if (d < bd && m.inBounds(x, y)) { bd = d; best = [x, y]; }
+      }
+      if (npc.tx === best[0] && npc.ty === best[1]) { this.through(game, npc, hop, curId); return; }
+      const next = this.nextStep(game, m, npc, best[0], best[1]);
+      if (next) { npc.step(next[0], next[1]); npc.stuckT = 0; }
+      else if ((npc.stuckT += dt) > STUCK_SECONDS) this.through(game, npc, hop, curId);
+      return;
+    }
+    npc.hopT += dt;
+    if (npc.hopT < HOP_SECONDS) return;
+    // Don't pop out of a door right on top of the player; wait a moment.
+    if (hop.to === curId && game.player.tx === hop.tx && game.player.ty === hop.ty) return;
+    this.through(game, npc, hop, curId);
+  }
+
+  private through(game: Game, npc: NpcRT, hop: Portal, curId: MapId): void {
+    const seen = npc.map === curId || hop.to === curId;
+    npc.place(hop.to, hop.tx, hop.ty, hop.dir);
+    npc.hopT = 0; npc.stuckT = 0;
+    if (seen && Math.abs(game.player.tx - npc.tx) + Math.abs(game.player.ty - npc.ty) < 14) sfx.door();
+  }
+
+  /** Little signs of work: sparks off Gideon's anvil, feed scattered for Ruth's hens. */
+  private effects(game: Game, npc: NpcRT, stop: Stop, dt: number): void {
+    if (!stop.tag || npc.moving) return;
+    npc.fxT -= dt;
+    if (npc.fxT > 0) return;
+    const near = Math.abs(game.player.tx - npc.tx) + Math.abs(game.player.ty - npc.ty) < 9;
+    const cx = npc.tx * 16 + 8, cy = npc.ty * 16;
+    if (stop.tag === 'anvil') {
+      npc.fxT = 1 + Math.random() * 0.5;
+      npc.dir = stop.dir;
+      for (let k = 0; k < 3; k++) game.particles.sparkle(cx + (Math.random() - 0.5) * 8, cy - 10 + Math.random() * 4, k % 2 ? P.AMBER : P.LANTERN);
+      if (near) sfx.rockHit();
+    } else if (stop.tag === 'chickens') {
+      npc.fxT = 2 + Math.random() * 2;
+      for (let k = 0; k < 4; k++) game.particles.sparkle(cx + (Math.random() - 0.5) * 24, cy + 14 + Math.random() * 8, P.AMBER);
     }
   }
 
@@ -144,7 +285,7 @@ export class Townsfolk {
     return !this.npcs.some((o) => o !== self && o.map === m.id && o.tx === x && o.ty === y);
   }
 
-  /** First step of a BFS path toward (gx, gy), within a 40-tile radius. */
+  /** First step of a BFS path toward (gx, gy), within a 40-tile radius. The goal may be a doorway. */
   private nextStep(game: Game, m: MapRuntime, npc: NpcRT, gx: number, gy: number): [number, number] | null {
     const W = m.w;
     const start = npc.ty * W + npc.tx, goal = gy * W + gx;
@@ -156,7 +297,7 @@ export class Townsfolk {
       const cx = cur % W, cy = Math.floor(cur / W);
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = cx + dx, ny = cy + dy, ni = ny * W + nx;
-        if (prev.has(ni) || Math.abs(nx - npc.tx) > 40 || Math.abs(ny - npc.ty) > 40) continue;
+        if (!m.inBounds(nx, ny) || prev.has(ni) || Math.abs(nx - npc.tx) > 40 || Math.abs(ny - npc.ty) > 40) continue;
         if (ni !== goal && !this.free(game, m, nx, ny, npc)) continue;
         if (ni === goal && m.blocked(nx, ny, true)) continue;
         prev.set(ni, cur); q.push(ni);
@@ -166,15 +307,26 @@ export class Townsfolk {
     let c = goal;
     while (prev.get(c) !== start && prev.get(c) !== -1) c = prev.get(c)!;
     const nx = c % W, ny = Math.floor(c / W);
+    if (c === goal) {
+      // Stepping into the doorway itself: only if nobody's standing in it.
+      if (game.player.tx === nx && game.player.ty === ny) return null;
+      return this.npcs.some((o) => o !== npc && o.map === m.id && o.tx === nx && o.ty === ny) ? null : [nx, ny];
+    }
     return this.free(game, m, nx, ny, npc) ? [nx, ny] : null;
   }
 
+  /** The townsperson on this tile (someone in bed answers from either half of the bed). */
   at(map: MapId, x: number, y: number): NpcRT | null {
-    return this.npcs.find((n) => n.map === map && n.tx === x && n.ty === y) ?? null;
+    return this.npcs.find((n) => n.map === map && n.tx === x && (n.ty === y || (n.inBed && n.ty - 1 === y))) ?? null;
   }
 
   on(map: MapId): NpcRT[] {
     return this.npcs.filter((n) => n.map === map);
+  }
+
+  /** Is anyone up and about on this map (lights on)? */
+  awakeIn(map: MapId): boolean {
+    return this.npcs.some((n) => n.map === map && !n.inBed);
   }
 }
 

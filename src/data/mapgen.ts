@@ -16,6 +16,13 @@ export type MapId =
   | 'STORE_INT'
   | 'MUSEUM_INT'
   | 'MUSEUM_BASEMENT'
+  | 'HOUSE_VANCE'
+  | 'HOUSE_FINCH'
+  | 'HOUSE_MILLER'
+  | 'HOUSE_CALLOWAY'
+  | 'HOUSE_RUTH'
+  | 'STORE_LOFT'
+  | 'DINER_ROOM'
   | 'EXPANSION_RAIL';
 
 export interface Portal {
@@ -28,7 +35,7 @@ export interface Portal {
   /** Shown instead once the Town Restoration Grant is awarded. */
   grantMsg?: string;
   /** Progress gate (e.g. the Archive Basement needs 8 donations). */
-  requires?: 'archive';
+  requires?: 'archive' | 'home';
 }
 
 export interface Structure {
@@ -41,6 +48,8 @@ export interface Structure {
   /** Night light sources, pixel offsets from the footprint's top-left corner. */
   windows: Array<[number, number]>;
   chimney?: [number, number];
+  /** House art variant (else chosen from position). */
+  variant?: number;
 }
 
 export interface PlotDef {
@@ -87,6 +96,8 @@ export interface MapDef {
   battleColors: [number, number];
   /** Per-tile tags (museum case -> cryptid id, survey table -> ritual...). */
   meta?: Map<number, string>;
+  /** Someone's home: every object with text in `signs` reads it when inspected. */
+  home?: boolean;
 }
 
 export class Builder {

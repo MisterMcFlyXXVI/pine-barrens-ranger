@@ -19,7 +19,7 @@ const frogGone = new Map<number, number>();
 let frogMap = '';
 let lastChime = 0;
 /** Backyard chickens in town: home tile and whether it's a white hen (else a red one). */
-const CHICKENS: Array<[number, number, boolean]> = [[20, 51, true], [22, 52, false], [33, 52, true], [35, 51, true], [47, 51, false], [16, 50, true]];
+const CHICKENS: Array<[number, number, boolean]> = [[40, 54, true], [42, 53, false], [39, 56, true], [43, 55, true], [20, 51, true], [16, 50, false]];
 
 export interface View { x0: number; x1: number; y0: number; y1: number; cx: number; cy: number; season: number; time: number }
 

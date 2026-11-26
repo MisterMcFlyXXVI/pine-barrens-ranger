@@ -63,6 +63,23 @@ No environment variables or API keys are needed.
   (e.g. Mabel's skillet doubles stove meals, Barney's handcar, Agnes's lucky brooch, discounts). The Journal's
   Townsfolk page shows hearts and the tastes you've discovered.
 
+## Town life & homes
+- **Everyone has a home**: Agnes's cottage (Elias moves in after the campaign), Barney and Buster's house, the
+  Miller-Thorne house (Mabel & Gideon), the Calloway house (Pippa), Ruth Haddix's house (Sam and his grandma Ruth,
+  who keeps chickens), Toby's loft over the store and Dr. Okafor's room over the diner.
+- **Visit at 4 hearts**: knock on a front door (or climb the stairs) while someone's home and awake. Until you're
+  close friends you hear them through the door; once you are, you're welcomed in. Every object in a home has its
+  own little story.
+- **Real routines**: townsfolk walk to doors and through them (taking time to cross maps even out of sight), come
+  home of an evening and climb into bed (drawn tucked in, with Zs). Windows only glow where someone is home and
+  awake; closed shops go dark.
+- **Weekdays & weather**: Sunday breakfast at the diner (Buster's allowed in), Barney and Gideon fish your pond on
+  Sunday afternoons, the Junior Cryptid Club visits your cabin on Saturday mornings, Dr. Okafor researches at the
+  museum on Mondays. Rain sends the kids to the museum, Barney to the diner and Dr. Okafor's show to her room.
+- **Out and about**: Agnes lunches on a square bench, Mabel takes a 2 PM break out front, Gideon works an open-air
+  anvil in the late afternoon (you can shop there), Toby hauls hinges to the museum, Ruth rocks on her porch and
+  feeds the hens. Shops only open while their keeper is on duty; greetings change with what people are doing.
+
 ## Wildflowers, little life & seasons
 - **Regional wildflowers** (`src/data/decor.ts`, art in `src/graphics/decorSprites.ts`) with a different look each
   season: forget-me-nots on wet banks, thistle and asters in the meadows and on the ridge, rhododendron thickets

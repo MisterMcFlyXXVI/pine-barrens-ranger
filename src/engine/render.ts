@@ -20,7 +20,8 @@ import { deerKey } from '../graphics/outdoorSprites';
 import { STOPS } from '../data/handcar';
 import { NPCS_BY_ID } from '../data/npcs';
 import { DECOR, PROP, DECAL } from '../graphics/decorSprites';
-import { LIT } from '../graphics/townSprites';
+import { TOWN_ART } from '../graphics/townSprites';
+import type { MapId, Structure } from '../data/mapgen';
 import { drawAmbient, drawFireflies } from '../graphics/ambient';
 import type { View } from '../graphics/ambient';
 import { SEASONS } from './clock';
@@ -302,6 +303,9 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.MINE_CART: return PROP.minecart[0];
     case O.LAMP_HOUSE: return PROP.lamphouse[night ? 1 : 0];
     case O.DOG: return PROP.dog[Math.floor(time * 0.7 + h * 3) % 2];
+    case O.WALL_FRAME: return (PROP[`frame_${m.def.meta?.get(m.idx(x, y)) ?? 'photo'}`] ?? PROP.frame_photo)[0];
+    case O.MODEL_TRAIN: return PROP.modeltrain[Math.floor(time * 3) % 8];
+    case O.RADIO_RIG: return PROP.radiorig[Math.floor(time * 2 + h) % 2];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -325,7 +329,7 @@ const LITTER_GROUND: ReadonlySet<number> = new Set<number>([T.GRASS, T.FOREST, T
 /** Barn-quilt height on the shed's gable (px from the sprite top). */
 const QUILT_Y = 14;
 
-const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER, O.CREEK_STONE]);
+const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER, O.CREEK_STONE, O.WALL_FRAME]);
 
 const SWING: Record<Dir, Array<[number, number]>> = {
   right: [[-120, 1], [-55, 1], [25, 1]],
@@ -573,27 +577,50 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   });
   // Structures
   for (const s of m.def.structures) {
-    const frames = s.kind === 'mine' ? (flags.grant ? STRUCT.mineOpen : m.id === 'PINE_HOLLOW_TOWN' ? STRUCT.mineBoarded : STRUCT.mine) : STRUCT[s.kind];
-    const n = night ? 1 : 0;
-    const img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2]
-      : s.kind === 'house' ? frames[((s.x + s.y) % 3) * 2 + n]
-        : s.kind === 'station' ? frames[(flags.grant ? 2 : 0) + n]
-          : frames[night && frames.length > 1 ? 1 : 0];
+    const artKey = s.kind === 'house' ? `house${s.variant ?? (s.x + s.y) % 3}` : s.kind === 'station' ? `station${flags.grant ? 1 : 0}` : s.kind;
+    const art = TOWN_ART[artKey];
+    let img: Canv;
+    let layers: Canv[] = [];
+    if (art) {
+      img = night ? art.night : art.day;
+      if (night) {
+        const groups = litGroups(game, s, m.def.portals.find((p) => p.x === s.door.x && p.y === s.door.y)?.to);
+        layers = groups.map((k) => art.layers[k]).filter((c) => !!c);
+        for (const k of ['lamp', ...groups]) for (const [wx, wy] of art.lights[k] ?? []) lights.push({ x: s.x * 16 + wx - cx, y: (s.y + s.h) * 16 - img.height + wy - cy, r: k === 'lamp' ? 11 : 13 });
+      }
+    } else {
+      const frames = s.kind === 'mine' ? (flags.grant ? STRUCT.mineOpen : m.id === 'PINE_HOLLOW_TOWN' ? STRUCT.mineBoarded : STRUCT.mine) : STRUCT[s.kind];
+      img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2] : frames[night && frames.length > 1 ? 1 : 0];
+      if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
+    }
     const dx = s.x * 16 - cx, dy = (s.y + s.h) * 16 - img.height - cy;
     if (dx > game.w || dy > game.h || dx + img.width < 0 || dy + img.height < 0) continue;
     const simg = winter && !m.def.indoor ? snowy(img) : img;
     const quilt = s.kind === 'shed' ? PROP.barnquilt[0] : null;
-    list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
-    // Town buildings know exactly which of their windows glow; others use the map's window list.
-    const litKey = s.kind === 'house' ? `house${(s.x + s.y) % 3}` : s.kind === 'station' ? `station${flags.grant ? 1 : 0}` : s.kind;
-    const litList = LIT[litKey];
-    if (night && litList) for (const [wx, wy] of litList) lights.push({ x: dx + wx, y: dy + wy, r: 13 });
-    else if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
+    const over = layers;
+    list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); for (const l of over) g.drawImage(l, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
   }
   // Townsfolk
   for (const npc of game.townsfolk.on(m.id)) {
     const nx = Math.round(npc.x) - 4 - cx, ny = Math.round(npc.y) - 7 - cy;
     if (nx < -30 || ny < -30 || nx > game.w + 30 || ny > game.h + 30) continue;
+    if (npc.inBed) {
+      const bx = npc.tx * 16 - cx, by = (npc.ty - 1) * 16 - cy;
+      if (npc.def.kind === 'dog') {
+        const dimg = PROP.dog[Math.floor(time * 0.7) % 2];
+        list.push({ y: (npc.ty + 1) * 16 - 1, fn: () => { g.drawImage(dimg, bx, by + 16); drawZzz(g, bx + 4, by + 14, time); } });
+        continue;
+      }
+      // Tucked in: just the head on the pillow, quilt pulled up to the chin.
+      const head = personFrame(npc.def.body, npc.def.look, 'down', 0, 'walk');
+      const bed = OBJ.bed[0];
+      list.push({ y: (npc.ty + 1) * 16 + 0.5, fn: () => {
+        g.drawImage(head, 5, 0, 14, 12, bx + 1, by + 1, 14, 12);
+        g.drawImage(bed, 0, 11, 16, 10, bx, by + 11, 16, 10);
+        drawZzz(g, bx + 10, by, time);
+      } });
+      continue;
+    }
     if (npc.def.kind === 'dog') {
       const left = npc.dir === 'left';
       const f = (npc.moving ? Math.floor(time * 8) : Math.floor(time * 2)) % 2;
@@ -602,11 +629,20 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       continue;
     }
     const img = personFrame(npc.def.body, npc.def.look, npc.dir, npc.frame, 'walk');
+    const fishing = npc.stop?.tag === 'fishing' && npc.map === npc.stop.map && !npc.moving;
     list.push({
       y: npc.y + 16.4,
       fn: () => {
         g.globalAlpha = 0.35; g.fillStyle = hex(P.VOID); g.fillRect(nx + 7, ny + 21, 10, 2); g.globalAlpha = 1;
         g.drawImage(img, nx, ny);
+        if (fishing) {
+          // A line out over the pond, bobber riding the ripples.
+          const pen = new Pen(g);
+          const bob = Math.round(Math.sin(time * 2.2 + nx) * 1);
+          pen.line(nx + 17, ny + 13, nx + 22, ny + 2, P.RUST);
+          pen.line(nx + 22, ny + 2, nx + 20, ny + 30 + bob, P.MIST);
+          pen.px(nx + 20, ny + 30 + bob, P.RED); pen.px(nx + 20, ny + 31 + bob, P.FOG);
+        }
         if (npc.talkT > 0) { g.fillStyle = hex(P.LANTERN); g.fillRect(nx + 11, ny - 3, 2, 2); }
       },
     });
@@ -699,5 +735,31 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   if (outdoors) {
     game.weatherFx.drawParticles(g, game.w, game.h, wthr, time, cx, cy);
     game.weatherFx.drawFlash(g, game.w, game.h);
+  }
+}
+
+/** Floating Zs over a sleeper. */
+function drawZzz(g: CanvasRenderingContext2D, x: number, y: number, time: number): void {
+  for (let k = 0; k < 2; k++) {
+    const t = (time * 0.5 + k * 0.5) % 1;
+    const zx = Math.round(x + t * 6 + k * 2), zy = Math.round(y - t * 10);
+    g.globalAlpha = 1 - t;
+    g.fillStyle = hex(P.FOG);
+    g.fillRect(zx, zy, 3, 1); g.fillRect(zx + 1, zy + 1, 1, 1); g.fillRect(zx, zy + 2, 3, 1);
+  }
+  g.globalAlpha = 1;
+}
+
+/** Which window groups of a town building are lit tonight: only where somebody is home and awake. */
+function litGroups(game: Game, s: Structure, home: MapId | undefined): string[] {
+  const tf = game.townsfolk;
+  const late = game.clock.minutes >= 19 * 60 + 30;
+  switch (s.kind) {
+    case 'house': return home && tf.awakeIn(home) ? (late ? ['main', 'attic'] : ['main']) : [];
+    case 'diner': return tf.awakeIn('DINER_INT') ? ['main', 'sign'] : [];
+    case 'store': return [...(tf.awakeIn('STORE_INT') ? ['main'] : []), ...(tf.awakeIn('STORE_LOFT') ? ['attic'] : [])];
+    case 'museum': return tf.awakeIn('MUSEUM_INT') ? ['main', 'upper'] : [];
+    case 'station': return flags.grant && game.clock.minutes < 22 * 60 ? ['main'] : [];
+    default: return [];
   }
 }

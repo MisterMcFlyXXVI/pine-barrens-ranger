@@ -30,6 +30,9 @@ import { WeatherFx } from '../graphics/weatherFx';
 import { Progress } from './progress';
 import { Townsfolk, NpcRT } from './townsfolk';
 import { talkTo } from './talk';
+import { HOMES, isHome } from '../data/homes';
+import type { HomeId } from '../data/homes';
+import { hearts } from './friends';
 import { CraftMenu, BoardMenu, PedestalMenu, ShopMenu } from '../ui/shops';
 import { GIFT_STOCK, MILESTONES, Recipe, ToolLine, UPGRADES } from '../data/economy';
 import { QUESTS } from '../data/quests';
@@ -315,6 +318,20 @@ export class Game {
     return ok;
   }
 
+  /**
+   * Why you can't go into someone's home right now (null = come on in): nobody's
+   * home, they're asleep, or you're not close enough friends yet (4 hearts).
+   */
+  homeClosed(id: HomeId): string[] | null {
+    const h = HOMES[id];
+    const inside = this.townsfolk.on(id);
+    if (!inside.length) return [id === 'STORE_LOFT' || id === 'DINER_ROOM' ? 'The door at the top of the stairs is shut. Nobody\'s up there.' : 'You knock. Nobody\'s home.'];
+    if (inside.every((n) => n.inBed)) return ['The lights are out. Everybody inside is fast asleep.'];
+    if (h.friends.some((f) => hearts(this, f) >= 4)) return null;
+    const who = h.friends.map((f) => FRIEND_SHORT[f]).join(' or ');
+    return [h.knock, `(Grow closer to ${who} -- 4 hearts -- and you'll be welcome to visit.)`];
+  }
+
   enterMap(id: MapId, x: number, y: number, dir: Dir): void {
     this.cur = this.getMap(id);
     this.progress.visited.add(id);
@@ -323,6 +340,11 @@ export class Game {
     this.particles.clear();
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, 0, true);
     this.banner = { text: MAP_NAMES[id], t: 2.6 };
+    // The first time you're invited into someone's home, they welcome you in.
+    if (isHome(id) && !this.progress.flags.has(`visit_${id}`) && this.townsfolk.awakeIn(id)) {
+      this.progress.flags.add(`visit_${id}`);
+      this.openOverlay(new Dialog([...HOMES[id].welcome, '(Look around -- everything here tells you something about them.)']));
+    }
   }
 
   resize(w: number, h: number): void {
@@ -858,6 +880,14 @@ export class Game {
       this.openOverlay(new Dialog([...MINE_TEASE]));
       return;
     }
+    if (portal && portal.requires === 'home' && isHome(portal.to)) {
+      const shut = this.homeClosed(portal.to);
+      if (shut) {
+        p.chain = false;
+        if (this.msgCd <= 0) { this.msgCd = 1.2; sfx.knock(); this.openOverlay(new Dialog(shut)); }
+        return;
+      }
+    }
     if (portal && (!BUILT_MAPS.has(portal.to) || locked)) {
       this.notice(locked ? 'The basement door is locked. Agnes: "The Archive opens for researchers with 8 donations, dear."'
         : this.progress.has('grant') && portal.grantMsg ? portal.grantMsg : portal.closedMsg);
@@ -1362,6 +1392,13 @@ export class Game {
     return (this.pageSpots.get(map) ?? []).filter((p) => !this.progress.pages.has(p.id));
   }
 
+  /** In someone's home, everything has a story. */
+  private homeNote(tx: number, ty: number): string | null {
+    const m = this.cur;
+    if (!m.def.home || !m.inBounds(tx, ty)) return null;
+    return m.def.signs.get(m.anchorIdx(m.idx(tx, ty))) ?? null;
+  }
+
   private tryInteract(tx: number, ty: number): boolean {
     const page = this.journalPagesOn(this.cur.id).find((p) => p.x === tx && p.y === ty);
     if (page) {
@@ -1376,6 +1413,8 @@ export class Game {
     if (npc) { talkTo(this, npc); return true; }
     const track = this.trackAt(tx, ty);
     if (track) { this.inspectTrack(track); return true; }
+    const homeNote = this.homeNote(tx, ty);
+    if (homeNote) { sfx.blip(); this.openOverlay(new Dialog([homeNote])); return true; }
     const kind = this.interactKind(tx, ty);
     if (!kind) return false;
     const m = this.cur;
@@ -1556,7 +1595,7 @@ export class Game {
         return true;
       case 'counter':
         sfx.blip();
-        this.openOverlay(new Dialog([m.id === 'DINER_INT' ? 'A bell sits on the counter. Mabel serves 6 AM to 9 PM.' : m.id === 'STORE_INT' ? 'A sign: "Back soon -- G.T. (Open 8 AM to 5 PM)"' : 'The front desk. Agnes keeps hours 8 AM to 5 PM.']));
+        this.openOverlay(new Dialog([m.id === 'DINER_INT' ? 'A bell sits on the counter. "SERVING 6:15 AM TO 9 PM. BREAK 2 TO 2:30. SUNDAY BREAKFAST 8 TO 11 -- ALL WELCOME."' : m.id === 'STORE_INT' ? 'A sign: "OPEN 8 TO 5. LUNCH 12 TO 1. SUNDAYS CLOSED AFTER 1. Afternoons I\'m at the anvil out back. -- G.T."' : 'The front desk. Agnes keeps hours 8 AM to 5 PM.']));
         return true;
       case 'case': {
         const cid = m.def.meta?.get(m.anchorIdx(i)) ?? '';
@@ -1764,7 +1803,8 @@ export class Game {
     if (kind === 'snare') return this.cur.snares.get(this.cur.idx(tx, ty)) ? 'COLLECT' : 'CHECK SNARE';
     if (this.selected?.id === 'static_radio' && this.progress.act === 4 && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads')) return 'TUNE RADIO';
     const npc = this.npcFacing(tx, ty);
-    if (npc) return `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;
+    if (npc) return npc.inBed ? 'SHH...' : `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;
+    if (this.homeNote(tx, ty)) return 'LOOK';
     const tr = this.trackAt(tx, ty);
     if (tr) return tr.kind === 'page' || tr.kind === 'book' ? 'PICK UP' : 'INSPECT TRACKS';
     if (kind === 'mount') {
@@ -1916,3 +1956,8 @@ export class Game {
     }
   }
 }
+
+/** How the game refers to each friend in hints. */
+const FRIEND_SHORT: Record<string, string> = {
+  agnes: 'Agnes', barnaby: 'Barney', mabel: 'Mabel', gideon: 'Gideon', clara: 'Dr. Okafor', pippa: 'Pippa', sam: 'Sam', toby: 'Toby',
+};
