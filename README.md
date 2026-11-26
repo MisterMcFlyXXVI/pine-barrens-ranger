@@ -47,9 +47,10 @@ No environment variables or API keys are needed.
   station) starts broken; repair it with materials at its HANDCAR STOP sign. Once Barney's service runs (Telegraph
   Repair quest or 2 hearts with Barney), he waits at every repaired stop: ride stop-to-stop (about an hour) and get
   dropped on the destination platform. There's no fast travel from anywhere else.
-- **The old C&O spur**: only bits of the line show in the woods (rusted rails and rotten ties, 3-6 tiles at a time)
-  to suggest its route between stops; the local map draws the full line as a railroad symbol where you've explored,
-  and the valley map shows the C&O SPUR linking the stops.
+- **The old C&O spur**: a continuous, worn line runs from each stop through the region toward its rail neighbours
+  (pathfound: it crosses trails, goes around buildings/gardens/cliffs, and crosses water on timber trestles that stay
+  unwalkable). Until the stop is repaired, trees, tall grass and ferns sit on the line; repairing clears them so the
+  rails are a walkable route. The local map draws it as a railroad symbol where explored; the valley map shows the C&O SPUR.
 - **Music**: procedural chiptune (no audio files) for the title, cabin, town, woods, glades, Radio Ridge, nights,
   interiors, encounters and the festival. The SND button (or M) cycles music+sound -> sound effects only -> off.
 - **Pocket Map** (MAP pill / P), styled like a national-park trail brochure: REGION map with red dashed trails,

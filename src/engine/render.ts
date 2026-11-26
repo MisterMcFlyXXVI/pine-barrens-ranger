@@ -294,7 +294,11 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       // Bits of the old C&O spur peeking through the woods (drawn under trees and objects).
       if (railBits) {
         const ri = m.idx(x, y);
-        if (railBits.bits.has(ri)) g.drawImage(railBits.route.get(ri) === 1 ? ((x + y) % 2 ? MISC.oldRailV0 : MISC.oldRailV1) : ((x + y) % 2 ? MISC.oldRailH0 : MISC.oldRailH1), sx, sy);
+        const dir = railBits.route.get(ri);
+        if (dir !== undefined) {
+          if (railBits.trestle.has(ri)) g.drawImage(dir === 1 ? MISC.trestleV : MISC.trestleH, sx, sy);
+          else g.drawImage(dir === 1 ? ((x + y) % 2 ? MISC.oldRailV0 : MISC.oldRailV1) : ((x + y) % 2 ? MISC.oldRailH0 : MISC.oldRailH1), sx, sy);
+        }
       }
       const o = m.obj(x, y);
       if (FLAT.has(o)) {

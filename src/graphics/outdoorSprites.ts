@@ -111,6 +111,21 @@ function oldRail(vertical: boolean, seed: number): Canv {
   return c;
 }
 
+/** A weathered timber trestle carrying the line over water (purely visual; the water stays unwalkable). */
+function trestle(vertical: boolean): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  const put = (a: number, b: number, col: number) => (vertical ? p.px(a, b, col) : p.px(b, a, col));
+  for (let t = 0; t < 16; t++) {
+    for (const a of [2, 13]) put(a, t, SHADOW);            // stringers
+    for (const a of [3, 12]) put(a, t, RUST);
+    if (t % 3 === 0) for (let a = 2; a <= 13; a++) put(a, t, a % 5 === 0 ? CRAN : AMBER); // ties
+    put(5, t, t % 7 === 3 ? RUST : MIST); put(10, t, t % 9 === 5 ? RUST : MIST);          // rails
+  }
+  for (const b of [1, 9]) { put(1, b, SHADOW); put(14, b, SHADOW); put(1, b + 1, SHADOW); put(14, b + 1, SHADOW); } // pilings
+  return c;
+}
+
 function stopSign(): Canv {
   const { c, g } = makeCanvas(16, 16);
   const p = new Pen(g);
@@ -156,6 +171,7 @@ export function bakeOutdoors(): void {
   OBJ.stopsign = [stopSign()];
   MISC.oldRailH0 = oldRail(false, 11); MISC.oldRailH1 = oldRail(false, 29);
   MISC.oldRailV0 = oldRail(true, 47); MISC.oldRailV1 = oldRail(true, 83);
+  MISC.trestleH = trestle(false); MISC.trestleV = trestle(true);
   for (const buck of [false, true]) for (const grazing of [false, true]) for (const f of [0, 1]) {
     const right = deer(f, buck, grazing);
     MISC[deerKey(buck, false, grazing, f)] = right;

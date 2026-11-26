@@ -48,7 +48,7 @@ import { Dialog, BagMenu, DresserMenu, JournalMenu, SleepSummary } from '../ui/m
 import { TitleScreen } from '../ui/title';
 import { StorageMenu } from '../ui/storage';
 import { WorldMap, handcarUnlocked } from '../ui/worldmap';
-import { REPAIRS, STOPS, stopFlag } from '../data/handcar';
+import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
 import { drawHud, hotbarHit } from '../ui/hud';
@@ -144,7 +144,7 @@ export class Game {
 
   getMap(id: MapId): MapRuntime {
     let m = this.maps.get(id);
-    if (!m) { m = new MapRuntime(id); m.spawnForage(this.clock.day); this.maps.set(id, m); }
+    if (!m) { m = new MapRuntime(id); m.spawnForage(this.clock.day); this.maps.set(id, m); if (this.stopRepaired(id)) this.clearLine(m); }
     return m;
   }
 
@@ -244,6 +244,8 @@ export class Game {
     this.wispNight = d.wispNight ?? 0;
     this.lunarNight = d.lunarNight ?? 0;
     this.progress = Progress.load(d.progress);
+    // Regions were rebuilt before progress loaded: clear the lines of repaired stops now.
+    for (const m of this.maps.values()) if (this.stopRepaired(m.id)) this.clearLine(m);
     if (this.inv.count('bog_waders') > 0 && this.progress.tools.waders === 0) this.progress.tools.waders = 1;
     // Saves from before carrying capacity: the old 27/36/45 packs map onto the new tiers, so nobody loses slots.
     if (!this.progress.flags.has('carry2')) {
@@ -1035,6 +1037,17 @@ export class Game {
   /** Repaired and Barney is running the handcar: he waits here for you. */
   stopActive(id: MapId): boolean { return STOPS.has(id) && this.stopRepaired(id) && handcarUnlocked(this); }
 
+  /** A repaired stop's line is cleared of trees and growth so you can walk it (trestles stay off-limits). */
+  clearLine(m: MapRuntime): void {
+    const stop = STOPS.get(m.id);
+    if (!stop) return;
+    for (const t of stop.route.keys()) {
+      if (stop.trestle.has(t) || m.placed.has(t) || !LINE_CLEARABLE.has(m.objects[t])) continue;
+      m.objects[t] = O.NONE;
+      m.hp.delete(t);
+    }
+  }
+
   private useHandcarStop(): void {
     const id = this.cur.id;
     const name = MAP_NAMES[id];
@@ -1052,6 +1065,7 @@ export class Game {
           for (const [it, n] of need.mats) { const fromBag = Math.min(n, this.inv.count(it)); if (fromBag) this.inv.remove(it, fromBag); if (n - fromBag) this.storage.remove(it, n - fromBag); }
           this.gold -= need.gold;
           this.progress.flags.add(stopFlag(id));
+          this.clearLine(this.cur);
           sfx.rockHit(); sfx.fanfare();
           this.toast(handcarUnlocked(this) ? `${name} stop repaired! Barney can pick you up here now.` : `${name} stop repaired! Now Barney just needs his handcar running.`);
         } },

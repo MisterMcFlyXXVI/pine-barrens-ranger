@@ -8,7 +8,7 @@
  * spot every time.
  */
 import type { MapDef, MapId } from './mapgen';
-import { O, T } from './tiles';
+import { O, T, objProps } from './tiles';
 
 export interface StopDef {
   map: MapId;
@@ -19,9 +19,13 @@ export interface StopDef {
   arrive: { x: number; y: number; dir: 'left' | 'right' | 'up' | 'down' };
   /** The old line's route through the region: tile index -> 0 horizontal / 1 vertical. */
   route: Map<number, 0 | 1>;
-  /** The scattered bits of that route you can actually see in the woods (subset of route). */
-  bits: Set<number>;
+  /** Route tiles over water: drawn as a wooden trestle (never walkable). */
+  trestle: Set<number>;
 }
+
+/** Growth that sits on the old line until its stop is repaired (then cleared off the rails). */
+export const LINE_CLEARABLE: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.BRUSH, O.ROCK, O.STUMP, O.LOG, O.BOULDER, O.TALLGRASS,
+  O.FERN, O.FLOWERS, O.MUSHROOMS, O.RED_SPRUCE, O.SKUNK_CABBAGE, O.DEAD_TREE, O.HEMLOCK_TREE, O.REEDS, O.CRAN_BUSH, O.WILLOW, O.BRIAR]);
 
 /**
  * The C&O spur through the valley: Town <-> Cabin <-> Pine Trail, branching to the
@@ -56,48 +60,119 @@ function rng(seed: number): () => number {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-/** Ground where old rails can still show (not trails, water, paving or buildings). */
-const RAIL_SHOWS = new Set<number>([T.GRASS, T.FOREST, T.CLOVER, T.HEMLOCK, T.ROCKY, T.BOG, T.SLOPE]);
+const WATERY = new Set<number>([T.WATER, T.SHALLOW, T.SPRING]);
+const TRAILISH = new Set<number>([T.PATH, T.BOARDWALK, T.BRIDGE]);
+const NO_GO_GROUND = new Set<number>([T.VOID, T.CLIFF, T.WALL_TOP, T.WALL_FACE, T.WALL_BASE, T.WALL_SIDE, T.SOIL, T.PLAZA, T.MARBLE, T.RAIL, T.PLATFORM, T.PORCH]);
+const NO_GO_OBJ = new Set<number>([O.BLOCK, O.SIGN, O.FENCE, O.STONE_WALL, O.RUIN_WALL, O.HEDGE, O.HANDCAR, O.STOP_SIGN, O.MAILBOX, O.WORKBENCH, O.SHIP_BIN, O.RAIN_BARREL, O.LAMP]);
 
-/** Trace the line from the stop to each facing edge, then pick scattered visible stretches. */
+/** Tiny binary heap for the route search. */
+class Heap {
+  private a: Array<[number, number]> = [];
+  get size(): number { return this.a.length; }
+  push(k: number, v: number): void {
+    const a = this.a; a.push([k, v]);
+    let i = a.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (a[p][0] <= a[i][0]) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+  }
+  pop(): [number, number] {
+    const a = this.a, top = a[0], last = a.pop()!;
+    if (a.length) {
+      a[0] = last; let i = 0;
+      for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < a.length && a[l][0] < a[m][0]) m = l; if (r < a.length && a[r][0] < a[m][0]) m = r; if (m === i) break; [a[m], a[i]] = [a[i], a[m]]; i = m; }
+    }
+    return top;
+  }
+}
+
+/**
+ * Lay the old line: a cheapest-path search from the stop to each target, with
+ * gentle noise and a turning penalty so it curves like a railroad. It may cross
+ * trails (but not follow them), bridges water on trestles, and goes around
+ * buildings, gardens, walls and cliffs.
+ */
 function traceLine(def: MapDef, stop: StopDef, seed: number): void {
   const r = rng(seed);
-  const i = (x: number, y: number) => y * def.w + x;
-  const legs: Array<{ tx: number; ty: number; horiz: boolean; sx: number; sy: number }> = [];
+  const W = def.w, H = def.h;
+  const i = (x: number, y: number) => y * W + x;
+  const plots = new Set(def.plots.map((p) => i(p.x, p.y)));
+  const noise = (x: number, y: number) => { let h = (x * 374761393 + y * 668265263 + seed * 2654435761) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const blocked = (x: number, y: number): boolean => {
+    if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return x < 0 || y < 0 || x >= W || y >= H;
+    const t = i(x, y), gr = def.ground[t];
+    // Solid things a repair crew wouldn't clear (lumber piles, slag, hollow logs, apple trees...) are routed around.
+    if (objProps(def.objects[t]).solid && !LINE_CLEARABLE.has(def.objects[t])) return true;
+    if (NO_GO_GROUND.has(gr) || NO_GO_OBJ.has(def.objects[t]) || def.structAt.has(t) || def.anchors.has(t) || plots.has(t) || def.signs.has(t)) return true;
+    return def.portals.some((p) => x >= p.x - 1 && x < p.x + p.w + 1 && y >= p.y - 1 && y < p.y + p.h + 1);
+  };
+  const stepCost = (x: number, y: number): number => {
+    const t = i(x, y), gr = def.ground[t];
+    let c = 1 + noise(x >> 2, y >> 2) * 1.4;
+    if (TRAILISH.has(gr)) c += 5;          // cross trails, don't follow them
+    if (WATERY.has(gr)) c += 4;            // a trestle is a big job
+    if (gr === T.BOG || gr === T.SLOPE) c += 0.8;
+    if (def.objects[t] !== O.NONE) c += 0.6;
+    return c;
+  };
+
+  const legs: Array<{ goal: (x: number, y: number) => boolean; sx: number; sy: number }> = [];
+  const startN = { x: stop.car.x, y: stop.car.y - 2 }, startS = { x: stop.car.x, y: stop.car.y + 3 };
   for (const [, side] of Object.entries(EDGE[def.id] ?? {}) as Array<[MapId, 'n' | 's' | 'e' | 'w']>) {
-    // Leave the spur from its end nearest that edge.
-    let sx = stop.car.x, sy = side === 'n' ? stop.car.y - 2 : side === 's' ? stop.car.y + 3 : stop.car.y;
-    if (side === 'e' || side === 'w') sx += side === 'e' ? 1 : -1;
-    const tx = side === 'e' ? def.w - 1 : side === 'w' ? 0 : Math.max(6, Math.min(def.w - 7, sx + Math.round((r() - 0.5) * 24)));
-    const ty = side === 'n' ? 0 : side === 's' ? def.h - 1 : Math.max(6, Math.min(def.h - 7, sy + Math.round((r() - 0.5) * 24)));
-    legs.push({ tx, ty, horiz: side === 'e' || side === 'w', sx, sy });
+    const st = side === 'n' ? startN : side === 's' ? startS : (stop.car.y < H / 2 ? startS : startN);
+    const along = side === 'n' || side === 's' ? Math.max(6, Math.min(W - 7, st.x + Math.round((r() - 0.5) * 24))) : Math.max(6, Math.min(H - 7, st.y + Math.round((r() - 0.5) * 24)));
+    const goal = side === 'n' ? (x: number, y: number) => y === 0 && Math.abs(x - along) <= 12
+      : side === 's' ? (x: number, y: number) => y === H - 1 && Math.abs(x - along) <= 12
+      : side === 'e' ? (x: number, y: number) => x === W - 1 && Math.abs(y - along) <= 12
+      : (x: number, y: number) => x === 0 && Math.abs(y - along) <= 12;
+    legs.push({ goal, sx: st.x, sy: st.y });
   }
   for (const [fx, fy] of DEEP[def.id] ?? []) {
-    const tx = Math.round(fx * (def.w - 1)), ty = Math.round(fy * (def.h - 1));
-    const sy = ty < stop.car.y ? stop.car.y - 2 : stop.car.y + 3;
-    legs.push({ tx, ty, horiz: Math.abs(tx - stop.car.x) > Math.abs(ty - stop.car.y), sx: stop.car.x, sy });
+    const tx = Math.round(fx * (W - 1)), ty = Math.round(fy * (H - 1));
+    const st = ty < stop.car.y ? startN : startS;
+    legs.push({ goal: (x, y) => Math.abs(x - tx) <= 2 && Math.abs(y - ty) <= 2, sx: st.x, sy: st.y });
   }
-  for (const { tx, ty, horiz, sx, sy } of legs) {
-    let x = sx, y = sy;
-    let guard = 0;
-    while ((x !== tx || y !== ty) && guard++ < 400) {
-      const dx = Math.sign(tx - x), dy = Math.sign(ty - y);
-      const horizMain = horiz;
-      // Mostly head for the edge, with long gentle bends toward the target line.
-      let mx = 0, my = 0;
-      if (horizMain) { if (dx && (r() < 0.82 || !dy)) mx = dx; else my = dy; }
-      else { if (dy && (r() < 0.82 || !dx)) my = dy; else mx = dx; }
-      x += mx; y += my;
-      if (x < 0 || y < 0 || x >= def.w || y >= def.h) break;
-      stop.route.set(i(x, y), mx ? 0 : 1);
+
+  const DIRS: Array<[number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (const leg of legs) {
+    if (leg.sx < 0 || leg.sy < 0 || leg.sx >= W || leg.sy >= H) continue;
+    // State = tile * 4 + arriving direction (for the turning penalty).
+    const dist = new Float64Array(W * H * 4).fill(Infinity);
+    const prev = new Int32Array(W * H * 4).fill(-1);
+    const heap = new Heap();
+    for (let d = 0; d < 4; d++) { dist[i(leg.sx, leg.sy) * 4 + d] = 0; heap.push(0, i(leg.sx, leg.sy) * 4 + d); }
+    let end = -1;
+    while (heap.size) {
+      const [c, st] = heap.pop();
+      if (c > dist[st]) continue;
+      const t = st >> 2, d = st & 3, x = t % W, y = (t / W) | 0;
+      if (leg.goal(x, y)) { end = st; break; }
+      for (let nd = 0; nd < 4; nd++) {
+        const nx = x + DIRS[nd][0], ny = y + DIRS[nd][1];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || blocked(nx, ny)) continue;
+        const ns = i(nx, ny) * 4 + nd;
+        const nc = c + stepCost(nx, ny) + (nd === d ? 0 : 1.6);
+        if (nc < dist[ns]) { dist[ns] = nc; prev[ns] = st; heap.push(nc, ns); }
+      }
     }
+    if (end < 0) continue;
+    const tiles: number[] = [];
+    for (let st = end; st >= 0; st = prev[st]) tiles.push(st >> 2);
+    tiles.reverse();
+    tiles.forEach((t, k) => {
+      const a = tiles[Math.max(0, k - 1)], b = tiles[Math.min(tiles.length - 1, k + 1)];
+      const horiz = Math.abs((b % W) - (a % W)) >= Math.abs(((b / W) | 0) - ((a / W) | 0));
+      if (!stop.route.has(t)) stop.route.set(t, horiz ? 0 : 1);
+      if (WATERY.has(def.ground[t])) stop.trestle.add(t);
+    });
   }
-  // Only bits of it show: runs of 3-6 tiles, then 3-9 tiles of nothing.
-  let show = r() < 0.5, left = 3 + Math.floor(r() * 4);
-  for (const idx of stop.route.keys()) {
-    if (show && RAIL_SHOWS.has(def.ground[idx]) && !def.structAt.has(idx) && !def.anchors.has(idx)) stop.bits.add(idx);
-    if (--left <= 0) { show = !show; left = show ? 3 + Math.floor(r() * 4) : 3 + Math.floor(r() * 7); }
+  // Until the stop is repaired the line is overgrown: tall grass and brush creep over it here and there.
+  for (const t of stop.route.keys()) {
+    if (def.objects[t] !== O.NONE || TRAILISH.has(def.ground[t]) || WATERY.has(def.ground[t])) continue;
+    // Only non-solid growth, so overgrowth never walls anything off; trees already on the line stay until repair.
+    const roll = r();
+    if (roll < 0.22) def.objects[t] = O.TALLGRASS;
+    else if (roll < 0.3) def.objects[t] = O.FERN;
   }
+  for (const fg of def.forage) fg.spots = fg.spots.filter((t) => !stop.route.has(t));
 }
 
 export const STOP_MAPS: readonly MapId[] = [
@@ -132,7 +207,7 @@ export function placeStop(def: MapDef): void {
   if (def.id === 'PINE_HOLLOW_TOWN') {
     // The station: a free rail tile with platform beside it.
     let best: StopDef | null = null, bestD = Infinity;
-    const fresh = () => ({ route: new Map<number, 0 | 1>(), bits: new Set<number>() });
+    const fresh = () => ({ route: new Map<number, 0 | 1>(), trestle: new Set<number>() });
     for (let y = 4; y < def.h - 4; y++) for (let x = 1; x < def.w - 1; x++) {
       if (g(x, y) !== T.RAIL || o(x, y) !== O.NONE) continue;
       const side = g(x - 1, y) === T.PLATFORM && o(x - 1, y) === O.NONE ? -1 : g(x + 1, y) === T.PLATFORM && o(x + 1, y) === O.NONE ? 1 : 0;
@@ -184,7 +259,7 @@ export function placeStop(def: MapDef): void {
     car: { x: railX, y: y + 1 },
     sign: { x: platX, y: y + 3 },
     arrive: { x: platX, y: y + 1, dir: platX > railX ? 'left' : 'right' },
-    route: new Map(), bits: new Set(),
+    route: new Map(), trestle: new Set(),
   };
   def.objects[i(stop.car.x, stop.car.y)] = O.HANDCAR;
   def.objects[i(stop.sign!.x, stop.sign!.y)] = O.STOP_SIGN;

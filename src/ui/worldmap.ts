@@ -105,7 +105,9 @@ function bakeMinimap(m: MapRuntime): Canv {
       if (o === O.BLOCK) col = px === 0 && py === 0 ? P.VOID : P.CRAN; // buildings
       // Railroad symbol along the old line: dark track with crossties.
       const rail = stop?.route.get(y * m.w + x);
-      if (rail !== undefined && !TRAILS.has(gr) && gr !== T.WATER) {
+      if (rail !== undefined && stop?.trestle.has(y * m.w + x)) {
+        col = (rail === 0 ? py === 0 : px === 0) ? P.RUST : P.AMBER; // trestle over water
+      } else if (rail !== undefined && !TRAILS.has(gr) && gr !== T.WATER) {
         const along = rail === 0 ? py === 0 : px === 0;
         const tie = rail === 0 ? x % 2 === 0 : y % 2 === 0;
         col = along || tie ? P.VOID : P.FOG; // dark track with a pale edge so it reads on any ground
