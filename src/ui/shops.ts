@@ -36,19 +36,41 @@ export abstract class ListMenu implements Overlay {
   footer(): string { return 'A: SELECT  B: CLOSE'; }
   showGold(): boolean { return true; }
 
-  private layout(game: Game): Rect & { rows: Rect[]; tabs: Rect[]; visible: number; rowH: number } {
+  /** Characters that fit on a row's label / sub line (rows clip; the detail box shows the rest). */
+  private rowChars(w: number, row: Row): { label: number; sub: number } {
+    const indent = row.icon ? 19 : 4;
+    return { label: Math.floor((w - 8 - indent - 44) / 4), sub: Math.floor((w - 8 - indent - 4) / 4) };
+  }
+
+  /** Full text for the selected row: anything clipped in the list, then the description. */
+  private detail(w: number, row: Row | undefined): Array<{ text: string; color: number }> {
+    if (!row) return [];
+    const out: Array<{ text: string; color: number }> = [];
+    const c = this.rowChars(w, row);
+    const tw = w - 10;
+    if (row.label.length > c.label) wrapText(row.label, tw).forEach((t) => out.push({ text: t, color: P.VOID }));
+    if (row.sub && row.sub.length > c.sub) wrapText(row.sub, tw).forEach((t) => out.push({ text: t, color: P.RUST }));
+    if (row.desc) wrapText(row.desc, tw).forEach((t) => out.push({ text: t, color: P.CRAN }));
+    return out;
+  }
+
+  private layout(game: Game): Rect & { rows: Rect[]; tabs: Rect[]; visible: number; rowH: number; detailLines: number } {
     const w = Math.min(game.w - 8, 250);
     const rowH = 18;
     const hasTabs = this.tabs().length > 0;
     const top = hasTabs ? 26 : 14;
-    const visible = Math.max(3, Math.min(7, Math.floor((game.h - top - 60) / rowH)));
-    const h = top + visible * rowH + 34;
+    // The detail box is sized for the wordiest row on this tab, so the panel doesn't jump as you scroll.
+    const all = this.rows(game);
+    const detailLines = Math.max(2, ...all.map((r) => this.detail(w, r).length));
+    const room = game.h - 8;
+    const visible = Math.max(2, Math.min(7, Math.floor((room - top - 20 - detailLines * 7) / rowH)));
+    const h = Math.min(room, top + visible * rowH + 20 + detailLines * 7);
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 10);
     const rows = Array.from({ length: visible }, (_, i) => ({ x: x + 4, y: y + top + i * rowH, w: w - 8, h: rowH - 1 }));
     const tl = this.tabs();
     const tw = tl.length ? Math.floor((w - 8) / tl.length) : 0;
     const tabs = tl.map((_, i) => ({ x: x + 4 + i * tw, y: y + 13, w: tw - 2, h: 10 }));
-    return { x, y, w, h, rows, tabs, visible, rowH };
+    return { x, y, w, h, rows, tabs, visible, rowH, detailLines };
   }
 
   update(game: Game): void {
@@ -102,14 +124,16 @@ export abstract class ListMenu implements Overlay {
       const icon = row.icon ? ICON[row.icon] : undefined;
       if (icon) g.drawImage(icon, r.x + 1, r.y);
       const tx = r.x + (row.icon ? 19 : 4);
-      const maxC = Math.floor((r.w - (tx - r.x) - 44) / 4);
-      drawText(g, row.label.slice(0, maxC), tx, r.y + 2, sel ? (row.dim ? P.RUST : P.VOID) : row.dim ? P.AMBER : P.CRAN);
-      if (row.sub) drawText(g, row.sub.slice(0, Math.floor((r.w - (tx - r.x) - 4) / 4)), tx, r.y + 9, sel ? P.CRAN : P.RUST);
+      const c = this.rowChars(L.w, row);
+      const clip = (t: string, n: number) => (t.length > n ? t.slice(0, Math.max(1, n - 2)) + '..' : t);
+      drawText(g, clip(row.label, c.label), tx, r.y + 2, sel ? (row.dim ? P.RUST : P.VOID) : row.dim ? P.AMBER : P.CRAN);
+      if (row.sub) drawText(g, clip(row.sub, c.sub), tx, r.y + 9, sel ? P.CRAN : P.RUST);
       if (row.right) drawTextRight(g, row.right, r.x + r.w - 2, r.y + 2, sel ? (row.dim ? P.RUST : P.VOID) : row.dim ? P.AMBER : P.RUST);
     });
     if (rows.length > L.visible) drawTextRight(g, `${this.cursor + 1}/${rows.length}`, L.x + L.w - 5, L.y + L.h - 11, P.RUST);
-    const desc = rows[this.cursor]?.desc ?? '';
-    wrapText(desc, L.w - 10).slice(0, 2).forEach((l, k) => drawText(g, l, L.x + 5, L.y + L.h - 28 + k * 7, P.CRAN));
+    const dy = L.y + L.h - 14 - L.detailLines * 7;
+    g.fillStyle = hex(P.AMBER); g.fillRect(L.x + 4, dy - 3, L.w - 8, 1);
+    this.detail(L.w, rows[this.cursor]).slice(0, L.detailLines).forEach((l, k) => drawText(g, l.text, L.x + 5, dy + k * 7, l.color));
     drawText(g, this.footer(), L.x + 5, L.y + L.h - 11, P.RUST);
   }
 }
