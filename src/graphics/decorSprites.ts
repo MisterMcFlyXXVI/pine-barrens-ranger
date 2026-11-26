@@ -253,6 +253,106 @@ function milkCans(): Canv {
   }, 16, 16, true);
 }
 
+/* ------------------------- square, station & mine ------------------------- */
+
+/** A bronze coal miner on a stone plinth, lamp on his helmet and a pick on his shoulder. */
+function statue(): Canv {
+  return art((p) => {
+    p.rect(2, 22, 12, 10, MIST); p.rect(1, 21, 14, 2, FOG); p.rect(1, 30, 14, 2, TWILIGHT);
+    p.rect(5, 25, 6, 3, AMBER); p.hline(6, 9, 26, RUST); // plaque
+    // figure (verdigris bronze)
+    p.rect(6, 4, 4, 4, FOREST); p.hline(5, 10, 4, PINE); p.px(8, 3, LANTERN); // helmet + lamp
+    p.rect(5, 8, 6, 7, FOREST); p.vline(5, 8, 14, PINE);
+    p.rect(5, 15, 2, 6, FOREST); p.rect(9, 15, 2, 6, FOREST); p.hline(4, 11, 20, PINE);
+    p.line(11, 6, 14, 12, RUST); p.line(10, 5, 13, 4, MIST); // pick
+    p.px(7, 6, MOSS); p.px(6, 10, MOSS); p.px(9, 12, MOSS); // weathering
+  }, 16, 32, true);
+}
+
+function flagpole(f: number): Canv {
+  return art((p) => {
+    p.vline(3, 2, 42, MIST); p.px(3, 1, LANTERN); p.rect(1, 41, 5, 3, SHADOW);
+    const w = f ? 1 : 0;
+    // A gold-and-blue flag with a white seal, rippling.
+    for (let x = 0; x < 11; x++) {
+      const dy = Math.round(Math.sin(x * 0.7 + f * 1.6) * 1);
+      p.vline(4 + x, 3 + dy, 9 + dy, TWILIGHT);
+      p.px(4 + x, 3 + dy, LANTERN); p.px(4 + x, 9 + dy, LANTERN);
+    }
+    p.rect(8 + w, 5, 3, 3, FOG);
+  }, 16, 44, true);
+}
+
+function gumball(): Canv {
+  return art((p) => {
+    p.rect(6, 12, 4, 4, RED); p.rect(5, 10, 6, 2, RED); p.px(8, 11, LANTERN);
+    p.ellipse(8, 6, 4, 4, MIST); p.ellipse(8, 6, 3, 3, FOG);
+    for (const [x, y, c] of [[7, 6, RED], [9, 5, LANTERN], [8, 8, VIOLET], [6, 5, MOSS], [10, 7, AMBER]] as Array<[number, number, number]>) p.px(x, y, c);
+    p.rect(7, 1, 2, 2, RED);
+  }, 16, 16, true);
+}
+
+/** The town water tower: a wooden tank on trestle legs, with a spout arm. */
+function waterTower(): Canv {
+  return art((p) => {
+    for (const x of [6, 25]) p.line(x, 47, x + (x < 16 ? 4 : -4), 22, SHADOW);
+    p.line(8, 40, 23, 30, RUST); p.line(23, 40, 8, 30, RUST);
+    p.rect(4, 6, 24, 18, RUST); for (let x = 6; x < 28; x += 4) p.vline(x, 7, 23, CRAN);
+    for (const y of [9, 15, 21]) p.hline(4, 27, y, SHADOW);
+    p.rect(2, 2, 28, 5, SHADOW); p.hline(5, 26, 1, SHADOW); p.px(16, 0, SHADOW);
+    p.line(27, 18, 31, 24, MIST); // spout
+    p.rect(9, 12, 14, 4, AMBER); p.hline(11, 20, 13, RUST); // faded C&O lettering
+    p.px(5, 22, MOSS); p.px(26, 8, MOSS);
+  }, 32, 48, true);
+}
+
+/** A rusted coal tipple over the old loading track. */
+function tipple(): Canv {
+  return art((p) => {
+    for (const x of [4, 22, 40]) { p.vline(x, 20, 55, SHADOW); p.vline(x + 1, 20, 55, RUST); }
+    for (let y = 26; y < 56; y += 10) { p.line(4, y, 22, y + 8, RUST); p.line(22, y, 40, y + 8, RUST); }
+    p.rect(1, 6, 46, 16, RUST); for (let x = 3; x < 46; x += 4) p.vline(x, 7, 21, CRAN);
+    p.rect(0, 2, 48, 5, SHADOW); p.rect(14, 10, 8, 6, SHADOW); p.rect(30, 10, 8, 6, VOID);
+    p.rect(18, 22, 12, 8, RUST); p.line(18, 30, 22, 34, RUST); p.line(29, 30, 25, 34, RUST); // chute
+    p.line(46, 8, 54, 0, SHADOW); // conveyor stub
+    for (const [x, y] of [[6, 12], [40, 18], [12, 20], [44, 4]]) { p.px(x, y, MOSS); p.px(x + 1, y, FOREST); }
+  }, 48, 56, true);
+}
+
+function mineCart(): Canv {
+  return art((p) => {
+    p.rect(2, 5, 12, 7, RUST); p.rect(3, 6, 10, 2, SHADOW); p.hline(2, 13, 5, AMBER);
+    for (const x of [4, 11]) { p.rect(x - 1, 12, 3, 3, SHADOW); p.px(x, 13, MIST); }
+    for (const x of [4, 7, 10]) { p.px(x, 4, VOID); p.px(x + 1, 3, SHADOW); } // a few lumps of coal
+    p.px(6, 9, CRAN); p.px(12, 7, CRAN);
+  }, 16, 16, true);
+}
+
+/** The lamp house, where miners once checked out their cap lamps. */
+function lampHouse(night: boolean): Canv {
+  return art((p) => {
+    p.rect(2, 12, 28, 22, FOG); for (let y = 14; y < 34; y += 3) p.hline(2, 29, y, MIST);
+    for (let y = 2; y < 13; y++) { const i = Math.round((12 - y) * 1.2); p.hline(i, 31 - i, y, y % 3 ? SHADOW : TWILIGHT); }
+    p.rect(5, 18, 8, 7, AMBER); p.rect(6, 19, 6, 5, night ? LANTERN : MIST); p.vline(9, 19, 23, RUST);
+    p.rect(18, 20, 8, 14, SHADOW); p.rect(19, 21, 6, 13, RUST);
+    p.rect(8, 27, 16, 3, CRAN); // faded sign band
+    p.px(3, 32, MOSS); p.px(4, 31, FOREST); p.px(28, 30, MOSS);
+  }, 32, 36, true);
+}
+
+/** An old coonhound asleep on the porch: ears flopped, ribs rising and falling. */
+function dog(frame: number): Canv {
+  return art((p) => {
+    const b = frame ? 1 : 0;
+    p.ellipse(9, 12, 6, 2.6 + b * 0.4, RUST); p.ellipse(9, 13, 5, 1.6, AMBER);
+    p.ellipse(3, 12, 2.5, 2, RUST); p.rect(1, 12, 2, 2, AMBER); p.px(1, 13, VOID); // muzzle + nose
+    p.rect(3, 10, 2, 4, CRAN); // floppy ear
+    p.px(3, 11, SHADOW);
+    p.hline(14, 15, 13, RUST);
+    if (frame === 1) { p.px(2, 9, FOG); p.px(1, 8, FOG); } // a snore
+  }, 16, 16, true);
+}
+
 /* ------------------------------ decals ------------------------------ */
 
 function puddle(seed: number): Canv {
@@ -337,6 +437,14 @@ export function bakeDecor(): void {
   PROP.newsbox = [newsBox()];
   PROP.flowerpot = [flowerPot(0), flowerPot(1), flowerPot(2)];
   PROP.milkcans = [milkCans()];
+  PROP.statue = [statue()];
+  PROP.flagpole = [flagpole(0), flagpole(1)];
+  PROP.gumball = [gumball()];
+  PROP.watertower = [waterTower()];
+  PROP.tipple = [tipple()];
+  PROP.minecart = [mineCart()];
+  PROP.lamphouse = [lampHouse(false), lampHouse(true)];
+  PROP.dog = [dog(0), dog(1)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];
   DECAL.snowLight = [snowLight(7), snowLight(19), snowLight(41)];

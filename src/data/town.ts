@@ -78,6 +78,22 @@ export function buildTown(): MapDef {
   for (const [x, y] of [[32, 30], [44, 30], [33, 34], [43, 34]]) b.setO(x, y, O.BENCH);
   for (const [x, y] of [[30, 24], [46, 24], [30, 35], [46, 35]]) b.setO(x, y, O.LAMP);
   for (const [x, y] of [[35, 25], [41, 25], [31, 28], [45, 28]]) b.setO(x, y, O.FLOWERBED);
+  // Lawns in the corners with brick walks in from the trails, so it's a park, not a parking lot.
+  const segDist = (x: number, y: number, ax: number, ay: number, bx: number, by: number) => {
+    const vx = bx - ax, vy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy)));
+    return Math.hypot(x - ax - vx * t, y - ay - vy * t);
+  };
+  for (let y = S.y; y < S.y + S.h - 1; y++) for (let x = S.x; x < S.x + S.w; x++) {
+    const ex = (x + 0.5 - 38) / 6.8, ey = (y + 0.5 - 29.5) / 5;
+    if (ex * ex + ey * ey <= 1) continue;
+    if (segDist(x + 0.5, y + 0.5, 30.5, 26.5, 38, 29.5) < 1.1 || segDist(x + 0.5, y + 0.5, 46.5, 25.5, 38, 29.5) < 1.1) continue;
+    b.setG(x, y, T.GRASS);
+  }
+  // Shade trees, the miners' memorial and the flag.
+  for (const [x, y] of [[31, 24], [45, 24], [31, 33], [45, 33]]) if (b.o(x, y) === O.NONE) b.setO(x, y, O.OAK);
+  b.setO(38, 25, O.STATUE);
+  b.signs.set(b.i(38, 25), "MINERS' MEMORIAL. \"To the men of Pine Hollow No. 3, who went down in the dark so the rest of us could have light. 1927.\" Somebody keeps fresh ramps and a pepperoni roll at the base.");
+  if (b.o(36, 24) === O.NONE) b.setO(36, 24, O.FLAGPOLE);
 
   // Buildings
   b.structure({ kind: 'museum', x: 32, y: 14, w: 12, h: 8, door: { x: 37, y: 21 }, open: true, windows: [[28, 98], [164, 98]] });
@@ -148,6 +164,29 @@ export function buildTown(): MapDef {
   if ([44, 45, 46].every((x) => b.o(x, 46) === O.NONE && b.g(x, 46) === T.GRASS)) b.place(44, 46, O.CLOTHESLINE, 3, 1);
   // Station: Barney's cat keeps him company.
   prop([[58, 33], [58, 32], [66, 34]], O.CAT);
+  prop([[42, 48], [42, 49], [37, 49]], O.DOG);
+  prop([[20, 35], [21, 34], [21, 35]], O.GUMBALL);
+  // Multi-tile railroad & mine works, only where the whole footprint is clear.
+  const put = (ax: number, ay: number, o: number, fw: number, fh: number, text: string) => {
+    for (let y = ay - fh + 1; y <= ay; y++) for (let x = ax; x < ax + fw; x++) {
+      if (b.o(x, y) !== O.NONE || b.g(x, y) === T.PATH || b.g(x, y) === T.RAIL || b.structAt.has(b.i(x, y))) return false;
+    }
+    b.place(ax, ay - fh + 1, o, fw, fh);
+    b.signs.set(b.i(ax, ay), text);
+    return true;
+  };
+  // Cinder yard and the C&O water tower behind the station.
+  for (let y = 22; y <= 26; y++) for (let x = 55; x <= 61; x++) if (b.g(x, y) === T.GRASS && hash2(x, y, 31) < 0.85) { b.setG(x, y, T.ROCKY); if (b.o(x, y) === O.NONE && hash2(x, y, 32) < 0.15) b.setO(x, y, O.TALLGRASS); }
+  for (const [ax, ay] of [[58, 25], [57, 25], [59, 25], [56, 24]] as Array<[number, number]>) {
+    if (b.o(ax, ay) === O.TALLGRASS) b.setO(ax, ay, O.NONE);
+    if (b.o(ax + 1, ay) === O.TALLGRASS) b.setO(ax + 1, ay, O.NONE);
+    if (put(ax, ay, O.WATER_TOWER, 2, 2, 'C&O WATER TANK. Steam engines topped up here on the climb to the coal camps. The tank still holds a few inches of rainwater and a family of tree frogs.')) break;
+  }
+  // Coal works: tipple over a short loading track, ore carts, and the lamp house.
+  for (const [ax, ay] of [[60, 7], [61, 7], [59, 6]] as Array<[number, number]>) if (put(ax, ay, O.TIPPLE, 3, 2, 'THE TIPPLE. Coal came out of No. 3 in cars, got tipped and screened here, and dropped into hoppers on the C&O. Rust has eaten most of the screens.')) break;
+  for (let x = 55; x <= 63; x++) if (b.o(x, 8) === O.NONE && b.g(x, 8) !== T.PATH) b.setG(x, 8, T.RAIL);
+  for (const x of [57, 61]) if (b.o(x, 8) === O.NONE && b.g(x, 8) === T.RAIL) { b.setO(x, 8, O.MINE_CART); b.signs.set(b.i(x, 8), 'An ore car, rusted to the rails and still half full of coal. Someone has chalked "PIPPA + SAM CRYPTID CLUB HQ" on the side.'); }
+  for (const [ax, ay] of [[47, 8], [45, 8], [46, 11], [50, 11]] as Array<[number, number]>) if (put(ax, ay, O.LAMP_HOUSE, 2, 2, 'LAMP HOUSE. Each miner hung a brass check on the board going in, and took it back coming out. A few checks are still hanging. Gideon won\'t say whose.')) break;
 
   return wrap(b, 'PINE_HOLLOW_TOWN', 'Pine Hollow Town', {
     portals: [

@@ -75,6 +75,10 @@ No environment variables or API keys are needed.
   letter in the diner sign) with ivy climbing the walls, chimneys that smoke, curtains and window boxes, attic
   windows and porch lamps. At night each lit window glows on its own (a couple of museum rooms stay dark). By the
   doors: porch cats you can pet, flower pots, trash cans, a bicycle, milk cans, a clothesline and the Gazette box.
+- **Town square & works**: lawns with shade trees and brick walks around the fountain, a Miners' Memorial and a
+  flagpole; a gumball machine (1g) and a glowing EAT sign at the diner; a cinder yard and C&O water tower behind the
+  station; a coal tipple, ore carts on a loading track and the old lamp house up by the mine. An old hound naps on a
+  porch and chickens scratch around the backyards (they scatter when you walk up).
 - **Homestead**: porch rocking chair (sit a spell), wind chimes that ring when you're near, a clothesline of laundry
   and a barn quilt on the shed.
 - **Little life** (`src/graphics/ambient.ts`): butterflies over meadows by day, fireflies on summer evenings,

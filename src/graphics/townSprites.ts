@@ -369,6 +369,13 @@ function diner(night: boolean): Canv {
   flowerBox(p, 13, 71, 20, P.RED); flowerBox(p, 93, 71, 20, P.RED);
   door(p, 52, 84, 28, P.RED);
   porchLamp(p, 44, 86, night);
+  // A blade sign on the corner: EAT, in letters that glow at night.
+  p.rect(114, 44, 10, 27, P.SHADOW); p.rect(115, 45, 8, 25, night ? P.RED : P.CRAN);
+  const L = night ? P.LANTERN : P.FOG;
+  p.vline(117, 47, 51, L); p.hline(117, 120, 47, L); p.hline(117, 119, 49, L); p.hline(117, 120, 51, L);           // E
+  p.vline(117, 54, 58, L); p.vline(120, 54, 58, L); p.hline(117, 120, 54, L); p.hline(117, 120, 56, L);           // A
+  p.hline(117, 121, 61, L); p.vline(119, 61, 66, L);                                                              // T
+  if (night && litNow) litNow.push([119, 57]);
   ivy(p, 6, H - 1, 40, 8, 1301, 2, W - 3);
   if (night && litNow) litNow.push([64, 30]); // the neon-ish sign
   return outline(c);

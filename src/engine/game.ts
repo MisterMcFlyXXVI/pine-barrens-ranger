@@ -1438,6 +1438,19 @@ export class Game {
         this.openOverlay(new Dialog([lines[(this.clock.day + tx + ty) % lines.length]]));
         return true;
       }
+      case 'dog': {
+        sfx.blip();
+        this.openOverlay(new Dialog(['The old hound thumps his tail twice without opening his eyes. That\'s about as excited as he gets these days.']));
+        return true;
+      }
+      case 'gumball': {
+        if (this.gold < 1) { sfx.error(); this.openOverlay(new Dialog(['It takes a penny. You don\'t have one.'])); return true; }
+        this.gold -= 1;
+        sfx.coin();
+        const c = ['cranberry red', 'buckwheat brown', 'Golden Delicious yellow', 'Mothman black', 'ramp green'][(this.clock.day + this.clock.minutes) % 5];
+        this.openOverlay(new Dialog([`Crank, rattle, clunk. A ${c} gumball. It tastes faintly of the 1970s. (-1g)`]));
+        return true;
+      }
       case 'rocker': {
         sfx.blip();
         const h = Math.floor(this.clock.minutes / 60) % 24;
@@ -1736,7 +1749,7 @@ export class Game {
     const kind = this.interactKind(tx, ty);
     const labels: Partial<Record<string, string>> = {
       forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'CRAFT',
-      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', cat: 'PET', mailbox: 'MAIL', fireplace: 'LOOK',
+      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', cat: 'PET', dog: 'PET', gumball: 'GUMBALL 1G', mailbox: 'MAIL', fireplace: 'LOOK',
       bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
       board: 'READ BOARD', case: 'LOOK', kiosk: 'GIFT SHOP', maptable: 'STUDY', railcar: 'LOOK', pedestal: 'DISPLAY',
     };

@@ -144,7 +144,7 @@ let season = 0;
 /** Things that wear a cap of snow in winter. */
 const SNOWCAP: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.ROCK, O.BOULDER, O.STUMP, O.LOG, O.HEMLOCK_TREE, O.RED_SPRUCE, O.DEAD_TREE,
   O.WILLOW, O.APPLE_TREE, O.RHODODENDRON, O.BRUSH, O.FENCE, O.STONE_WALL, O.SLAG, O.HOLLOW_LOG, O.LUMBER, O.MAILBOX, O.WOODPILE, O.SHIP_BIN,
-  O.STOP_SIGN, O.HANDCAR, O.CROSSBUCK, O.TRAILHEAD, O.HEDGE, O.BENCH, O.TRASH_CAN, O.NEWS_BOX, O.MILK_CANS, O.FLOWERBED, O.FOUNTAIN]);
+  O.STOP_SIGN, O.HANDCAR, O.CROSSBUCK, O.TRAILHEAD, O.HEDGE, O.BENCH, O.TRASH_CAN, O.NEWS_BOX, O.MILK_CANS, O.FLOWERBED, O.FOUNTAIN, O.STATUE, O.WATER_TOWER, O.TIPPLE, O.MINE_CART, O.LAMP_HOUSE, O.GUMBALL]);
 const snowCache = new WeakMap<Canv, Canv>();
 /** A copy of a sprite with snow settled on every upward-facing edge. */
 function snowy(src: Canv): Canv {
@@ -294,6 +294,14 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.NEWS_BOX: return PROP.newsbox[0];
     case O.FLOWER_POT: return pick(PROP.flowerpot, h);
     case O.MILK_CANS: return PROP.milkcans[0];
+    case O.STATUE: return PROP.statue[0];
+    case O.FLAGPOLE: return PROP.flagpole[Math.floor(time * 2.5) % 2];
+    case O.GUMBALL: return PROP.gumball[0];
+    case O.WATER_TOWER: return PROP.watertower[0];
+    case O.TIPPLE: return PROP.tipple[0];
+    case O.MINE_CART: return PROP.minecart[0];
+    case O.LAMP_HOUSE: return PROP.lamphouse[night ? 1 : 0];
+    case O.DOG: return PROP.dog[Math.floor(time * 0.7 + h * 3) % 2];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -522,6 +530,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           } });
         }
         if (o === O.LAMP && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 10 - cy, r: 46, flicker: true });
+        if (o === O.LAMP_HOUSE && night) lights.push({ x: x * 16 + 9 - cx, y: (y + 1) * 16 - 15 - cy, r: 13 });
         if (o === O.PYLON && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 12 - cy, r: 30, flicker: true });
         if (o === O.TOTEM || o === O.CHIME || o === O.ROD || o === O.PYLON) {
           const c = game.summonAt(o);

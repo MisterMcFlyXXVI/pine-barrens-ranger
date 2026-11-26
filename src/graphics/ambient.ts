@@ -18,6 +18,8 @@ const BUTTERFLY = [P.LANTERN, P.FOG, P.AMBER, P.MIST, P.MOON];
 const frogGone = new Map<number, number>();
 let frogMap = '';
 let lastChime = 0;
+/** Backyard chickens in town: home tile and whether it's a white hen (else a red one). */
+const CHICKENS: Array<[number, number, boolean]> = [[20, 51, true], [22, 52, false], [33, 52, true], [35, 51, true], [47, 51, false], [16, 50, true]];
 
 export interface View { x0: number; x1: number; y0: number; y1: number; cx: number; cy: number; season: number; time: number }
 
@@ -108,6 +110,31 @@ export function drawAmbient(game: Game, g: CanvasRenderingContext2D, v: View): v
     }
     // Porch wind chimes ring now and then when you're nearby.
     if (o === O.CHIMES && time - lastChime > 6 && Math.hypot(ptx - x, pty - y) < 5 && Math.random() < 0.01) { lastChime = time; sfx.chimes(); }
+  }
+
+  // Chickens scratching around the backyards in town by day; they scatter from you.
+  if (m.id === 'PINE_HOLLOW_TOWN' && (phase === 'day' || phase === 'dusk') && w !== 'STORM') {
+    CHICKENS.forEach(([hx, hy, hen], k) => {
+      const t = time * 0.22 + k * 3.7;
+      const seg = Math.floor(t), f = t - seg;
+      const wp = (n: number): [number, number] => [hx + hash2(n, k, 61) * 4 - 2, hy + hash2(n, k, 62) * 2.4 - 1.2];
+      const [ax, ay] = wp(seg), [bx2, by2] = wp(seg + 1);
+      const e = f < 0.6 ? 0 : (f - 0.6) / 0.4;
+      let fx = (ax + (bx2 - ax) * e) * 16, fy = (ay + (by2 - ay) * e) * 16;
+      // Scatter: push away from the player.
+      const dxp = fx + 8 - (p.x + 8), dyp = fy + 8 - (p.y + 8), dp = Math.hypot(dxp, dyp);
+      if (dp < 30 && dp > 0.1) { fx += (dxp / dp) * (30 - dp); fy += (dyp / dp) * (30 - dp) * 0.6; }
+      const sx = Math.round(fx - cx + 4), sy = Math.round(fy - cy + 8);
+      if (sx < -10 || sy < -10 || sx > game.w + 10 || sy > game.h + 10) return;
+      const left = (e > 0 ? bx2 - ax : Math.sin(seg + k)) < 0;
+      const peck = e === 0 && Math.floor(time * 3 + k) % 4 === 0;
+      const body = hen ? P.FOG : P.AMBER, d = left ? -1 : 1;
+      g.globalAlpha = 0.35; dot(g, sx, sy + 5, P.VOID, 6, 1); g.globalAlpha = 1;
+      dot(g, sx, sy, body, 6, 4); dot(g, sx + (left ? 5 : -1), sy - 1, hen ? P.MIST : P.RUST, 2, 3); // tail
+      const hx2 = left ? sx - 1 : sx + 5, hy2 = peck ? sy + 2 : sy - 2;
+      dot(g, hx2, hy2, body, 2, 2); dot(g, hx2 + (left ? 0 : 1), hy2 - 1, P.RED); dot(g, hx2 + d * 2 + (left ? 1 : -1), hy2 + 1, P.AMBER);
+      dot(g, sx + 2, sy + 4, P.AMBER, 1, 1); dot(g, sx + 4, sy + 4, P.AMBER, 1, 1);
+    });
   }
 
   // Leaves drifting down in the fall (screen-space, gently looping).

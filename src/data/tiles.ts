@@ -172,6 +172,14 @@ export const O = {
   NEWS_BOX: 100,
   FLOWER_POT: 101,
   MILK_CANS: 102,
+  STATUE: 103,
+  FLAGPOLE: 104,
+  GUMBALL: 105,
+  WATER_TOWER: 106,
+  TIPPLE: 107,
+  MINE_CART: 108,
+  LAMP_HOUSE: 109,
+  DOG: 110,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -187,7 +195,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'snare' | 'handcar' | 'rocker' | 'cat' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'handcar' | 'rocker' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -290,6 +298,14 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.NEWS_BOX]: { name: 'Newspaper Box', solid: true, interact: 'sign' },
   [O.FLOWER_POT]: { name: 'Flower Pot', solid: false },
   [O.MILK_CANS]: { name: 'Milk Cans', solid: true },
+  [O.STATUE]: { name: "Miners' Memorial", solid: true, interact: 'sign' },
+  [O.FLAGPOLE]: { name: 'Flagpole', solid: true },
+  [O.GUMBALL]: { name: 'Gumball Machine', solid: true, interact: 'gumball' },
+  [O.WATER_TOWER]: { name: 'Water Tower', solid: true, interact: 'sign', fw: 2, fh: 2 },
+  [O.TIPPLE]: { name: 'Coal Tipple', solid: true, interact: 'sign', fw: 3, fh: 2 },
+  [O.MINE_CART]: { name: 'Mine Cart', solid: true, interact: 'sign' },
+  [O.LAMP_HOUSE]: { name: 'Lamp House', solid: true, interact: 'sign', fw: 2, fh: 2 },
+  [O.DOG]: { name: 'Old Hound', solid: true, interact: 'dog' },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },
