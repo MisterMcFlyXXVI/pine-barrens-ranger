@@ -348,6 +348,21 @@ function mineBoarded(): Canv {
   return c;
 }
 
+/** Post-Grant mine: gate swung open onto darkness, a lantern glinting far below. */
+function mineOpen(): Canv {
+  const src = STRUCT.mine[0];
+  const { c, g } = makeCanvas(src.width, src.height);
+  g.drawImage(src, 0, 0);
+  const p = new Pen(g);
+  p.rect(28, 34, 24, 46, P.VOID);
+  for (let y = 34; y < 80; y += 3) p.px(29 + (y % 2), y, P.SHADOW);
+  for (let x = 52; x < 60; x += 2) p.vline(x, 40, 76, P.MIST);
+  p.hline(52, 59, 50, P.TWILIGHT);
+  p.px(40, 70, P.LANTERN); p.px(40, 69, P.AMBER);
+  p.rect(30, 26, 20, 3, P.FOG); p.hline(32, 47, 27, P.SHADOW);
+  return c;
+}
+
 /* ---------------- characters & quest decals ---------------- */
 
 function buster(f: number): Canv {
@@ -359,6 +374,16 @@ function buster(f: number): Canv {
   p.hline(12, 14, 8 + b, P.RED);
   for (const x of [5, 7, 11, 13]) p.rect(x, 12, 1, 3, P.RUST);
   p.line(3, 8 + b, 1, 5 + f * 2, P.AMBER);
+  return outline(c);
+}
+
+/** Ranger Vance's half-burned field journal (sits on the cabin table). */
+function vanceBook(): Canv {
+  const { c, p } = mk(16, 16);
+  p.rect(2, 5, 12, 8, P.FOREST); p.rect(3, 6, 10, 6, P.FOG); p.vline(8, 5, 12, P.PINE);
+  p.hline(4, 7, 8, P.MIST); p.hline(9, 12, 8, P.MIST); p.hline(4, 6, 10, P.MIST);
+  for (const [x, y] of [[11, 6], [12, 7], [12, 10], [13, 11], [10, 11]]) p.px(x, y, P.SHADOW);
+  p.px(12, 6, P.VOID); p.px(13, 9, P.AMBER);
   return outline(c);
 }
 
@@ -464,9 +489,11 @@ export function bakeTown(): void {
   STRUCT.house = [house(false, 0), house(true, 0), house(false, 1), house(true, 1), house(false, 2), house(true, 2)];
   STRUCT.station = [station(false, false), station(true, false), station(false, true), station(true, true)];
   STRUCT.mineBoarded = [mineBoarded()];
+  STRUCT.mineOpen = [mineOpen()];
 
   MISC.busterR = buster(0); MISC.busterR1 = buster(1);
   MISC.busterL = flipH(MISC.busterR); MISC.busterL1 = flipH(MISC.busterR1);
+  MISC.vanceBook = vanceBook();
   MISC.paw = paw(); MISC.boot = boot(); MISC.page = page(); MISC.sketchbook = sketchbook();
   MISC.bonfire0 = bonfire(0); MISC.bonfire1 = bonfire(1);
   MISC.wagonEzri = wagon(P.VIOLET, P.MOON); MISC.wagonPike = wagon(P.TWILIGHT, P.AMBER);

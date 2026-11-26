@@ -68,3 +68,14 @@ Handy URL flags for trying things out:
   - Outfitter upgrades for the Machete, Bog Waders, Lantern, Camera and Field Pack.
   - Diner food that gives a buff for the rest of the day.
   - A daily Bulletin Board request, and telegraph sighting reports once you fix Barnaby's telegraph.
+
+## Phase 4: Campaign "The Signal on Radio Ridge"
+- **Opening intro**: a 4-panel pixel-art story (B skips). It explains the fire-watch ad and how Ranger Elias Vance vanished. New games start on the cabin porch.
+- **Vance's Field Journal**: read it at the cabin table. 9 torn pages are hidden around the valley, and the journal fills in as you find them.
+- **Campaign tracker**: Tab opens the Journal, whose first page is CAMPAIGN. Objectives are checked automatically, and free-roam play is never blocked.
+  - **Act I – The Fire-Watch**: read the journal, clear the garden, harvest a crop, explore Pine Trail, meet Agnes, log a cryptid.
+  - **Act II – Restoring Pine Hollow**: explore the Bog and the Old Growth, find 4 pages, reach 24 donations, attend the Folklore Festival. Then talk to Agnes.
+  - **Act III – The Four Wardens**: log the Sasquatch, the Wendigo, the Thunderbird and The Awful.
+  - **Act IV – The Midnight Broadcast**: use the Static Radio at the Crossroads in the Witching Hour. You tune three frequencies (the journal pages give the answers), then the epilogue plays and free play continues.
+- **Post-game**: Elias Vance lives in town. At 32 donations the Town Restoration Grant repairs the station and opens the Coal Mine gate, which teases a future underground expansion.
+- **Title screen**: New Game (asks before replacing a save), Continue, Export Save (downloads a JSON file), Import Save (choose a JSON file).

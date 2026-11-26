@@ -11,6 +11,8 @@ import { moonPhase, WEATHER_LABEL } from '../data/weather';
 import { dexTotals } from '../engine/dex';
 import { moveName } from '../engine/encounter';
 import { QUESTS } from '../data/quests';
+import { ACT_TITLES, JOURNAL_PAGES } from '../data/campaign';
+import { objectives } from '../engine/campaign';
 import { OUTFIT_PERKS } from '../data/outfits';
 import { OUTFITS, HATS, outfitById, hatById } from '../data/outfits';
 import { HOTBAR_SIZE } from '../engine/inventory';
@@ -376,7 +378,7 @@ export class DresserMenu implements Overlay {
 export class JournalMenu implements Overlay {
   closed = false;
   private page = 0;
-  private static readonly PAGES = 4;
+  private static readonly PAGES = 5;
 
   update(game: Game): void {
     const inp = game.input;
@@ -387,16 +389,36 @@ export class JournalMenu implements Overlay {
   }
 
   draw(game: Game, g: CanvasRenderingContext2D): void {
-    const w = Math.min(game.w - 8, 230), h = Math.min(game.h - 30, 132);
+    const w = Math.min(game.w - 8, 236), h = Math.min(game.h - 30, 140);
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
-    const titles = ['FIELD JOURNAL', 'QUEST LOG', 'ALMANAC & KIT', 'CONTROLS'];
+    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
     let ly = y + 16;
     const line = (s: string, c: number = P.RUST) => { drawText(g, s, lx, ly, c); ly += 8; };
+    const page = this.page - 1;
     if (this.page === 0) {
+      const act = game.progress.act;
+      const [num, title] = ACT_TITLES[act];
+      line(`${num}: ${title.toUpperCase()}`, P.CRAN);
+      line(act >= 5 ? 'POST-GAME: THE VALLEY IS YOURS' : '"THE SIGNAL ON RADIO RIDGE"', P.AMBER);
+      for (const o of objectives(game, act)) {
+        const lines = wrapText(o.text, w - 22);
+        lines.slice(0, 2).forEach((l, k) => {
+          if (k === 0) {
+            g.fillStyle = hex(o.done ? P.FOREST : P.RUST); g.fillRect(lx, ly, 5, 5);
+            if (!o.done) { g.fillStyle = hex(P.LANTERN); g.fillRect(lx + 1, ly + 1, 3, 3); }
+          }
+          drawText(g, l, lx + 9, ly, o.done ? P.FOREST : P.RUST);
+          ly += 7;
+        });
+        ly += 1;
+      }
+      const pages = [...game.progress.pages].filter((x) => x > 0).length;
+      drawText(g, `VANCE JOURNAL PAGES: ${pages}/${JOURNAL_PAGES.length - 1}`, lx, y + h - 10, P.CRAN);
+    } else if (page === 0) {
       const c = game.clock;
       const yard = game.getMap('CABIN_YARD');
       line(`${c.season.toUpperCase()} ${c.dayOfSeason}, YEAR ${c.year} - ${c.timeLabel()}`, P.CRAN);
@@ -409,7 +431,7 @@ export class JournalMenu implements Overlay {
       line(`TOTAL EARNED: ${game.stats.shippedGold}G   DAYS: ${game.stats.daysPlayed}`);
       ly += 2;
       wrapText('Lure crops draw specific cryptids. Keep a stock of each before venturing past the trails.', w - 12).forEach((l) => line(l, P.CRAN));
-    } else if (this.page === 1) {
+    } else if (page === 1) {
       const pr = game.progress;
       const active = QUESTS.filter((q) => pr.active(q.id));
       const done = QUESTS.filter((q) => pr.done(q.id));
@@ -420,7 +442,7 @@ export class JournalMenu implements Overlay {
       }
       ly += 2;
       line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/36`, P.FOREST);
-    } else if (this.page === 2) {
+    } else if (page === 2) {
       const c = game.clock;
       const moon = moonPhase(c.day);
       const tot = dexTotals(game.dex);

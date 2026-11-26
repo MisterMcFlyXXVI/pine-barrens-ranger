@@ -23,6 +23,11 @@ export interface ProgressSave {
   boardDay: number;
   displays: Record<string, string>;
   archiveRead: boolean;
+  // Phase 4 campaign
+  act?: number;
+  flags?: string[];
+  pages?: number[];
+  visited?: string[];
 }
 
 export interface Track {
@@ -44,6 +49,13 @@ export class Progress {
   /** "MAP:tileIndex" -> displayed specimen item id (cabin pedestals). */
   displays: Record<string, string> = {};
   archiveRead = false;
+  /** Campaign act (1-4, 5 = epilogue / post-game). */
+  act = 1;
+  /** Story flags: journal, agnes, festival, mine, finale... */
+  flags = new Set<string>();
+  /** Recovered Vance journal pages (0 = the burned journal itself). */
+  pages = new Set<number>([0]);
+  visited = new Set<string>();
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -55,6 +67,7 @@ export class Progress {
     return {
       quests: this.quests, donated: [...this.donated], claimed: [...this.claimed], blueprints: [...this.blueprints],
       tools: { ...this.tools }, buffs: { ...this.buffs }, boardDay: this.boardDay, displays: { ...this.displays }, archiveRead: this.archiveRead,
+      act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited],
     };
   }
 
@@ -70,6 +83,10 @@ export class Progress {
     p.boardDay = d.boardDay ?? 0;
     p.displays = { ...(d.displays ?? {}) };
     p.archiveRead = !!d.archiveRead;
+    p.act = Math.min(5, Math.max(1, d.act ?? 1));
+    p.flags = new Set(d.flags ?? []);
+    p.pages = new Set([0, ...(d.pages ?? [])]);
+    p.visited = new Set(d.visited ?? []);
     return p;
   }
 

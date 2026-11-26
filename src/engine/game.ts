@@ -6,7 +6,7 @@ import { Input } from '../input/input';
 import { Camera } from '../graphics/camera';
 import { Particles } from '../graphics/particles';
 import { Lighting } from '../graphics/lighting';
-import { ICON } from '../graphics/sprites';
+import { ICON, MISC } from '../graphics/sprites';
 import type { Look } from '../graphics/playerSprite';
 import { sfx, Surface } from '../audio/sfx';
 import { Clock, DAY_START } from './clock';
@@ -32,6 +32,11 @@ import { GIFT_STOCK, MILESTONES, Recipe, ToolLine, UPGRADES } from '../data/econ
 import { QUESTS } from '../data/quests';
 import { CRYPTIDS } from '../data/cryptids';
 import { hash2 } from '../util';
+import { campaignTick, setAct } from './campaign';
+import { playIntro, playEpilogue } from '../ui/intro';
+import { VanceJournal } from '../ui/vanceJournal';
+import { FinaleScene } from '../ui/finale';
+import { JOURNAL_PAGES, MINE_TEASE } from '../data/campaign';
 import { OUTFITS, HATS } from '../data/outfits';
 import type { Dir } from '../util';
 import { DIR_VEC, randInt } from '../util';
@@ -106,6 +111,8 @@ export class Game {
   progress = new Progress();
   readonly townsfolk = new Townsfolk();
   private talks = new Map<string, number>();
+  private campaignT = 1;
+  private pageSpots: Map<string, Array<{ id: number; x: number; y: number }>> | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement, readonly g: CanvasRenderingContext2D) {}
 
@@ -154,13 +161,18 @@ export class Game {
       for (const it of Object.values(ITEMS)) if (it.kind === 'gear') this.inv.add(it.id, 1);
       this.progress.tools.waders = 1;
     }
-    this.enterMap(BED_SPAWN.map, BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
+    // Start on the cabin porch (Act I), after the Firewatch-style intro.
+    this.enterMap('CABIN_YARD', 29, 19, 'down');
+    this.banner.t = 0;
     this.mode = 'play';
     this.overlays = [];
-    this.openOverlay(new Dialog([
-      'Welcome to the Pine Barrens, Ranger. This old cabin is yours now: a garden out front, a creek out back, and woods full of things nobody can quite explain.',
-      'Grow lure crops, clear the overgrown garden plots, and keep your field journal. Sleep in your bed to end each day and save. Check the mailbox outside for a letter!',
-    ]));
+    playIntro(this, () => {
+      this.openOverlay(new Dialog([
+        'The cabin porch creaks under your boots. Somewhere out in the pines, something answers the creak.',
+        "Ranger Vance's half-burned Field Journal waits on the table inside. Clear the garden, grow lure crops, and sleep in the bed to end each day and save. Press Tab for your Campaign journal.",
+      ]));
+      setAct(this, 1);
+    });
   }
 
   loadGame(d: SaveData): void {
@@ -168,6 +180,7 @@ export class Game {
     this.clock.day = d.day;
     this.clock.minutes = d.minutes;
     this.inv = new Inventory();
+    this.inv.resize(Math.min(45, d.inv.length));
     d.inv.forEach((s, i) => { if (i < this.inv.slots.length && s && ITEMS[s.id]) this.inv.slots[i] = { id: s.id, n: s.n }; });
     this.gold = d.gold;
     this.stamina = d.stamina;
@@ -250,6 +263,7 @@ export class Game {
 
   enterMap(id: MapId, x: number, y: number, dir: Dir): void {
     this.cur = this.getMap(id);
+    this.progress.visited.add(id);
     this.player.place(x, y, dir);
     this.particles.clear();
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, 0, true);
@@ -447,6 +461,40 @@ export class Game {
     return n;
   }
 
+  /** Act IV: Static Radio at the Crossroads in the Witching Hour. */
+  private tryFinale(): boolean {
+    const p = this.progress;
+    if (p.act !== 4) return false;
+    const atCrossroads = this.cur.id === 'RADIO_RIDGE_AND_CROSSROADS' && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads');
+    if (!atCrossroads || this.clock.phase() !== 'witching') {
+      sfx.error();
+      this.notice(atCrossroads ? 'Only static. Clara said the Witching Hour: midnight to 2 AM.' : 'Static... Clara said to tune it at the Radio Ridge Crossroads, in the Witching Hour.');
+      return true;
+    }
+    sfx.alert();
+    this.openOverlay(new Dialog(['You switch on the Static Radio. The needle swings on its own, and the dead tree at the Crossroads begins to hum...'], [
+      { label: 'Listen', fn: () => this.openOverlay(new FinaleScene(() => this.finishCampaign())) },
+      { label: 'Not yet', fn: () => undefined },
+    ]));
+    return true;
+  }
+
+  private finishCampaign(): void {
+    const p = this.progress;
+    p.flags.add('finale');
+    p.act = 5;
+    for (const id of ['indrid_cold', 'weaver']) {
+      const e = this.dex[id];
+      e.seen = true;
+      e.behavior = true;
+      if (!e.logged) { e.logged = true; const c = CRYPTIDS.find((x) => x.id === id)!; this.inv.add(c.drop.id, 1); }
+    }
+    playEpilogue(this, () => {
+      this.toast('CAMPAIGN COMPLETE! The valley remains open. Elias Vance has come home.');
+      this.sleep(false);
+    });
+  }
+
   markRumor(cid: string): void {
     const e = this.dex[cid];
     if (e) e.rumor = true;
@@ -535,6 +583,8 @@ export class Game {
       this.handleHotbarInput();
       if (this.clock.tick(dt)) this.passOut();
       this.townsfolk.update(this, dt);
+      this.campaignT -= dt;
+      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); }
       this.updatePlayer(dt);
       this.updateAmbience(dt);
     }
@@ -667,6 +717,14 @@ export class Game {
     const nx = p.tx + dx, ny = p.ty + dy;
     const portal = this.cur.portalAt(nx, ny);
     const locked = portal && portal.requires === 'archive' && !this.progress.has('archive');
+    if (portal && portal.to === 'COAL_MINE' && this.progress.has('grant') && this.msgCd <= 0) {
+      this.msgCd = 1.5;
+      p.chain = false;
+      this.progress.flags.add('mine');
+      sfx.door();
+      this.openOverlay(new Dialog([...MINE_TEASE]));
+      return;
+    }
     if (portal && (!BUILT_MAPS.has(portal.to) || locked)) {
       this.notice(locked ? 'The basement door is locked. Agnes: "The Archive opens for researchers with 8 donations, dear."'
         : this.progress.has('grant') && portal.grantMsg ? portal.grantMsg : portal.closedMsg);
@@ -800,6 +858,7 @@ export class Game {
     if (def.kind === 'seed') { this.plant(tx, ty); return; }
     if (def.kind === 'placeable') { this.placeMount(st.id, tx, ty); return; }
     if (def.edible) { this.eat(); return; }
+    if (st.id === 'static_radio' && this.tryFinale()) return;
     if (def.kind === 'gear') { this.notice(`${def.name} is part of your Field Kit. Carry it into encounters.`); return; }
     this.notice(`${def.name}: ship it in the bin, or use it as cryptid bait.`);
   }
@@ -1021,7 +1080,37 @@ export class Game {
     return null;
   }
 
+  /** Torn Vance journal pages lying in the wilds, resolved to walkable tiles. */
+  journalPagesOn(map: MapId): Array<{ id: number; x: number; y: number }> {
+    if (!this.pageSpots) {
+      this.pageSpots = new Map();
+      for (const pg of JOURNAL_PAGES) {
+        if (!pg.map || pg.x === undefined || pg.y === undefined) continue;
+        const m = this.getMap(pg.map);
+        let spot: [number, number] = [pg.x, pg.y];
+        search: for (let r = 0; r < 10; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = pg.x + dx, y = pg.y + dy;
+          if (!m.blocked(x, y, true) && !m.portalAt(x, y) && m.obj(x, y) === O.NONE) { spot = [x, y]; break search; }
+        }
+        const list = this.pageSpots.get(pg.map) ?? [];
+        list.push({ id: pg.id, x: spot[0], y: spot[1] });
+        this.pageSpots.set(pg.map, list);
+      }
+    }
+    return (this.pageSpots.get(map) ?? []).filter((p) => !this.progress.pages.has(p.id));
+  }
+
   private tryInteract(tx: number, ty: number): boolean {
+    const page = this.journalPagesOn(this.cur.id).find((p) => p.x === tx && p.y === ty);
+    if (page) {
+      this.progress.pages.add(page.id);
+      sfx.harvest();
+      this.particles.pop(tx * 16 + 8, ty * 16 + 8, MISC.page);
+      const pg = JOURNAL_PAGES[page.id];
+      this.openOverlay(new Dialog([`You found a torn page from Ranger Vance's journal: "${pg.title}".`, pg.text, `(${[...this.progress.pages].filter((x) => x > 0).length}/${JOURNAL_PAGES.length - 1} pages. Read them all at the cabin table.)`]));
+      return true;
+    }
     const npc = this.npcFacing(tx, ty);
     if (npc) { talkTo(this, npc); return true; }
     const track = this.trackAt(tx, ty);
@@ -1112,6 +1201,12 @@ export class Game {
         this.openOverlay(new Dialog(['A kerosene lamp post. It lights itself at dusk, somehow.']));
         return true;
       case 'table':
+        if (m.id === 'CABIN_INTERIOR') {
+          sfx.open();
+          if (!this.progress.flags.has('journal')) { this.progress.flags.add('journal'); this.toast("Ranger Vance's Field Journal added to your story."); }
+          this.openOverlay(new VanceJournal());
+          return true;
+        }
         sfx.blip();
         this.openOverlay(new Dialog(['A worn table. Someone carved "J.D. WAS HERE" with a claw-sized gouge.']));
         return true;
@@ -1359,6 +1454,9 @@ export class Game {
       bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
       board: 'READ BOARD', case: 'LOOK', kiosk: 'GIFT SHOP', maptable: 'STUDY', railcar: 'LOOK', pedestal: 'DISPLAY',
     };
+    if (this.journalPagesOn(this.cur.id).some((pg) => pg.x === tx && pg.y === ty)) return 'PICK UP PAGE';
+    if (kind === 'table' && this.cur.id === 'CABIN_INTERIOR') return 'READ JOURNAL';
+    if (this.selected?.id === 'static_radio' && this.progress.act === 4 && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads')) return 'TUNE RADIO';
     const npc = this.npcFacing(tx, ty);
     if (npc) return `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;
     const tr = this.trackAt(tx, ty);

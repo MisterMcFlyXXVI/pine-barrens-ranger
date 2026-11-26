@@ -77,6 +77,7 @@ export class Townsfolk {
       foggyNight: game.dayWeather.evening === 'FOG' && c.minutes >= 1080,
       questStage: (id) => game.progress.stage(id),
       questDone: (id) => game.progress.done(id),
+      campaignDone: game.progress.flags.has('finale'),
     };
   }
 

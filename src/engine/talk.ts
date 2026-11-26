@@ -10,6 +10,7 @@ import { ITEMS } from '../data/items';
 import { stars } from './dex';
 import { sfx } from '../audio/sfx';
 import { hash2 } from '../util';
+import { agnesStory } from './campaign';
 
 /** Quest givers (Sam shares Pippa's club quests). */
 function giverMatches(q: QuestDef, npcId: string): boolean {
@@ -110,6 +111,8 @@ export function talkTo(game: Game, npc: NpcRT): void {
     game.openOverlay(new Dialog(['Toby: "Ranger! I followed a light out here and my boots got stuck. Thank you!"', 'You help Toby through the shallows. He limps toward town. Quest updated: report to Gideon.']));
     return;
   }
+
+  if (d.id === 'agnes' && agnesStory(game)) return;
 
   // Quest turn-ins and offers
   for (const q of QUESTS) {

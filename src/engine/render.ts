@@ -318,6 +318,14 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     });
   }
 
+  // ---- Torn Vance journal pages (fluttering) ----
+  for (const pg of game.journalPagesOn(m.id)) {
+    if (pg.x < x0 || pg.x > x1 || pg.y < y0 || pg.y > y1) continue;
+    const flutter = Math.round(Math.sin(time * 4 + pg.id) * 1.5);
+    g.drawImage(MISC.page, pg.x * 16 - cx + flutter, pg.y * 16 - cy - 2 + Math.round(Math.sin(time * 2 + pg.id)));
+    if (Math.floor(time * 2 + pg.id) % 3 === 0) { g.fillStyle = hex(P.LANTERN); g.fillRect(pg.x * 16 + 12 - cx, pg.y * 16 + 1 - cy, 1, 1); }
+  }
+
   // ---- Y-sorted world ----
   const list: Drawable[] = [];
   const festival = m.id === 'PINE_HOLLOW_TOWN' && game.isFestival();
@@ -339,6 +347,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           if (o === O.CASE) {
             const cid = m.def.meta?.get(i);
             if (cid && game.progress.donated.has(cid)) { extra = cryptidFrame(cid, 'normal', Math.floor(time * 2 + x) % 2); ex = dx + 2; ey = dy + 4; es = 12; }
+          } else if (o === O.TABLE && m.id === 'CABIN_INTERIOR') {
+            extra = MISC.vanceBook; ex = dx + 2; ey = dy - 1; es = 12;
           } else if (o === O.PEDESTAL) {
             const item = game.progress.displays[`${m.id}:${i}`];
             if (item) {
@@ -393,7 +403,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   });
   // Structures
   for (const s of m.def.structures) {
-    const frames = s.kind === 'mine' && m.id === 'PINE_HOLLOW_TOWN' && !flags.grant ? STRUCT.mineBoarded : STRUCT[s.kind];
+    const frames = s.kind === 'mine' ? (flags.grant ? STRUCT.mineOpen : m.id === 'PINE_HOLLOW_TOWN' ? STRUCT.mineBoarded : STRUCT.mine) : STRUCT[s.kind];
     const n = night ? 1 : 0;
     const img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2]
       : s.kind === 'house' ? frames[((s.x + s.y) % 3) * 2 + n]

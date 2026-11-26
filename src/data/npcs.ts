@@ -11,7 +11,7 @@ import { P } from '../graphics/palette';
 import { CRYPTIDS, CryptidDef } from './cryptids';
 import { ITEMS } from './items';
 
-export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ezri' | 'pike';
+export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ezri' | 'pike' | 'vance';
 
 export interface Stop {
   map: MapId;
@@ -29,6 +29,8 @@ export interface ScheduleCtx {
   foggyNight: boolean;
   questStage: (id: string) => number;
   questDone: (id: string) => boolean;
+  /** Campaign finale complete (Elias Vance has come home). */
+  campaignDone: boolean;
 }
 
 export interface NpcDef {
@@ -242,6 +244,28 @@ export const NPCS: readonly NpcDef[] = [
     greet: ['Woof!', 'Buster wags his whole body.', 'Buster sniffs your pockets for venison.'],
     chat: ['Buster rolls over for belly rubs.', 'Buster howls at the rail car.'],
     rumor: 'Buster sniffs the air toward {place}...',
+  },
+  {
+    id: 'vance', name: 'Ranger Elias Vance', title: 'Former Fire-Watch Ranger', kind: 'person',
+    body: body('vance', P.LANTERN, P.AMBER, P.MIST, P.TWILIGHT, P.TWILIGHT, 'beard'),
+    look: { outfit: 'ranger_jacket', hat: 'ranger_cap' },
+    where: (c) => {
+      if (!c.campaignDone) return null;
+      if (c.festival && c.minutes >= H(18)) return { map: 'PINE_HOLLOW_TOWN', x: 38, y: 31, dir: 'down' };
+      if (between(c.minutes, H(8), H(17))) return { map: 'MUSEUM_INT', x: 9, y: 16, dir: 'right', wander: 1 };
+      if (between(c.minutes, H(17), H(20))) return { map: 'DINER_INT', x: 13, y: 9, dir: 'right' };
+      if (c.minutes >= H(20) || c.minutes < H(2)) return { map: 'RADIO_RIDGE_AND_CROSSROADS', x: 20, y: 10, dir: 'left', wander: 1 };
+      return null;
+    },
+    greet: ['Ranger. You kept the garden. Good.', 'Three years in the fog. I still dream in static.', 'Agnes won\'t let me out of her sight. Can\'t blame her.'],
+    chat: [
+      'The Weaver isn\'t cruel. It\'s a caretaker. It needed someone to listen while the Wardens were restless.',
+      'You logged all four Wardens. Do you understand what that means? They trust you. The valley picked you.',
+      'Something under the foothills was waking up. The Wardens kept it down. Now that they rest easy... the mine hums. Keep your lantern lit.',
+      'I owe Clara a dozen interviews. I\'ve done two. She records everything. Even my snoring.',
+      'My old journal? Keep it. You\'ve earned the pages more than I have.',
+    ],
+    rumor: 'Elias taps his radio: "From inside the fog I watched the {c}, {time}, near {place}. It always came for {lure}."',
   },
   {
     id: 'ezri', name: 'Old Ezri Vance-Kerr', title: 'Traveling Apothecary', kind: 'person',
