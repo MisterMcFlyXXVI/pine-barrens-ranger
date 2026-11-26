@@ -27,6 +27,8 @@ const gesture = () => sfx.unlock();
 
 /** Pick the largest integer scale that keeps at least ~15x10 tiles visible. */
 function layout(): void {
+  // Pin the SND/PAD row to the deck's real top edge (safe-area insets differ in home-screen mode).
+  document.documentElement.style.setProperty('--deck-y', `${deck.offsetTop}px`);
   const box = screen.getBoundingClientRect();
   if (box.width < 2 || box.height < 2) return;
   const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -56,7 +58,9 @@ muteBtn.addEventListener('pointerdown', (e) => {
   game.toggleMute();
 });
 
-new ResizeObserver(() => layout()).observe(screen);
+const ro = new ResizeObserver(() => layout());
+ro.observe(screen);
+ro.observe(deck);
 window.addEventListener('orientationchange', () => setTimeout(layout, 150));
 layout();
 

@@ -270,6 +270,10 @@ body {
     --deck-mid: calc(var(--deck-top) + (100% - var(--deck-top) - var(--deck-bot)) / 2);
     --dpad: min(42vw, calc(42dvh - 116px), 170px);
     --btn: min(17vw, calc((42dvh - 140px) / 1.9), 74px);
+    /* Measure the deck itself (container units) so notch/home-bar insets can't oversize the pad. */
+    container-type: size;
+    --dpad: min(42vw, calc(100cqh - 112px), 170px);
+    --btn: min(17vw, calc((100cqh - 136px) / 1.9), 74px);
   }
   body.touch-on .dpad {
     left: 5vw;
@@ -307,7 +311,7 @@ body {
   }
   /* In handheld mode the corner toggles live on the deck, never over the screen. */
   body.touch-on #corner {
-    top: calc(env(safe-area-inset-top) + 58% + 10px);
+    top: calc(var(--deck-y, 58%) + 10px);
     left: calc(env(safe-area-inset-left) + 10px);
   }
 }
