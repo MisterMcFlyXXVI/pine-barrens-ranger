@@ -23,6 +23,7 @@ import type { Dir } from '../util';
 import { touchOn } from '../util';
 import { accountEmail } from '../engine/account';
 import { drawClipped, More, tapMore } from './readMore';
+import { listStatus } from '../engine/materials';
 
 function anyConfirm(game: Game): boolean {
   return game.input.pressed('a') || game.input.taps.length > 0;
@@ -390,7 +391,7 @@ export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
-  private static readonly PAGES = 5;
+  private static readonly PAGES = 6;
 
   update(game: Game): void {
     const inp = game.input;
@@ -406,7 +407,7 @@ export class JournalMenu implements Overlay {
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
     this.mores = [];
-    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'ALMANAC & KIT', 'CONTROLS'];
+    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
@@ -453,6 +454,30 @@ export class JournalMenu implements Overlay {
       ly += 2;
       line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/${CRYPTIDS.length}`, P.FOREST);
     } else if (page === 2) {
+      // Materials list (read-only here; edit it at the Porch Workbench LIST tab).
+      const list = listStatus(game);
+      const bottom = y + h - 12;
+      if (!list.length) {
+        wrapText('Nothing tracked yet. At the Porch Workbench, select a recipe and tap +LIST. Counts include your bag and the cabin Storage Crate.', w - 12).forEach((l) => line(l, P.CRAN));
+      }
+      let shown = 0;
+      for (const st of list) {
+        if (ly + 8 > bottom) break;
+        drawText(g, `${st.name.toUpperCase()}${st.need.qty > 1 ? ` X${st.need.qty}` : ''}`, lx, ly, P.CRAN);
+        drawTextRight(g, st.ready ? 'READY!' : `${st.missing} LEFT`, x + w - 6, ly, st.ready ? P.FOREST : P.RUST);
+        ly += 8;
+        for (const p of st.parts) {
+          if (ly + 7 > bottom) break;
+          const ok = p.have >= p.need;
+          drawText(g, `${ok ? '+' : '-'} ${p.name} ${Math.min(p.have, p.need)}/${p.need}`, lx + 4, ly, ok ? P.FOREST : P.RUST);
+          drawTextRight(g, `BAG ${p.bag} CRATE ${p.crate}`, x + w - 6, ly, P.AMBER);
+          ly += 7;
+        }
+        ly += 2;
+        shown++;
+      }
+      if (shown < list.length) drawText(g, `+${list.length - shown} MORE: SEE THE WORKBENCH LIST TAB`, lx, bottom, P.CRAN);
+    } else if (page === 3) {
       const c = game.clock;
       const moon = moonPhase(c.day);
       const tot = dexTotals(game.dex);

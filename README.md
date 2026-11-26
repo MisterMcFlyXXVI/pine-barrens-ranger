@@ -17,6 +17,13 @@ npm run build    # type-checks (strict) and outputs to dist/
 3. Vercel reads `vercel.json` (framework `vite`, build `npm run build`, output `dist`). Leave the defaults and click **Deploy**.
 No environment variables or API keys are needed.
 
+## Storage & materials list
+- **Storage Crate** in the cabin (by the stove): 36 slots; tap an item to move its stack between crate and bag.
+  The Porch Workbench crafts from your bag first, then the crate.
+- **Materials list**: at the Workbench, select a recipe and tap **+LIST** (or press DEX/Tab). The **LIST** tab shows
+  have/need for every material (bag + crate), crafts when ready, and removes entries. The Journal has a read-only
+  Materials List page, and the game toasts your progress as you collect materials.
+
 ## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
 - **Accounts** (title screen → ACCOUNT): Continue with Google, or email + password (with password reset).

@@ -54,6 +54,10 @@ export interface SaveData {
   lunarNight?: number;
   // Phase 3
   progress?: Partial<ProgressSave>;
+  /** Cabin Storage Crate contents. */
+  storage?: Array<Stack | null>;
+  /** Materials list (recipe id + how many wanted). */
+  needs?: Array<{ recipe: string; qty: number }>;
 }
 
 export function hasSave(): boolean {

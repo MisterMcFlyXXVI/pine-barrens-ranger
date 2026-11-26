@@ -44,6 +44,8 @@ import { DIR_VEC, randInt } from '../util';
 import type { Overlay } from '../ui/overlay';
 import { Dialog, BagMenu, DresserMenu, JournalMenu, SleepSummary } from '../ui/menus';
 import { TitleScreen } from '../ui/title';
+import { StorageMenu } from '../ui/storage';
+import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
 import { drawHud, hotbarHit } from '../ui/hud';
 
@@ -67,6 +69,12 @@ export class Game {
   readonly lighting = new Lighting();
   clock = new Clock();
   inv = new Inventory();
+  /** Cabin Storage Crate (the workbench can craft from it). */
+  storage = Game.newStorage();
+  /** Materials list: recipes the player wants to craft. */
+  needs: Need[] = [];
+
+  static newStorage(): Inventory { const s = new Inventory(); s.resize(36); return s; }
   gold = START_GOLD;
   stamina = MAX_STAMINA;
   readonly maxStamina = MAX_STAMINA;
@@ -141,6 +149,9 @@ export class Game {
     this.clock = new Clock();
     this.inv = new Inventory();
     for (const [id, n] of STARTING_ITEMS) this.inv.add(id, n);
+    this.storage = Game.newStorage();
+    this.needs = [];
+    needsWatch.clear();
     this.gold = START_GOLD;
     this.stamina = MAX_STAMINA;
     this.water = MAX_WATER;
@@ -185,6 +196,10 @@ export class Game {
     this.inv = new Inventory();
     this.inv.resize(Math.min(45, d.inv.length));
     d.inv.forEach((s, i) => { if (i < this.inv.slots.length && s && ITEMS[s.id]) this.inv.slots[i] = { id: s.id, n: s.n }; });
+    this.storage = Game.newStorage();
+    (d.storage ?? []).forEach((s, i) => { if (i < this.storage.slots.length && s && ITEMS[s.id]) this.storage.slots[i] = { id: s.id, n: s.n }; });
+    this.needs = (d.needs ?? []).filter((n) => n && typeof n.recipe === 'string' && n.qty > 0).map((n) => ({ recipe: n.recipe, qty: n.qty }));
+    needsWatch.clear();
     this.gold = d.gold;
     this.stamina = d.stamina;
     this.water = d.water;
@@ -241,6 +256,8 @@ export class Game {
       stamina: this.stamina,
       water: this.water,
       inv: this.inv.slots.map((s) => (s ? { ...s } : null)),
+      storage: this.storage.slots.map((s) => (s ? { ...s } : null)),
+      needs: this.needs.map((n) => ({ ...n })),
       sel: this.sel,
       look: { ...this.look },
       wardrobe: [...this.wardrobe],
@@ -357,12 +374,18 @@ export class Game {
   craft(r: Recipe): void {
     const out = ITEMS[r.out];
     if (out.kind === 'gear' && this.inv.count(r.out) > 0) { sfx.error(); this.toast(`You already have a ${out.name}.`); return; }
-    if (!r.inputs.every(([id, n]) => this.inv.count(id) >= n)) { sfx.error(); this.toast('Missing ingredients.'); return; }
+    if (!r.inputs.every(([id, n]) => haveCount(this, id) >= n)) { sfx.error(); this.toast('Missing ingredients.'); return; }
     if (!this.inv.canFit(r.out)) { sfx.error(); this.toast('Your bag is full.'); return; }
-    for (const [id, n] of r.inputs) this.inv.remove(id, n);
+    // The Porch Workbench uses your bag first, then the cabin Storage Crate.
+    for (const [id, n] of r.inputs) {
+      const fromBag = Math.min(n, this.inv.count(id));
+      if (fromBag) this.inv.remove(id, fromBag);
+      if (n - fromBag) this.storage.remove(id, n - fromBag);
+    }
     this.inv.add(r.out, r.qty);
     sfx.harvest();
-    this.toast(`Crafted ${out.name}!`);
+    const left = craftedNeed(this, r.id);
+    this.toast(left < 0 ? `Crafted ${out.name}!` : left ? `Crafted ${out.name}! (${left} more on your list)` : `Crafted ${out.name}! Crossed off your list.`);
   }
 
   buyBlueprint(id: string, cost: number): void {
@@ -592,7 +615,7 @@ export class Game {
       if (this.clock.tick(dt)) this.passOut();
       this.townsfolk.update(this, dt);
       this.campaignT -= dt;
-      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); }
+      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
       this.updateAmbience(dt);
     }
@@ -1201,6 +1224,7 @@ export class Game {
         this.openOverlay(new Dialog(['A cast-iron stove, still warm. A kettle hums quietly.']));
         return true;
       case 'crate':
+        if (m.id === 'CABIN_INTERIOR') { sfx.open(); this.openOverlay(new StorageMenu()); return true; }
         sfx.blip();
         this.openOverlay(new Dialog(['A crate of old ranger gear: rope, flares, and a box of film for a camera you don\'t own yet.']));
         return true;
@@ -1464,6 +1488,7 @@ export class Game {
     };
     if (this.journalPagesOn(this.cur.id).some((pg) => pg.x === tx && pg.y === ty)) return 'PICK UP PAGE';
     if (kind === 'table' && this.cur.id === 'CABIN_INTERIOR') return 'READ JOURNAL';
+    if (kind === 'crate' && this.cur.id === 'CABIN_INTERIOR') return 'STORAGE';
     if (this.selected?.id === 'static_radio' && this.progress.act === 4 && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads')) return 'TUNE RADIO';
     const npc = this.npcFacing(tx, ty);
     if (npc) return `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;

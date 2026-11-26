@@ -15,6 +15,7 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 1. **`CABIN_YARD` (64x64 tiles) & `CABIN_INTERIOR` (20x16 tiles):**  
    - Player's homestead clearing surrounded by tall pines, a creek, a shed, a Porch Workbench, a Shipping/Sell Bin, a Rain Barrel, and **36 tillable garden plots** (12 cleared at start, 24 unlockable by clearing brush/rocks).  
    - Interior features a Bed (sleep to advance day, save progress, grow watered crops), Save Journal, and **Trophy Pedestals** for displayed specimens.  
+   - **Storage Crate** (36 slots) by the stove; the Porch Workbench crafts from bag + crate. A **Materials List** (Workbench LIST tab, +LIST on any recipe, Journal page) tracks have/need across bag and crate and toasts progress as materials are collected.  
 2. **`PINE_HOLLOW_TOWN` (84x72 tiles) + Building Interiors:**  
    - **Whistle-Stop Diner (`DINER_INT`):** Social hub run by Mabel Miller; morning/evening NPC gatherings; Diner counter selling stamina/stealth food buffs (Buckwheat Pancakes, Pepperoni Rolls with a Long Haul tool-energy buff, Soup Beans & Cornbread, Cranberry Pie, Ghost Pepper Chili).  
    - **General Store & Outfitter (`STORE_INT`):** Sells lure seeds, film rolls, basic gear, and upgrades tools (Machete, Bog Waders, Lantern, Camera, Field Pack).  

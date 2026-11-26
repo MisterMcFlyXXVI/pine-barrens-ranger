@@ -14,6 +14,7 @@ import { BLUEPRINTS, MERCHANT_GOODS, MILESTONES, RECIPES, ShopEntry, TOOL_LINES,
 import { CRYPTIDS } from '../data/cryptids';
 import { inRect, panel, Rect } from './panel';
 import { drawMoreTag, TextPopup } from './readMore';
+import { addNeed, haveCount, listStatus, removeNeed } from '../engine/materials';
 
 export interface Row {
   icon?: string;
@@ -23,6 +24,9 @@ export interface Row {
   dim?: boolean;
   desc?: string;
   act?: () => void;
+  /** Secondary action (e.g. add to the materials list): a tappable pill on the selected row, or the DEX button. */
+  alt?: () => void;
+  altLabel?: string;
 }
 
 export abstract class ListMenu implements Overlay {
@@ -30,6 +34,8 @@ export abstract class ListMenu implements Overlay {
   protected cursor = 0;
   protected scroll = 0;
   protected tab = 0;
+  /** Where the selected row's alt pill was drawn last frame (for taps). */
+  private altRect: Rect | null = null;
 
   abstract title(game: Game): string;
   abstract rows(game: Game): Row[];
@@ -86,7 +92,10 @@ export abstract class ListMenu implements Overlay {
     if (inp.repeat('down')) { this.cursor = (this.cursor + 1) % n; sfx.blip(); }
     let go = inp.pressed('a');
     const L = this.layout(game);
+    const curRow = rows[this.cursor];
+    if (curRow?.alt && inp.pressed('dex')) { curRow.alt(); return; }
     for (const t of inp.taps) {
+      if (curRow?.alt && this.altRect && inRect(this.altRect, t.x, t.y)) { curRow.alt(); return; }
       // Tap the description box: open the selected entry's full text.
       const cur = rows[this.cursor];
       if (cur && inRect(L.detailRect, t.x, t.y)) {
@@ -122,6 +131,7 @@ export abstract class ListMenu implements Overlay {
       drawTextCentered(g, t, r.x + r.w / 2, r.y + 3, sel ? P.LANTERN : P.RUST);
     });
     const rows = this.rows(game);
+    this.altRect = null;
     if (!rows.length) drawText(g, 'NOTHING HERE YET.', L.x + 8, L.rows[0].y + 5, P.RUST);
     L.rows.forEach((r, k) => {
       const i = k + this.scroll;
@@ -134,8 +144,17 @@ export abstract class ListMenu implements Overlay {
       const tx = r.x + (row.icon ? 19 : 4);
       const c = this.rowChars(L.w, row);
       const clip = (t: string, n: number) => (t.length > n ? t.slice(0, Math.max(1, n - 2)) + '..' : t);
+      const pill = sel && row.alt ? (row.altLabel ?? '+LIST') : '';
+      const pillW = pill ? pill.length * 4 + 5 : 0;
       drawText(g, clip(row.label, c.label), tx, r.y + 2, sel ? (row.dim ? P.RUST : P.VOID) : row.dim ? P.AMBER : P.CRAN);
-      if (row.sub) drawText(g, clip(row.sub, c.sub), tx, r.y + 9, sel ? P.CRAN : P.RUST);
+      if (row.sub) drawText(g, clip(row.sub, c.sub - (pill ? Math.ceil((pillW + 3) / 4) : 0)), tx, r.y + 9, sel ? P.CRAN : P.RUST);
+      if (pill) {
+        const pr = { x: r.x + r.w - pillW - 1, y: r.y + 8, w: pillW, h: 8 };
+        g.fillStyle = hex(P.FOREST); g.fillRect(pr.x, pr.y, pr.w, pr.h);
+        drawText(g, pill, pr.x + 3, pr.y + 2, P.LANTERN);
+        // Finger-sized hit area around the pill.
+        this.altRect = { x: pr.x - 6, y: r.y - 2, w: pr.w + 8, h: r.h + 4 };
+      }
       if (row.right) drawTextRight(g, row.right, r.x + r.w - 2, r.y + 2, sel ? (row.dim ? P.RUST : P.VOID) : row.dim ? P.AMBER : P.RUST);
     });
     if (rows.length > L.visible) drawTextRight(g, `${this.cursor + 1}/${rows.length}`, L.x + L.w - 5, L.y + L.h - 11, P.RUST);
@@ -194,20 +213,46 @@ export class StoreMenu extends ListMenu {
 
 /** Porch Workbench: crafting + mail-order seeds. */
 export class CraftMenu extends ListMenu {
-  override tabs(): string[] { return ['CRAFT', 'BLUEPRINTS', 'SEEDS']; }
+  override tabs(): string[] { return ['CRAFT', 'BLUEPRINTS', 'SEEDS', 'LIST']; }
   title(): string { return 'PORCH WORKBENCH'; }
-  override footer(): string { return this.tab === 2 ? 'L/R: TAB  A: BUY  B: CLOSE' : 'L/R: TAB  A: CRAFT  B: CLOSE'; }
+  override footer(): string {
+    if (this.tab === 2) return 'L/R: TAB  A: BUY  B: CLOSE';
+    if (this.tab === 3) return 'A: CRAFT  DEX: REMOVE  B: CLOSE';
+    return 'A: CRAFT  DEX: +LIST  B: CLOSE';
+  }
   private recipeRow(game: Game, r: Recipe): Row {
     const out = ITEMS[r.out];
-    const can = r.inputs.every(([id, n]) => game.inv.count(id) >= n);
+    const can = r.inputs.every(([id, n]) => haveCount(game, id) >= n);
     const owned = out.kind === 'gear' && game.inv.count(r.out) > 0;
-    const sub = r.inputs.map(([id, n]) => `${n} ${ITEMS[id]?.name ?? id} (${game.inv.count(id)})`).join(' + ');
+    // Counts include the cabin Storage Crate, which the workbench can craft from.
+    const sub = r.inputs.map(([id, n]) => `${n} ${ITEMS[id]?.name ?? id} (${haveCount(game, id)})`).join(' + ');
+    const listed = game.needs.find((x) => x.recipe === r.id)?.qty ?? 0;
     return {
-      icon: r.out, label: out.name, sub, right: owned ? 'OWNED' : can ? 'CRAFT' : '--', dim: !can || owned,
+      icon: r.out, label: listed ? `${out.name} [LIST x${listed}]` : out.name, sub, right: owned ? 'OWNED' : can ? 'CRAFT' : '--', dim: !can || owned,
       desc: out.desc, act: () => game.craft(r),
+      alt: () => { const q = addNeed(game, r.id); sfx.confirm(); game.toast(`Added ${out.name} to your materials list${q > 1 ? ` (x${q})` : ''}.`); },
     };
   }
+  private listRows(game: Game): Row[] {
+    const list = listStatus(game);
+    if (!list.length) {
+      return [{ label: 'YOUR LIST IS EMPTY', sub: 'PICK A RECIPE, THEN TAP +LIST', dim: true,
+        desc: 'On the CRAFT or BLUEPRINTS tab, select a recipe and tap +LIST (or press DEX). Its materials are tracked here and in your Journal, counting your bag and the Storage Crate.' }];
+    }
+    return list.map((st) => ({
+      icon: st.recipe.out,
+      label: `${st.name}${st.need.qty > 1 ? ` x${st.need.qty}` : ''}`,
+      sub: st.parts.map((p) => `${p.name} ${Math.min(p.have, p.need)}/${p.need}`).join(' + '),
+      right: st.ready ? 'READY' : `${st.missing} LEFT`,
+      dim: !st.ready,
+      desc: st.parts.map((p) => `${p.name}: ${p.have >= p.need ? 'got' : 'need'} ${p.need} (bag ${p.bag}, crate ${p.crate})`).join('. ') + '.',
+      act: () => game.craft(st.recipe),
+      alt: () => { removeNeed(game, st.recipe.id); sfx.cancel(); game.toast(`Removed ${st.name} from your list.`); },
+      altLabel: 'REMOVE',
+    }));
+  }
   rows(game: Game): Row[] {
+    if (this.tab === 3) return this.listRows(game);
     if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint).map((r) => this.recipeRow(game, r));
     if (this.tab === 1) {
       return RECIPES.filter((r) => r.blueprint).map((r) => {
