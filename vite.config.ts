@@ -20,7 +20,10 @@ function supabaseConfig(env: Record<string, string>): { url: string; key: string
   if (key.startsWith('sb_secret_') || role === 'service_role') {
     throw new Error('The Supabase key given to the game is a SECRET (service_role) key. Use the anon / publishable key instead.');
   }
-  return { url: url.replace(/\/$/, ''), key };
+  // Accept the project URL however it was copied (e.g. the ".../rest/v1/" API URL): keep only the origin.
+  let origin = url.trim();
+  try { if (origin) origin = new URL(origin).origin; } catch { origin = origin.replace(/\/(rest|auth)\/v1\/?.*$/, '').replace(/\/$/, ''); }
+  return { url: origin, key };
 }
 
 export default defineConfig(({ mode }) => {
