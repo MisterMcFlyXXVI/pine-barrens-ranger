@@ -70,7 +70,7 @@ export function rollVariant(rnd: () => number, mult: number, pylon: boolean): Va
 /** Per-step encounter chance for the tile just entered. */
 export function encounterChance(ground: number, obj: number, weather: Weather, nearDeepWater: boolean): number {
   if (obj === O.TALLGRASS || obj === O.REEDS) return 0.085;
-  if (obj === O.FERN || obj === O.CRAN_BUSH) return 0.06;
+  if (obj === O.FERN || obj === O.CRAN_BUSH || obj === O.SKUNK_CABBAGE) return 0.06;
   if (ground === T.SHALLOW || ground === T.SPRING) return 0.07;
   if (nearDeepWater && (ground === T.BOARDWALK || ground === T.BOG)) return 0.045;
   if (ground === T.SLOPE || ground === T.RUIN_FLOOR || ground === T.BOG) return 0.03;

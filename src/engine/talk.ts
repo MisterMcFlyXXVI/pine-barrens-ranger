@@ -39,7 +39,7 @@ function readyToComplete(game: Game, q: QuestDef): boolean {
 const OFFER: Record<string, string[]> = {
   buster: ['"Ranger! Buster slipped his collar chasing a rabbit -- one with ANTLERS -- down Pine Trail. He\'s never been gone this long."', '"Follow his pawprints from the east road. Please bring my boy home."'],
   telegraph: ['"Buster\'s home, so I\'ve got time to fix the old telegraph. If it worked, I could post sighting reports from all down the line."', '"Bring me 5 Scrap Copper and an Ionized Battery Pack. The sawmill and the mine slag have copper aplenty."'],
-  toby: ['"My apprentice Toby went into the Cranberry Bog after a floating light. That was yesterday. He hasn\'t come back."', '"His boot tracks start at the west boardwalk. You\'ll want Bog Waders. I sell them. ...I\'ll owe you, Ranger."'],
+  toby: ['"My apprentice Toby went into the Cranberry Glades after a floating light. That was yesterday. He hasn\'t come back."', '"His boot tracks start at the west boardwalk. You\'ll want Bog Waders. I sell them. ...I\'ll owe you, Ranger."'],
   sketchbook: ['Pippa: "Ranger! Our club sketchbook is GONE. All our drawings! We were near the Hoop Snake meadow on Pine Trail."', 'Sam: "The wind took some pages too. Three of them. They\'re red. The book. Not the pages."'],
   nightcrawler_photo: ['Pippa: "The club needs proof. A GOLD photo of a Fresno Nightcrawler. They walk near your cabin at night!"', 'Sam: "Get its Trust up first or the flash scares it. That\'s what Dr. Okafor says."'],
   mabel_harvest: ['"Festival pie season, hon! I need 5 Sweet Corn and 10 Cranberries from that garden of yours."', '"You bring me the fixings, I\'ll pay you fair and save you a pie."'],

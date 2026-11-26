@@ -70,10 +70,10 @@ export const JOURNAL_PAGES: readonly JournalPage[] = [
 ];
 
 export const INTRO_TEXT: readonly string[] = [
-  'Last spring you answered a classified ad nobody else would: "OVERNIGHT FIRE-WATCH RANGER, PINE HOLLOW, W.VA. Room & board. Solitude. No questions asked."',
+  'Last spring you answered a classified ad nobody else would: "OVERNIGHT FIRE-WATCH RANGER, PINE HOLLOW, W.VA. Room & board. Solitude. No questions asked." Folks born here just call it Pine Holler.',
   'Three autumns ago the last ranger, Elias Vance, walked out of his cabin into the fog on Radio Ridge... and never walked back. Folks down the hollow call these high Allegheny plateaus "the Barrens," and they say the Barrens took him.',
-  'The old radio tower still blinks red above the ridge. Some nights it broadcasts a voice, though the station has been dark since 1979.',
-  'Now the cabin is yours: an overgrown garden, a half-burned field journal on the table, and a mountain hollow full of things watching from the tall grass. Welcome to the Barrens, Ranger.',
+  'The old radio tower still blinks red above the ridge, deep in the radio Quiet Zone. Some nights it broadcasts a voice, though the station has been dark since 1979.',
+  'Now the cabin is yours: an overgrown garden, a half-burned field journal on the table, and a mountain hollow full of things watching from the tall grass. Welcome to Pine Holler, Ranger.',
 ];
 
 export const EPILOGUE_TEXT: readonly string[] = [

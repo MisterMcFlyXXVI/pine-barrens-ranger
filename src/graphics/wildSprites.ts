@@ -81,7 +81,7 @@ function bakeApple(seed: number): Canv {
   const c = bakeOak(seed);
   const p = new Pen(c.getContext('2d')!);
   const r = mulberry32(seed * 7);
-  for (let i = 0; i < 7; i++) { const x = 5 + r() * 14, y = 5 + r() * 12; p.px(x, y, P.RED); p.px(x, y + 1, P.CRAN); }
+  for (let i = 0; i < 7; i++) { const x = 5 + r() * 14, y = 5 + r() * 12; p.px(x, y, P.LANTERN); p.px(x, y + 1, P.AMBER); } // Golden Delicious
   return c;
 }
 
@@ -233,6 +233,37 @@ function bakeCranBush(): Canv {
   return c;
 }
 
+/** Red spruce: the narrow, dark spire of the high Allegheny glades. */
+function bakeSpruce(seed: number): Canv {
+  const { c, g } = makeCanvas(20, 34);
+  const p = new Pen(g);
+  const r = mulberry32(seed);
+  p.ellipse(10, 32, 7, 1.8, P.SHADOW);
+  p.rect(9, 26, 3, 7, P.RUST); p.vline(11, 26, 32, P.CRAN);
+  for (let y = 2; y < 28; y++) {
+    const half = Math.min(8, 1 + (y - 2) * 0.32 + (y % 4 === 0 ? 1 : 0));
+    for (let x = Math.round(10 - half); x <= Math.round(10 + half); x++) {
+      const edge = Math.abs(x - 10) >= half - 1;
+      p.px(x, y, edge ? (r() < 0.5 ? P.PINE : P.SHADOW) : (x < 10 ? P.FOREST : P.PINE));
+    }
+    if (y % 4 === 0) p.hline(Math.round(10 - half), Math.round(10 + half), y, P.SHADOW);
+  }
+  p.px(10, 1, P.PINE); p.px(10, 0, P.FOREST);
+  return outline(c);
+}
+
+/** Skunk cabbage: broad green leaves around a mottled purple hood. */
+function bakeSkunkCabbage(): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  p.ellipse(4, 10, 3.5, 2.2, P.MOSS); p.ellipse(12, 10, 3.5, 2.2, P.MOSS);
+  p.ellipse(5, 7, 2.6, 3.2, P.FOREST); p.ellipse(11, 7, 2.6, 3.2, P.FOREST);
+  p.line(4, 10, 6, 6, P.FERN); p.line(12, 10, 10, 6, P.FERN);
+  p.ellipse(8, 10, 2.2, 3, P.CRAN); p.px(8, 8, P.VIOLET); p.px(7, 11, P.AMBER); p.px(9, 10, P.VIOLET);
+  p.hline(3, 13, 13, P.PINE);
+  return outline(c);
+}
+
 function bakeTotem(): Canv {
   const { c, g } = makeCanvas(16, 30);
   const p = new Pen(g);
@@ -377,6 +408,8 @@ export function bakeWild(): void {
   OBJ.slag = [bakeSlag()];
   OBJ.deadtree = [bakeDeadTree(101), bakeDeadTree(102)];
   OBJ.cranbush = [bakeCranBush()];
+  OBJ.spruce = [bakeSpruce(131), bakeSpruce(132)];
+  OBJ.skunkcabbage = [bakeSkunkCabbage()];
   OBJ.totem = [bakeTotem()];
   OBJ.rod = [bakeRod(0), bakeRod(1)];
   OBJ.chime = [bakeChime(0), bakeChime(1)];
@@ -403,7 +436,7 @@ export function bakeWild(): void {
 /* ---------------- Phase 2 item icons ---------------- */
 
 const P2_ICONS: Record<string, string[]> = {
-  wild_apple: ['.....3......', '.....34.....', '....3.44....', '..1111111...', '.1bbbbbba1..', '1b77bbbbba1.', '1b7bbbbbba1.', '1bbbbbbbba1.', '1bbbbbbbaa1.', '.1bbbbbaa1..', '..1aaaaa1...', '...11111....'],
+  wild_apple: ['.....3......', '.....34.....', '....3.44....', '..1111111...', '.177777881..', '17667777781.', '17677777781.', '17777777781.', '17777777881.', '.177777889..', '..18888891..', '...11111....'],
   sweet_sap: ['....1111....', '...198891...', '...1aaaa1...', '..17777771..', '..17888871..', '..17877871..', '..17887771..', '..17888871..', '..17888871..', '..17777771..', '...111111...', '............'],
   foraged_meat: ['............', '...1111.....', '..1bbbb1....', '.1bb6bbb1...', '.1b6bbbbb1..', '.1bbbbbab61.', '..1bbbaa1661', '...1aaa1.161', '....111..11.', '............', '............', '............'],
   foraged_egg: ['............', '....1111....', '...166661...', '..16766661..', '..16666d61..', '.166d66666..', '.1666666d1..', '.16d666661..', '..1666661...', '...11111....', '............', '............'],

@@ -136,10 +136,13 @@ export const O = {
   POSTER: 70,
   HEDGE: 71,
   BOOTH_SEAT: 72,
+  // ---- West Virginia glades ----
+  RED_SPRUCE: 73,
+  SKUNK_CABBAGE: 74,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
-export const COVER_OBJECTS: ReadonlySet<number> = new Set<number>([O.TALLGRASS, O.REEDS, O.FERN, O.CRAN_BUSH]);
+export const COVER_OBJECTS: ReadonlySet<number> = new Set<number>([O.TALLGRASS, O.REEDS, O.FERN, O.CRAN_BUSH, O.SKUNK_CABBAGE]);
 
 /** Placeable lure-mount item id -> object id. */
 export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
@@ -225,6 +228,8 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.SLAG]: { name: 'Slag Heap', solid: true, tool: 'hoe', hp: 4, drops: [{ item: 'scrap_copper', chance: 0.7, min: 1, max: 2 }, { item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }] },
   [O.DEAD_TREE]: { name: 'Lightning-Struck Snag', solid: true },
   [O.CRAN_BUSH]: { name: 'Wild Cranberry', solid: false },
+  [O.RED_SPRUCE]: { name: 'Red Spruce', solid: true },
+  [O.SKUNK_CABBAGE]: { name: 'Skunk Cabbage', solid: false },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },
   [O.CHIME]: { name: 'Bone & Antler Chime', solid: true, interact: 'mount' },

@@ -75,7 +75,7 @@ export class TouchControls {
 
   private build(): void {
     const d = this.deck;
-    el('div', 'deck-label', d, 'PINE BARRENS RANGER');
+    el('div', 'deck-label', d, 'PINE HOLLER RANGER');
     el('div', 'grille', d);
 
     // ---- D-pad ----

@@ -2,7 +2,7 @@
 import { CRYPTIDS } from './cryptids';
 
 export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen' | 'food';
-export type Buff = 'stealth' | 'calm';
+export type Buff = 'stealth' | 'calm' | 'haul';
 export type ToolKind = 'hoe' | 'can' | 'machete';
 
 export interface ItemDef {
@@ -66,7 +66,8 @@ const base: ItemDef[] = [
 
   { id: 'pine_resin', name: 'Pine Resin', kind: 'forage', price: 18, stack: 99, desc: 'Sticky amber sap. Used in smoking & incense.' },
   { id: 'wild_acorn', name: 'Wild Acorn', kind: 'forage', price: 12, stack: 99, desc: 'Lure: Wampahoofus. Totem ingredient.' },
-  { id: 'wild_onion', name: 'Wild Onion', kind: 'forage', price: 15, stack: 99, edible: 12, desc: 'Lure: Squonk. Edible, if pungent.' },
+  { id: 'wild_onion', name: 'Ramps', kind: 'forage', price: 15, stack: 99, edible: 12, desc: 'Wild mountain leeks. Lure: Squonk. Edible, if pungent -- folks will smell you coming.' },
+  { id: 'pawpaw', name: 'Pawpaw', kind: 'forage', price: 30, stack: 99, edible: 18, desc: 'The hill-country banana: custardy, sweet, gone in a week. Sells well in town.' },
   { id: 'wild_honeycomb', name: 'Wild Honeycomb', kind: 'forage', price: 40, stack: 99, edible: 18, desc: 'Dripping comb. Lure: Pukwudgie, Sasquatch.' },
   { id: 'plant_fiber', name: 'Plant Fiber', kind: 'material', price: 3, stack: 99, desc: 'Tough grass fiber from cutting tall grass.' },
   { id: 'charred_wood', name: 'Charred Wood', kind: 'material', price: 10, stack: 99, desc: 'Lightning-scorched timber. Lure: Hodag.' },
@@ -74,11 +75,11 @@ const base: ItemDef[] = [
   { id: 'mineral_salt', name: 'Mineral Salt', kind: 'material', price: 25, stack: 99, desc: 'Coarse salt crust. Lure: Slide-Rock Bolter.' },
 
   // ---- Phase 2 wilderness forage & salvage ----
-  { id: 'wild_apple', name: 'Wild Apple', kind: 'forage', price: 20, stack: 99, edible: 10, desc: 'Heirloom apple from the grove. Lure: Albatwitch.' },
+  { id: 'wild_apple', name: 'Golden Delicious', kind: 'forage', price: 20, stack: 99, edible: 10, desc: 'Heirloom apple from the grove -- the variety was born in these hills. Lure: Albatwitch.' },
   { id: 'sweet_sap', name: 'Sweet Sap', kind: 'forage', price: 22, stack: 99, desc: 'Sugary pine sap. Lure: Hoop Snake.' },
   { id: 'foraged_meat', name: 'Foraged Meat', kind: 'forage', price: 30, stack: 99, desc: 'Game left by something bigger. Lure: Thunderbird.' },
   { id: 'foraged_egg', name: 'Foraged Egg', kind: 'forage', price: 18, stack: 99, edible: 8, desc: 'A speckled wild egg.' },
-  { id: 'sulfur_crust', name: 'Sulfur Crust', kind: 'material', price: 28, stack: 99, desc: 'Yellow crust from the Mineral Springs.' },
+  { id: 'sulfur_crust', name: 'Sulfur Crust', kind: 'material', price: 28, stack: 99, desc: 'Yellow crust from the Sulphur Springs.' },
   { id: 'scrap_copper', name: 'Scrap Copper', kind: 'material', price: 25, stack: 99, desc: 'Salvaged copper wire and fittings.' },
   { id: 'iron_nail', name: 'Iron Nail', kind: 'material', price: 8, stack: 99, desc: 'Square-cut sawmill nail. Lure: Snarly Yow.' },
 
@@ -114,6 +115,8 @@ const base: ItemDef[] = [
   { id: 'black_coffee', name: 'Black Coffee', kind: 'food', price: 10, stack: 20, edible: 30, desc: '+30 energy. Mabel brews it strong.' },
   { id: 'pancakes', name: 'Buckwheat Pancakes', kind: 'food', price: 25, stack: 20, edible: 60, desc: '+60 energy. Buckwheat & maple syrup.' },
   { id: 'cranberry_pie', name: 'Cranberry Pie', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today.' },
+  { id: 'pepperoni_roll', name: 'Pepperoni Roll', kind: 'food', price: 20, stack: 20, edible: 45, buff: 'haul', desc: '+45 energy. Long Haul: tools cost 1 energy today. The coal-camp lunch.' },
+  { id: 'soup_beans', name: 'Soup Beans & Cornbread', kind: 'food', price: 35, stack: 20, edible: 90, desc: '+90 energy. Pintos, ham hock, a skillet of cornbread.' },
   { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },
 ];
 

@@ -97,7 +97,7 @@ export class TitleScreen {
     if (Math.floor(t * 1.3) % 5 !== 0) { g.fillStyle = hex(P.RED); const ex = Math.floor(W * 0.62), ey = ground - 14; g.fillRect(ex, ey, 2, 1); g.fillRect(ex + 5, ey, 2, 1); }
 
     const ty = Math.max(8, Math.floor(H * 0.14));
-    drawTextCentered(g, 'PINE BARRENS', W / 2, ty, P.FERN, P.VOID, 2);
+    drawTextCentered(g, 'PINE HOLLER', W / 2, ty, P.FERN, P.VOID, 2);
     drawTextCentered(g, 'RANGER', W / 2, ty + 14, P.LANTERN, P.CRAN, 3);
     drawTextCentered(g, 'THE SIGNAL ON RADIO RIDGE', W / 2, ty + 34, P.MIST, P.VOID);
 

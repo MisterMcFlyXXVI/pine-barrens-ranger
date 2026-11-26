@@ -1,5 +1,5 @@
 /**
- * The complete 36-cryptid roster. Each entry carries exact spawn rules
+ * The complete 37-cryptid roster. Each entry carries exact spawn rules
  * (region / sub-zone / time / weather / summon), favourite lures, encounter
  * stances, temperament, special-mechanic traits and its specimen drop.
  */
@@ -191,7 +191,7 @@ export const CRYPTIDS: readonly CryptidDef[] = [
     lures: ['sulfur_egg', 'mineral_salt'], stances: ['AGITATED', 'SHY'], temperament: 'territorial', traits: ['sulfur'],
     drop: d('slippery_oil', 'Slick Bear Oil', 'An iridescent oil that beads on everything.', 95),
     look: 'An oil-sheened black bear dripping spring water and sulfur fumes.',
-    notes: 'Lurks in the Mineral Springs. A Scent Mask is needed to block the sulfur fumes.',
+    notes: 'Lurks in the Sulphur Springs. A Scent Mask is needed to block the sulfur fumes.',
   },
   // ---------------- Tier 3: Old Growth & Abandoned Sawmill ----------------
   {
@@ -205,7 +205,7 @@ export const CRYPTIDS: readonly CryptidDef[] = [
     id: 'jersey_devil', num: 21, name: 'Jersey Devil', tier: 3, maps: ['OLD_GROWTH_AND_SAWMILL', 'PINE_TRAIL_AND_ORCHARD'], times: ['NIGHT'], weather: 'ANY',
     lures: ['charred_wood', 'smoked_venison'], stances: ['AGITATED', 'PRIDEFUL'], temperament: 'predator', traits: ['fastStartle'],
     drop: d('devil_membrane', 'Devil Wing Membrane', 'Leathery and warm. Smells of brimstone.', 140),
-    look: 'A horse-headed, bat-winged terror of the Barrens.',
+    look: 'A horse-headed, bat-winged terror, a long way from the Jersey pines.',
     notes: 'Startle climbs 50% faster than usual. Move decisively.',
   },
   {
@@ -314,6 +314,14 @@ export const CRYPTIDS: readonly CryptidDef[] = [
     drop: d('awful_talon', 'Awful Talon', 'A crimson talon longer than your hand.', 300),
     look: 'A griffin-like beast: lion body, eagle head and vast wings.',
     notes: 'Proud: cowering (Hold Breath) lowers Trust. Stand your ground with a Brass Bell or Parabolic Dish.',
+  },
+  // ---------------- No. 37: a Boone County local ----------------
+  {
+    id: 'sheepsquatch', num: 37, name: 'Sheepsquatch', tier: 2, maps: ['CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL'], times: ['DUSK', 'NIGHT'], weather: 'ANY',
+    lures: ['mineral_salt', 'wild_clover'], stances: ['AGITATED', 'CURIOUS'], temperament: 'territorial', traits: ['sulfur', 'mimicLove'],
+    drop: d('sheep_fleece', 'Sulfur-Matted Fleece', 'A hank of coarse white wool that reeks of brimstone.', 110),
+    look: 'A bear-sized, shaggy white beast with curling ram horns, drinking from the creek.',
+    notes: 'West Virginia born and raised. Smells of sulfur (wear a Scent Mask), loves a salt lick, and answers a Mimic Call bleat.',
   },
 ];
 

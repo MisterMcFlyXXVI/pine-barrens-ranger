@@ -387,7 +387,7 @@ export class Game {
     if (!c || this.progress.donated.has(cid) || !this.inv.remove(c.drop.id, 1)) return;
     this.progress.donated.add(cid);
     sfx.trustChime();
-    this.toast(`Donated ${c.drop.name}! (${this.progress.donations}/36)`);
+    this.toast(`Donated ${c.drop.name}! (${this.progress.donations}/${CRYPTIDS.length})`);
     const reached = this.progress.newlyReached();
     if (!reached.length) return;
     const pages: string[] = [];
@@ -890,7 +890,7 @@ export class Game {
   }
 
   private startTool(tool: ToolKind, tx: number, ty: number): void {
-    const cost = tool === 'can' ? 1 : 2;
+    const cost = tool === 'can' || this.progress.buffs.haul === this.clock.day ? 1 : 2;
     if (this.stamina < cost) { sfx.error(); this.notice("You're too exhausted to work. Eat something or get some sleep."); return; }
     this.stamina -= cost;
     if (!this.lowStaminaWarned && this.stamina < 20) { this.lowStaminaWarned = true; this.toast('You feel worn out... time to rest soon.'); }
@@ -1026,7 +1026,7 @@ export class Game {
     this.inv.removeAt(this.sel, 1);
     sfx.eat();
     if (def.buff) this.progress.buffs[def.buff] = this.clock.day;
-    const buffTxt = def.buff === 'stealth' ? ' STEALTH buff today!' : def.buff === 'calm' ? ' STEADY NERVES buff today!' : '';
+    const buffTxt = def.buff === 'stealth' ? ' STEALTH buff today!' : def.buff === 'calm' ? ' STEADY NERVES buff today!' : def.buff === 'haul' ? ' LONG HAUL buff today!' : '';
     this.toast(st.id === 'ghost_pepper' ? 'HOT! HOT! +2 energy... and tears.' : `Ate ${def.name}. +${def.edible} energy.${buffTxt}`);
     if (this.stamina >= 20) this.lowStaminaWarned = false;
   }
@@ -1226,7 +1226,7 @@ export class Game {
         if (m.shaken.has(ai)) { this.notice('No more ripe apples on this tree today.'); return true; }
         m.shaken.add(ai);
         this.give('wild_apple', 1 + (Math.random() < 0.4 ? 1 : 0), cx, cy - 4);
-        this.toast('A Wild Apple drops!');
+        this.toast('A Golden Delicious drops!');
         return true;
       }
       case 'hollow': {
@@ -1294,7 +1294,7 @@ export class Game {
         return true;
       case 'jukebox':
         sfx.fanfare();
-        this.toast('The jukebox plays "Moonlight on the Barrens" (1958).');
+        this.toast('The jukebox plays "Moonlight in the Holler" (1958).');
         return true;
       case 'grill':
         sfx.blip();

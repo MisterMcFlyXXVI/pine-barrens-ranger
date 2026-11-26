@@ -1,5 +1,6 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
 import type { Game } from '../engine/game';
+import { CRYPTIDS } from '../data/cryptids';
 import type { Overlay } from './overlay';
 import { drawText, drawTextCentered, drawTextRight, textWidth, wrapText } from '../graphics/font';
 import { hex, P } from '../graphics/palette';
@@ -441,14 +442,14 @@ export class JournalMenu implements Overlay {
         wrapText(`- ${q.steps[Math.max(0, pr.stage(q.id) - 1)]}`, w - 12).slice(0, 2).forEach((l) => line(l));
       }
       ly += 2;
-      line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/36`, P.FOREST);
+      line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/${CRYPTIDS.length}`, P.FOREST);
     } else if (page === 2) {
       const c = game.clock;
       const moon = moonPhase(c.day);
       const tot = dexTotals(game.dex);
       line(`WEATHER: ${WEATHER_LABEL[game.dayWeather.morning].toUpperCase()} / TONIGHT ${WEATHER_LABEL[game.dayWeather.evening].toUpperCase()}`, P.CRAN);
       line(`MOON: ${moon.label.toUpperCase()}${moon.full ? ' (!)' : ''}`);
-      line(`DEX: LOGGED ${tot.logged}/36  RARE ${tot.rare}/36  GOLD ${tot.gold}`);
+      line(`DEX: LOGGED ${tot.logged}/${CRYPTIDS.length}  RARE ${tot.rare}/${CRYPTIDS.length}  GOLD ${tot.gold}`);
       line(`KIT: ${moveName(game.kit.bait)} / ${moveName(game.kit.signal)}`);
       line(`     ${moveName(game.kit.document)} / ${moveName(game.kit.stealth)}`);
       const gear = ['bog_waders', 'scent_mask', 'thermal_lens', 'brass_bell', 'silver_bell', 'static_radio', 'parabolic_dish', 'chronos_shutter'].filter((id) => game.inv.count(id) > 0);

@@ -11,7 +11,7 @@ export function exportSave(): string {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `pine-barrens-ranger-day${day}.json`;
+  a.download = `pine-holler-ranger-day${day}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -44,7 +44,7 @@ export function importSave(onDone: (msg: string, ok: boolean) => void): void {
     if (!file) { onDone('Import cancelled.', false); return; }
     file.text().then((text) => {
       const d = validateSave(text);
-      if (!d) { onDone('That file is not a Pine Barrens Ranger save.', false); return; }
+      if (!d) { onDone('That file is not a Pine Holler Ranger save.', false); return; }
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch { onDone('Could not write save (storage blocked).', false); return; }
       onDone(`Imported save: day ${d.day}. Choose CONTINUE.`, true);
     }).catch(() => onDone('Could not read that file.', false));

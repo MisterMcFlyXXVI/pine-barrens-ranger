@@ -29,9 +29,9 @@ export const QUESTS: readonly QuestDef[] = [
   },
   {
     id: 'toby', title: 'Missing Person: Toby', giver: 'gideon',
-    steps: ["Follow Toby's boot tracks into the Cranberry Bog (Bog Waders help).", 'Toby limped home! Report to Gideon at the Outfitter.'],
+    steps: ["Follow Toby's boot tracks into the Cranberry Glades (Bog Waders help).", 'Toby limped home! Report to Gideon at the Outfitter.'],
     reward: { gold: 300, note: 'Gideon upgrades your Machete for free.' },
-    notice: 'MISSING: TOBY, apprentice smith. Went into the Cranberry Bog chasing a light. Contact Gideon Thorne at the Outfitter.',
+    notice: 'MISSING: TOBY, apprentice smith. Went into the Cranberry Glades chasing a light. Contact Gideon Thorne at the Outfitter.',
   },
   {
     id: 'sketchbook', title: 'The Lost Sketchbook', giver: 'pippa',

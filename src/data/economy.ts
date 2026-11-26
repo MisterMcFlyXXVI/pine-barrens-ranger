@@ -120,7 +120,8 @@ export const GIFT_STOCK: readonly ShopEntry[] = [
 /** Whistle-Stop Diner menu (Mabel). Food buffs last the rest of the day. */
 export const DINER_MENU: readonly ShopEntry[] = [
   { id: 'black_coffee', cost: 40 }, { id: 'pancakes', cost: 90 }, { id: 'cranberry_pie', cost: 120 },
-  { id: 'ghost_chili', cost: 150 }, { id: 'smoked_fish', cost: 70 }, { id: 'apple_cider', cost: 60 },
+  { id: 'ghost_chili', cost: 150 }, { id: 'pepperoni_roll', cost: 60 }, { id: 'soup_beans', cost: 110 },
+  { id: 'smoked_fish', cost: 70 }, { id: 'apple_cider', cost: 60 },
 ];
 
 export interface Milestone {

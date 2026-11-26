@@ -1,4 +1,4 @@
-/** The strict 16-colour GBC Pine-Barrens palette. */
+/** The strict 16-colour GBC Pine Holler palette. */
 export const PALETTE = [
   '#0b1316', // 0 void black
   '#16262e', // 1 deep shadow

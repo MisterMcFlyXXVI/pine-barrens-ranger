@@ -15,7 +15,7 @@ import { JournalMenu } from './menus';
 
 const VARIANTS: Variant[] = ['normal', 'albino', 'static'];
 const SHORT_MAP: Record<string, string> = {
-  CABIN_YARD: 'Cabin Yard', PINE_TRAIL_AND_ORCHARD: 'Pine Trail', CRANBERRY_BOG_AND_SPRINGS: 'Cranberry Bog',
+  CABIN_YARD: 'Cabin Yard', PINE_TRAIL_AND_ORCHARD: 'Pine Trail', CRANBERRY_BOG_AND_SPRINGS: 'Cranberry Glades',
   OLD_GROWTH_AND_SAWMILL: 'Old Growth', RADIO_RIDGE_AND_CROSSROADS: 'Radio Ridge',
 };
 
@@ -91,7 +91,7 @@ export class DexMenu implements Overlay {
 
   private drawList(game: Game, g: CanvasRenderingContext2D, B: Rect, tot: ReturnType<typeof dexTotals>): void {
     drawText(g, 'CRYPTID-DEX', B.x + 5, B.y + 5, P.CRAN);
-    drawTextRight(g, `LOGGED ${tot.logged}/36  RARE ${tot.rare}/36  ${tot.entries}/72`, B.x + B.w - 5, B.y + 5, P.RUST);
+    drawTextRight(g, `LOGGED ${tot.logged}/${CRYPTIDS.length}  RARE ${tot.rare}/${CRYPTIDS.length}  ${tot.entries}/${CRYPTIDS.length * 2}`, B.x + B.w - 5, B.y + 5, P.RUST);
     const rows = this.rows(game);
     for (let r = 0; r < rows; r++) {
       const i = this.scroll + r;

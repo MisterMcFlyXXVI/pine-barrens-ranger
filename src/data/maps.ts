@@ -25,7 +25,7 @@ export const MAP_NAMES: Record<MapId, string> = {
   CABIN_INTERIOR: 'Ranger Cabin',
   PINE_TRAIL_AND_ORCHARD: 'Pine Trail & Orchard',
   PINE_HOLLOW_TOWN: 'Pine Hollow Town',
-  CRANBERRY_BOG_AND_SPRINGS: 'Cranberry Bog & Springs',
+  CRANBERRY_BOG_AND_SPRINGS: 'Cranberry Glades',
   OLD_GROWTH_AND_SAWMILL: 'Old Growth & Sawmill',
   RADIO_RIDGE_AND_CROSSROADS: 'Radio Ridge & Crossroads',
   COAL_MINE: 'Abandoned Coal Mine',
@@ -147,7 +147,7 @@ function buildCabinYard(): MapDef {
     }
   }
   b.setO(NX, NY - 2, O.STUMP);
-  b.sign(NX - 2, NY + 2, "RANGER'S NOTE: A secret foraging nook. Resin, acorns, and wild onions turn up here every morning.");
+  b.sign(NX - 2, NY + 2, "RANGER'S NOTE: A secret foraging nook. Resin, acorns, and ramps turn up here every morning.");
   b.setO(NX + 2, NY + 1, O.LOG);
 
   // 8. Clutter, meadow patches, reeds & lily pads

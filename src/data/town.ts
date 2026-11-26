@@ -52,7 +52,7 @@ export function buildTown(): MapDef {
   b.setO(70, 27, O.SIGNAL_LANTERN);
   b.setO(67, 33, O.TICKET_BOOTH);
   b.structure({ kind: 'station', x: 59, y: 27, w: 7, h: 6, door: { x: 62, y: 32 }, open: false, windows: [[20, 44], [92, 44]],
-    lockedMsg: 'The waiting room is boarded up. "CLOSED UNTIL FURTHER NOTICE -- Pine Hollow & Western Railroad."' });
+    lockedMsg: 'The waiting room is boarded up. "CLOSED UNTIL FURTHER NOTICE -- Chesapeake & Ohio Railway."' });
 
   // NE foothills: boarded-up coal mine adit
   for (let y = 2; y < 13; y++) for (let x = 44; x < 70; x++) { b.setG(x, y, T.ROCKY); b.setO(x, y, O.NONE); }
@@ -104,9 +104,9 @@ export function buildTown(): MapDef {
     else if (roll < 0.06) b.setO(x, y, O.BRUSH);
   }
 
-  b.sign(11, 34, 'PINE HOLLOW. Pop. 212 (and counting cryptids). Welcome, Ranger!');
+  b.sign(11, 34, 'PINE HOLLOW, W.VA. Pop. 212 (and counting cryptids). Welcome to Pine Holler, Ranger!');
   b.sign(36, 22, 'PINE HOLLOW HISTORICAL SOCIETY. Curator: Agnes Vance. Specimen donations welcome.');
-  b.sign(65, 37, 'PINE HOLLOW STATION. Service suspended since the storm of \'79.');
+  b.sign(65, 37, 'PINE HOLLOW STATION. C&O branch line. Service suspended since the storm of \'79.');
   b.sign(51, 8, 'DANGER: MINE ENTRANCE SEALED BY ORDER OF THE TOWN COUNCIL.');
   b.sign(6, 18, 'WEST: Pine Trail & Orchard.');
 
@@ -184,7 +184,8 @@ export function buildMuseum(): MapDef {
   for (const x of [5, 12, 20]) b.setO(x, 1, O.WINDOW);
   b.setO(8, 1, O.POSTER); b.setO(17, 1, O.POSTER);
   CRYPTIDS.forEach((c, i) => {
-    const x = MUSEUM_CASE_COLS[i % 6], y = MUSEUM_CASE_ROWS[Math.floor(i / 6)];
+    // 36 cases in the 6x6 wings; No. 37 (Sheepsquatch) gets the centerpiece between the plants.
+    const [x, y] = i < 36 ? [MUSEUM_CASE_COLS[i % 6], MUSEUM_CASE_ROWS[Math.floor(i / 6)]] : [13, 6];
     b.setO(x, y, O.CASE);
     b.meta.set(b.i(x, y), c.id);
   });

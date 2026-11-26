@@ -58,7 +58,7 @@ const adArt: Art = (g, x, y, w, h) => {
   const px = x + (w - pw) / 2, py = y + 6;
   fill(g, P.LANTERN, px, py, pw, ph);
   fill(g, P.AMBER, px, py + ph - 2, pw, 2);
-  drawTextCentered(g, 'THE BARRENS GAZETTE', px + pw / 2, py + 4, P.CRAN);
+  drawTextCentered(g, 'THE HOLLER GAZETTE', px + pw / 2, py + 4, P.CRAN);
   fill(g, P.CRAN, px + 4, py + 11, pw - 8, 1);
   drawText(g, 'CLASSIFIEDS', px + 5, py + 15, P.RUST);
   fill(g, P.VOID, px + 4, py + 22, pw - 8, ph - 28);

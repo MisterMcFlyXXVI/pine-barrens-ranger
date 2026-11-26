@@ -1,5 +1,5 @@
 /**
- * 36 procedural 24x24 cryptid sprites, each with a distinct 2-frame idle
+ * 37 procedural 24x24 cryptid sprites, each with a distinct 2-frame idle
  * loop. Rare variants are derived: Albino (fog/moonlight palette swap) and
  * Static-Charged (crackling lantern/mist aura).
  */
@@ -21,6 +21,19 @@ const thick = (p: Pen, x0: number, y0: number, x1: number, y1: number, r: number
 };
 
 const DRAW: Record<string, Draw> = {
+  sheepsquatch(p, f) {
+    const b = f ? 1 : 0; // heavy breathing: the whole fleece rises and falls
+    for (let i = 0; i < 3; i++) p.px(3 + i * 2 + f, 5 - i - f, i % 2 ? LANTERN : FOG); // sulfur wisps
+    for (const x of [7, 10, 14, 17]) p.rect(x, 18, 2, 4, SHADOW);
+    p.rect(6, 21, 4, 1, VOID); p.rect(14, 21, 4, 1, VOID);
+    E(p, 12, 14 - b, 8, 6 + b * 0.5, FOG);
+    for (const [x, y] of [[6, 12], [9, 10], [13, 9], [17, 11], [19, 14], [5, 16], [10, 15], [15, 16], [18, 18]]) E(p, x, y - b, 1.6, 1.4, LANTERN);
+    E(p, 12, 7 - b, 3.6, 3.4, SHADOW); E(p, 12, 9 - b, 2.2, 1.6, PINE);
+    p.px(10, 6 - b, RED); p.px(14, 6 - b, RED);
+    E(p, 7, 5 - b, 2.4, 2.2, AMBER); E(p, 17, 5 - b, 2.4, 2.2, AMBER);
+    p.px(7, 5 - b, RUST); p.px(17, 5 - b, RUST); p.px(6, 7 - b, AMBER); p.px(18, 7 - b, AMBER);
+    p.rect(3, 13 - b, 2, 4, FOG); p.rect(19, 13 - b, 2, 4, FOG); p.px(3, 17 - b, SHADOW); p.px(20, 17 - b, SHADOW);
+  },
   jackalope(p, f) {
     const b = f ? -2 : 0;
     E(p, 11, 17 + b, 6, 4.2, AMBER); E(p, 11, 19 + b, 4, 1.6, LANTERN);

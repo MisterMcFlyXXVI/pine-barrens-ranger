@@ -66,7 +66,7 @@ export function buildPineTrail(): MapDef {
   }
   b.ellipseG(22, 61, 4.5, 3.2, T.WATER);
 
-  // Heirloom Apple Grove (NE), ringed by stone walls
+  // Heirloom Golden Delicious grove (NE), ringed by stone walls
   const OX = 49, OY = 7, OW = 27, OH = 25;
   for (let y = OY; y < OY + OH; y++) for (let x = OX; x < OX + OW; x++) { b.setG(x, y, T.GRASS); b.setO(x, y, O.NONE); }
   for (let x = OX; x < OX + OW; x++) { b.setO(x, OY, O.STONE_WALL); b.setO(x, OY + OH - 1, O.STONE_WALL); }
@@ -117,7 +117,7 @@ export function buildPineTrail(): MapDef {
     if (b.g(x, y) !== T.PATH && b.o(x, y) !== O.BRIAR && hash2(x, y, 9) > 0.15) { b.setO(x, y, O.STONE_WALL); }
   }
 
-  b.sign(42, 37, 'CROSSROADS. N: Old Growth & Sawmill   E: Cranberry Bog   W: Radio Ridge   S: Your cabin.');
+  b.sign(42, 37, 'CROSSROADS. N: Old Growth & Sawmill   E: Cranberry Glades   W: Radio Ridge   S: Your cabin.');
   b.sign(37, 74, 'PINE TRAIL. Rustling clover hides Jackalopes by day. Keep Wild Clover handy.');
   b.sign(72, 62, 'EAST: Pine Hollow Town. Diner, Outfitter & the Historical Society.');
   b.sign(46, 31, "APPLE GROVE. Shake a tree for heirloom apples. Something small steals them at dusk...");
@@ -135,7 +135,7 @@ export function buildPineTrail(): MapDef {
       { x: 79, y: 60, w: 1, h: 10, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 16, dir: 'right', closedMsg: '' },
     ],
     forage: [
-      { spots: forage, count: 8, table: ['wild_acorn', 'wild_onion', 'pine_resin', 'sweet_sap', 'sweet_sap', 'foraged_egg', 'wild_honeycomb'] },
+      { spots: forage, count: 8, table: ['wild_acorn', 'wild_onion', 'pine_resin', 'sweet_sap', 'sweet_sap', 'foraged_egg', 'wild_honeycomb', 'pawpaw'] },
       { spots: appleSpots, count: 4, table: ['wild_apple'] },
     ],
     battleColors: [P.FOG, P.MOSS],
@@ -143,15 +143,18 @@ export function buildPineTrail(): MapDef {
 }
 
 /* ================================================================== */
-/* CRANBERRY_BOG_AND_SPRINGS — 88x80                                  */
+/* CRANBERRY_BOG_AND_SPRINGS — 88x80 (Cranberry Glades & Sulphur Springs) */
 /* ================================================================== */
+
+/** valueNoise cut for cranberry beds: tuned so beds cover roughly a third of the open bog. */
+const CRAN_BED_CUT = 0.6;
 
 export function buildCranberryBog(): MapDef {
   const W = 88, H = 80;
   const b = new Builder(W, H, T.BOG);
   const r = mulberry32(4001);
   const exit = (x: number, y: number) => (x < 8 && y >= 36 && y <= 45) || (y < 8 && x >= 58 && x <= 67);
-  b.border(2, 3, T.BOG, (x, y) => (hash2(x, y, 6) < 0.45 ? O.WILLOW : O.PINE), exit, (x, y) => valueNoise(x, y, 41));
+  b.border(2, 3, T.BOG, (x, y) => (hash2(x, y, 6) < 0.6 ? O.RED_SPRUCE : O.PINE), exit, (x, y) => valueNoise(x, y, 41));
 
   // Marsh water by noise (interior only)
   for (let y = 6; y < H - 6; y++) for (let x = 6; x < W - 6; x++) {
@@ -169,14 +172,14 @@ export function buildCranberryBog(): MapDef {
   // Old canal
   for (let x = 28; x < W - 3; x++) for (const y of [18, 19]) { b.setG(x, y, T.WATER); b.setO(x, y, O.NONE); }
   b.zone('canal', 26, 14, 60, 10);
-  // Mineral Springs (NW)
+  // Sulphur Springs (NW)
   for (let y = 3; y < 24; y++) for (let x = 3; x < 26; x++) { b.setG(x, y, T.ROCKY); b.setO(x, y, O.NONE); }
   for (const [cx, cy, rx, ry] of [[9, 8, 3, 2.5], [17, 12, 4, 3], [8, 17, 3, 2], [21, 6, 2.5, 2], [20, 19, 2.5, 2]]) b.ellipseG(cx, cy, rx, ry, T.SPRING);
   b.zone('springs', 2, 2, 25, 23);
-  // Willow islands
+  // Red spruce islands
   for (const [cx, cy] of [[24, 60], [58, 30], [32, 70], [70, 40], [14, 52]]) {
     b.ellipseG(cx, cy, 3.2, 2.4, T.GRASS);
-    b.setO(cx, cy - 1, O.WILLOW);
+    b.setO(cx, cy - 1, O.RED_SPRUCE);
     b.setO(cx - 2, cy, O.TALLGRASS); b.setO(cx + 2, cy, O.TALLGRASS); b.setO(cx, cy + 1, O.TALLGRASS);
   }
 
@@ -189,38 +192,47 @@ export function buildCranberryBog(): MapDef {
   b.trail([[60, 58], [65, 62]], 2, BW, BW);
   b.trail([[46, 23], [60, 21], [74, 21], [84, 21]], 2, BW, BW);
 
-  // Cranberry patches, reeds and clutter
+  // About a third of the bog is cranberry beds; the rest is open sphagnum glade
+  // with skunk cabbage, cattails and the odd red spruce (like the real Cranberry Glades).
+  const bed = (x: number, y: number) => valueNoise(x / 13, y / 13, 73) > CRAN_BED_CUT;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (b.g(x, y) !== T.BOG || b.o(x, y) !== O.NONE) continue;
     const wet = b.neighbors4(x, y, (g) => g === T.WATER || g === T.SHALLOW);
     const roll = r();
+    if (bed(x, y)) {
+      if (roll < 0.62) b.setO(x, y, O.CRAN_BUSH);
+      else if (wet && roll < 0.75) b.setO(x, y, O.REEDS);
+      continue;
+    }
     if (wet && roll < 0.5) b.setO(x, y, O.REEDS);
-    else if (valueNoise(x / 5, y / 5, 57) > 0.6 && roll < 0.45) b.setO(x, y, O.CRAN_BUSH);
+    else if (valueNoise(x / 4, y / 4, 59) > 0.58 && roll < 0.4) b.setO(x, y, O.SKUNK_CABBAGE);
     else if (roll < 0.06) b.setO(x, y, O.REEDS);
-    else if (roll < 0.08) b.setO(x, y, O.WILLOW);
-    else if (roll < 0.095) b.setO(x, y, O.PINE);
-    else if (roll < 0.105) b.setO(x, y, O.DEAD_TREE);
-    else if (roll < 0.12) b.setO(x, y, O.MUSHROOMS);
+    else if (roll < 0.09) b.setO(x, y, O.SKUNK_CABBAGE);
+    else if (roll < 0.105) b.setO(x, y, O.RED_SPRUCE);
+    else if (roll < 0.112) b.setO(x, y, O.DEAD_TREE);
+    else if (roll < 0.125) b.setO(x, y, O.MUSHROOMS);
   }
   for (let y = 3; y < 24; y++) for (let x = 3; x < 26; x++) {
     if (b.g(x, y) === T.ROCKY && b.o(x, y) === O.NONE && r() < 0.07) b.setO(x, y, r() < 0.5 ? O.BOULDER : O.ROCK);
   }
 
-  b.sign(11, 38, 'CRANBERRY BOG. Stay on the boardwalks unless you own Bog Waders. Listen for frogs in the rain.');
-  b.sign(26, 24, 'MINERAL SPRINGS. Sulfur fumes ahead. Something oily bathes here on foggy nights.');
+  b.sign(11, 38, 'CRANBERRY GLADES. Wild cranberry beds and sphagnum bog. Stay on the boardwalks unless you own Bog Waders. Listen for frogs in the rain.');
+  b.sign(26, 24, 'SULPHUR SPRINGS. Fumes ahead. Something oily bathes here on foggy nights... and something woolly drinks here at dusk.');
   b.sign(48, 25, 'OLD CANAL. Something big and friendly swims here on clear days.');
 
   const cran = b.collect((x, y) => b.g(x, y) === T.BOG && b.free(x, y) && b.neighbors4(x, y, (_g, o) => o === O.CRAN_BUSH));
   const springs = b.collect((x, y) => b.g(x, y) === T.ROCKY && b.free(x, y) && b.neighbors4(x, y, (g) => g === T.SPRING));
   const general = b.collect((x, y) => (b.g(x, y) === T.BOG || b.g(x, y) === T.GRASS) && b.free(x, y) && nearTree(b, x, y));
+  const glade = b.collect((x, y) => b.g(x, y) === T.BOG && b.free(x, y) && b.neighbors4(x, y, (_g, o) => o === O.SKUNK_CABBAGE));
   return finish(b, {
-    id: 'CRANBERRY_BOG_AND_SPRINGS', name: 'Cranberry Bog & Springs',
+    id: 'CRANBERRY_BOG_AND_SPRINGS', name: 'Cranberry Glades',
     portals: [
       { x: 0, y: 36, w: 1, h: 10, to: 'PINE_TRAIL_AND_ORCHARD', tx: 78, ty: 40, dir: 'left', closedMsg: '' },
       { x: 58, y: 0, w: 10, h: 1, to: 'OLD_GROWTH_AND_SAWMILL', tx: 88, ty: 70, dir: 'left', closedMsg: '' },
     ],
     forage: [
-      { spots: cran, count: 6, table: ['cranberries', 'cranberries', 'cranberries', 'foraged_egg', 'wild_onion'] },
+      { spots: cran, count: 6, table: ['cranberries', 'cranberries', 'cranberries', 'cranberries', 'foraged_egg'] },
+      { spots: glade, count: 3, table: ['wild_onion', 'wild_onion', 'foraged_egg'] },
       { spots: springs, count: 4, table: ['sulfur_crust', 'sulfur_crust', 'mineral_salt', 'crushed_quartz'] },
       { spots: general, count: 3, table: ['foraged_egg', 'pine_resin', 'wild_honeycomb'] },
     ],
@@ -395,7 +407,7 @@ export function buildRadioRidge(): MapDef {
     else if (roll < 0.15) b.setO(x, y, O.BRUSH);
   }
   b.sign(70, 41, 'RADIO RIDGE. Switchbacks climb to the tower. Slopes are slippery in the rain.');
-  b.sign(19, 13, 'WKPB RADIO TOWER. Lightning-rod mounts installed. Dr. Okafor\'s night show broadcasts from here.');
+  b.sign(19, 13, 'WKPB RADIO TOWER. NATIONAL RADIO QUIET ZONE: transmitters prohibited. Dr. Okafor\'s night show broadcasts from here anyway.');
 
   const general = b.collect((x, y) => (b.g(x, y) === T.ROCKY || b.g(x, y) === T.GRASS) && b.free(x, y) && nearTree(b, x, y));
   const summit = b.collect((x, y) => x > 8 && x < 24 && y > 3 && y < 12 && b.free(x, y) && b.g(x, y) === T.ROCKY);

@@ -96,7 +96,7 @@ export const NPCS: readonly NpcDef[] = [
       if (between(c.minutes, H(18), H(21))) return { map: 'DINER_INT', x: 5, y: 8, dir: 'up' };
       return null;
     },
-    greet: ['Tickets? Ha! Habit. No trains since \'79.', 'Mornin\', Ranger. Track\'s still rusty.', 'Hear that whistle? ...No. Me neither. Not anymore.'],
+    greet: ['Tickets? Ha! Habit. No trains since \'79.', 'Mornin\', Ranger. Track\'s still rusty.', 'This was a C&O branch line once. Coal out, mail in.', 'Hear that whistle? ...No. Me neither. Not anymore.'],
     chat: [
       'Forty-one years I ran this station. The last train out carried the mail, a piano, and something in a crate that growled.',
       'The Snarly Yow used to pace the platform at dusk. Never bothered the passengers. Only the dogs.',
@@ -115,7 +115,7 @@ export const NPCS: readonly NpcDef[] = [
       if (between(c.minutes, H(6), H(21))) return { map: 'DINER_INT', x: 7, y: 4, dir: 'down', wander: 2 };
       return null;
     },
-    greet: ['Sit anywhere, hon. Coffee\'s hot.', 'You look starved. What\'ll it be?', 'Wipe your boots! ...Oh, it\'s you. Come in, come in.'],
+    greet: ['Sit anywhere, hon. Coffee\'s hot.', 'Pepperoni rolls are fresh out the oven, y\'all.', 'You look starved. What\'ll it be?', 'Wipe your boots! ...Oh, it\'s you. Come in, come in.'],
     chat: [
       'My cranberry pie wins the Folklore Festival bake-off every year. Every. Year.',
       'Something keeps stealing apples from the grove at dusk. Little hairy thing. Agnes calls it an Albatwitch.',
@@ -136,7 +136,7 @@ export const NPCS: readonly NpcDef[] = [
       if (between(c.minutes, H(20), H(22))) return { map: 'DINER_INT', x: 9, y: 8, dir: 'up' };
       return null;
     },
-    greet: ['Steel\'s hot. What do you need?', 'Bring me nails and I\'ll bring you an edge.', 'Ranger.'],
+    greet: ['Steel\'s hot. What do you need?', 'Twenty years down the mine on pepperoni rolls. Best lunch there is.', 'Bring me nails and I\'ll bring you an edge.', 'Ranger.'],
     chat: [
       'I worked that coal mine nineteen years. Sealed it myself after the cave-in. Something down there hums.',
       'A Machete\'s only as good as the steel. Bring me Iron Nails and I\'ll make it sing.',
@@ -157,7 +157,7 @@ export const NPCS: readonly NpcDef[] = [
       if (c.minutes >= H(17) || c.minutes < H(2)) return { map: 'RADIO_RIDGE_AND_CROSSROADS', x: 19, y: 9, dir: 'down', wander: 1 };
       return null;
     },
-    greet: ['This is WKPB, the voice of the Barrens... oh, hello!', 'I need evidence, Ranger. Real, peer-reviewable evidence.', 'Listeners called in three sightings last night!'],
+    greet: ['This is WKPB, the voice of the hollers... oh, hello!', 'We broadcast from inside the Quiet Zone. Technically, we shouldn\'t exist.', 'I need evidence, Ranger. Real, peer-reviewable evidence.', 'Listeners called in three sightings last night!'],
     chat: [
       'I broadcast from the tower every night. You\'d be amazed who calls in at 3 AM.',
       'Folklore is data that nobody bothered to graph. I\'m graphing it.',
@@ -290,7 +290,7 @@ export const NPCS: readonly NpcDef[] = [
 export const NPCS_BY_ID: Record<NpcId, NpcDef> = Object.fromEntries(NPCS.map((n) => [n.id, n])) as Record<NpcId, NpcDef>;
 
 const PLACE: Record<string, string> = {
-  CABIN_YARD: 'your cabin', PINE_TRAIL_AND_ORCHARD: 'Pine Trail', CRANBERRY_BOG_AND_SPRINGS: 'the Cranberry Bog',
+  CABIN_YARD: 'your cabin', PINE_TRAIL_AND_ORCHARD: 'Pine Trail', CRANBERRY_BOG_AND_SPRINGS: 'the Cranberry Glades',
   OLD_GROWTH_AND_SAWMILL: 'the Old Growth', RADIO_RIDGE_AND_CROSSROADS: 'Radio Ridge',
 };
 

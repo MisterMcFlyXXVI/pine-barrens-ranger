@@ -1,7 +1,7 @@
-# CLAUDE.md — Pine Barrens Ranger  
+# CLAUDE.md — Pine Holler Ranger  
   
 ## 1. Project Vision & Architectural Goals  
-**Pine Barrens Ranger** is a deep, systemic cryptid-research RPG blending **Stardew Valley** (expansive interconnected world exploration, homestead lure-farming, workbench crafting, seasonal/weather cycles, town restoration, NPC schedules & missing-person/pet side quests, tactile tool animations, and snappy sound effects) with **Game Boy Color Pokémon** (grid-based movement, strict 16-color pixel palette, tall-grass/fog encounters, turn-based split-screen pacification battles, 36-species Cryptid-Dex + Rare Variants).  
+**Pine Holler Ranger** is a deep, systemic cryptid-research RPG set in **Pine Hollow, West Virginia** ("Pine Holler" to the locals), an Appalachian town in the Allegheny highlands whose high plateaus are locally called "the Barrens". Keep setting details West Virginian (coal camps, C&O railroad, the radio Quiet Zone, ramps, pepperoni rolls, buckwheat, Golden Delicious apples); cryptids may come from anywhere. It is blending **Stardew Valley** (expansive interconnected world exploration, homestead lure-farming, workbench crafting, seasonal/weather cycles, town restoration, NPC schedules & missing-person/pet side quests, tactile tool animations, and snappy sound effects) with **Game Boy Color Pokémon** (grid-based movement, strict 16-color pixel palette, tall-grass/fog encounters, turn-based split-screen pacification battles, 37-species Cryptid-Dex + Rare Variants).  
   
 - **Deployment & Build Target:** Vite + TypeScript + HTML5 Canvas, deployed via GitHub -> Vercel (`npm run build` outputs to `dist/`). Zero external image, sprite, or audio files. Strict TypeScript compliance (zero unused variables/imports) so Vercel production builds succeed cleanly.  
 - **Responsive Viewport:** Center the Canvas on `#0b1316` with crisp integer scaling (`imageSmoothingEnabled = false`), smooth camera follow with map-edge clamping, keyboard controls (`WASD`/Arrows, `Space`/`E` interact, `1-9` hotbar, `Tab` Dex/Journal, `M` mute), and optional touch D-pad/A/B buttons for mobile browsers.  
@@ -16,15 +16,15 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
    - Player's homestead clearing surrounded by tall pines, a creek, a shed, a Porch Workbench, a Shipping/Sell Bin, a Rain Barrel, and **36 tillable garden plots** (12 cleared at start, 24 unlockable by clearing brush/rocks).  
    - Interior features a Bed (sleep to advance day, save progress, grow watered crops), Save Journal, and **Trophy Pedestals** for displayed specimens.  
 2. **`PINE_HOLLOW_TOWN` (84x72 tiles) + Building Interiors:**  
-   - **Whistle-Stop Diner (`DINER_INT`):** Social hub run by Mabel Miller; morning/evening NPC gatherings; Diner counter selling stamina/stealth food buffs.  
+   - **Whistle-Stop Diner (`DINER_INT`):** Social hub run by Mabel Miller; morning/evening NPC gatherings; Diner counter selling stamina/stealth food buffs (Buckwheat Pancakes, Pepperoni Rolls with a Long Haul tool-energy buff, Soup Beans & Cornbread, Cranberry Pie, Ghost Pepper Chili).  
    - **General Store & Outfitter (`STORE_INT`):** Sells lure seeds, film rolls, basic gear, and upgrades tools (Machete, Bog Waders, Lantern, Camera, Field Pack).  
    - **Town Square & Bulletin Board:** Rotating daily bounties, lost-pet/missing-hiker notices, and host site for the seasonal **Town Folklore Festival**.  
-   - **Pine Hollow Historical Society (`MUSEUM_INT`):** Run by Agnes Vance. Features 36 glass display cases that visually populate as specimens are donated, a Basement Archive (unlocks at 8 donations), and a Gift Shop kiosk (unlocks at 16 donations).  
+   - **Pine Hollow Historical Society (`MUSEUM_INT`):** Run by Agnes Vance. Features 37 glass display cases (6x6 wings + a Sheepsquatch centerpiece) that visually populate as specimens are donated, a Basement Archive (unlocks at 8 donations), and a Gift Shop kiosk (unlocks at 16 donations).  
    - **Broken-Down Train Station (East Edge of Town):** Rusted tracks, overgrown platform, flickering signal lantern, and a dilapidated ticket booth run by retired stationmaster Barnaby Finch. Repairable via town questline; includes a gated rail-car portal (`EXPANSION_RAIL_PORTAL`) for future regional expansions.  
 3. **`PINE_TRAIL_AND_ORCHARD` (80x80 tiles):**  
-   - Winding dirt paths, stone walls, wild clover meadows, and an overgrown heirloom Apple Grove connecting the Cabin Yard, Town, and Northern Woods. Features shortcut briars requiring the Brush Machete.  
-4. **`CRANBERRY_BOG_AND_SPRINGS` (88x80 tiles):**  
-   - Marshland maze of wooden boardwalks, shallow cranberry bogs (requires Bog Waders), willow islands, and steaming sulfur Mineral Springs in the northwest corner.  
+   - Winding dirt paths, stone walls, wild clover meadows, and an overgrown heirloom Golden Delicious Apple Grove connecting the Cabin Yard, Town, and Northern Woods. Features shortcut briars requiring the Brush Machete.  
+4. **`CRANBERRY_BOG_AND_SPRINGS` (88x80 tiles), displayed as "Cranberry Glades":**  
+   - Marshland maze of wooden boardwalks, shallow cranberry bogs (requires Bog Waders), willow islands, and steaming Sulphur Springs in the northwest corner. Modeled on WV's Cranberry Glades: about a third wild cranberry beds, the rest sphagnum glade with skunk cabbage and red spruce.  
 5. **`OLD_GROWTH_AND_SAWMILL` (90x85 tiles) + `COAL_MINE_EXTERIOR`:**  
    - Towering ancient hemlocks, hollow logs, moonlit clearings, and the rotting multi-room ruins of an Abandoned Sawmill.  
    - **Abandoned Coal Mine Entrance (Northeast Foothills):** Heavy timber framing, rusted iron gate, warning signs, and slag heaps (`MINE_ENTRANCE_PORTAL` cleanly stubbed in map data for future underground dungeon expansion).  
@@ -65,17 +65,17 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
   4. **Stealth / Stance:** *Hold Breath* (-25% Startle), *Crouch Step* (boosts capture grade; required on slopes/stealth cryptids).  
 - **3-Star Dex Mastery + Rare Variants:**  
   - 1-Star (Sighting), 2-Star (Behavior/Bait observed), 3-Star (Gold Photo + Specimen).  
-  - **Rare Variants (1-in-32 base odds, boosted by lures/outfits):** **Albino** (`#d8e8c8`/`#d4b4e3` palette swap) and **Static-Charged** (`#f4e4b8`/`#6b82b8` aura) variants logged separately (72 total Dex entries).  
+  - **Rare Variants (1-in-32 base odds, boosted by lures/outfits):** **Albino** (`#d8e8c8`/`#d4b4e3` palette swap) and **Static-Charged** (`#f4e4b8`/`#6b82b8` aura) variants logged separately (74 total Dex entries).  
   
 ---  
   
-## 5. Complete 36-Cryptid Roster (`src/data/cryptids.ts`)  
+## 5. Complete 37-Cryptid Roster (`src/data/cryptids.ts`)  
   
 ### Tier 1: Cabin Perimeter, Meadows & Slopes (Common / Uncommon)  
 1. **Jackalope** (`PINE_TRAIL`, `DAY|DUSK`, `ANY`) — Brown rabbit (`#d99b52`) with `#f4e4b8` antlers; 1px hop anim. Lure: *Wild Clover*. Skittish; spooks at early Flash Photo.  
 2. **Fresno Nightcrawler** (`CABIN_YARD|PINE_TRAIL`, `NIGHT`, `CLEAR|FOG`) — Tall white armless legs (`#d8e8c8`, `#8c6d9c` fold); alternating stride anim. Lure: *Moonberry*. Mesmerized by *Dim Lantern*.  
 3. **Hoop Snake** (`PINE_TRAIL`, `DAY`, `CLEAR`) — Coiled green ring (`#4e8c68`/`#2d5a4c`) biting tail; rotating rock anim. Lure: *Sweet Sap*. Aggressive stance; counter with *Hold Breath*.  
-4. **Squonk** (`OLD_GROWTH`, `ANY`, `RAIN`) — Drooping tearful pig-like creature (`#a65538`) with `#6b82b8` tear drops; trembling anim. Lure: *Wild Onion*. Starts at 50% Startle; *Quick Sketch* is safe.  
+4. **Squonk** (`OLD_GROWTH`, `ANY`, `RAIN`) — Drooping tearful pig-like creature (`#a65538`) with `#6b82b8` tear drops; trembling anim. Lure: *Ramps* (item id `wild_onion`). Starts at 50% Startle; *Quick Sketch* is safe.  
 5. **Albatwitch** (`PINE_TRAIL` Apple Grove, `DUSK`, `ANY`) — Tiny hunched dark ape (`#1f3a3d`) tossing a `#c44545` apple; juggling anim. Lure: *Apple / Cider*. Steals bait on missed turns; loves *Mimic Call*.  
 6. **Snarly Yow** (`PINE_TRAIL|TRAIN_STATION`, `DUSK|NIGHT`, `ANY`) — Massive spectral black hound (`#0b1316`) with `#c44545` eyes and `#6b82b8` mist trail; snapping jaw anim. Lure: *Smoked Venison / Iron Nail*. Immune to Flash Photo; solidify Trust with *Hold Breath* + *Brass Bell*.  
 7. **Wampus Cat** (`PINE_TRAIL|RADIO_RIDGE`, `NIGHT`, `ANY`) — Six-legged rust panther (`#a65538`/`#6e3438`) with `#f4e4b8` eyes; kneading paws + lashing tail anim. Lure: *Catnip Mint*. Dodges bait unless *Mimic Call* is used first.  
@@ -114,6 +114,9 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 34. **Wendigo** (`OLD_GROWTH`, `NIGHT` Witching Hr, `FOG|SNOW`) — Gaunt skeletal-antlered silhouette (`#16262e`) with `#d8e8c8` rib ridges, `#f4e4b8` antlers, `#c44545` eyes; frost-breath + head-snap anim. Lure: *Smoked Venison*. Summoned by placing a **Bone & Antler Chime** in Old Growth. Alternate *Hold Breath* when eyes flare red with tossing *Smoked Venison*.  
 35. **The Weaver (Fresno Elder)** (`RADIO_RIDGE` Crossroads, `NIGHT` Witching Hr, `FOG`) — Towering cloaked patriarch (`#d4b4e3`/`#d8e8c8`) with `#3b4d7a` runes and trailing silk ribbons; billowing silk anim. Lure: *Lunar Dew Distillate / Moonberry*. Requires 3-Star Dex entries for *Fresno Nightcrawler* & *Will-o'-the-Wisp*.  
 36. **The Awful** (`RADIO_RIDGE` High Cliffs, `DAY` Dawn | `STORM`, `ANY`) — Griffin-like beast with `#d99b52`/`#a65538` lion body, `#16262e`/`#f4e4b8` eagle head & wings, `#c44545` talons; wing-spread + crest-bristle anim. Lure: *Smoked Venison + Brass Bell*. Proud stance: cowering (*Hold Breath*) lowers Trust; stand ground with *Brass Bell* or *Parabolic Dish*.  
+
+### No. 37: West Virginia Local  
+37. **Sheepsquatch** (`CRANBERRY_BOG|OLD_GROWTH`, `DUSK|NIGHT`, `ANY`) — Bear-sized shaggy white beast (`#d8e8c8`/`#f4e4b8`) with `#d99b52` curled ram horns, `#16262e` face and `#c44545` eyes; heavy-breathing fleece + sulfur-wisp anim. Lure: *Mineral Salt / Wild Clover*. Territorial; sulfur stench needs *Scent Mask*; answers *Mimic Call*. Drop: *Sulfur-Matted Fleece*.  
   
 ---  
   

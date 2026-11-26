@@ -6,7 +6,7 @@
  */
 import type { Game } from './game';
 import { ACT_TITLES, WARDENS, JOURNAL_PAGES, ACT4_CALL, DECODE_SCENE } from '../data/campaign';
-import { CRYPTID_BY_ID } from '../data/cryptids';
+import { CRYPTIDS, CRYPTID_BY_ID } from '../data/cryptids';
 import type { MapId } from '../data/mapgen';
 import { dexTotals } from './dex';
 import { Dialog } from '../ui/menus';
@@ -46,7 +46,7 @@ export function objectives(game: Game, act: number): Objective[] {
       ];
     case 2: {
       const list: Objective[] = [
-        { text: 'Explore the Cranberry Bog & Springs', done: visited('CRANBERRY_BOG_AND_SPRINGS') },
+        { text: 'Explore the Cranberry Glades & Sulphur Springs', done: visited('CRANBERRY_BOG_AND_SPRINGS') },
         { text: 'Explore the Old Growth & Sawmill', done: visited('OLD_GROWTH_AND_SAWMILL') },
         { text: `Find torn journal pages in the wilds (${Math.min(4, pagesFound(game))}/4)`, done: pagesFound(game) >= 4 },
         { text: `Reach 24 Historical Society donations (${p.donations}/24)`, done: p.donations >= 24 },
@@ -66,7 +66,7 @@ export function objectives(game: Game, act: number): Objective[] {
       return [
         { text: `Reach 32 donations: Town Restoration Grant (${p.donations}/32)`, done: p.donations >= 32 },
         { text: 'Inspect the reopened Coal Mine gate', done: p.flags.has('mine') },
-        { text: `Complete the Cryptid-Dex (${tot.entries}/72)`, done: tot.entries >= 72 },
+        { text: `Complete the Cryptid-Dex (${tot.entries}/${CRYPTIDS.length * 2})`, done: tot.entries >= CRYPTIDS.length * 2 },
         { text: `Recover every journal page (${pagesFound(game)}/${JOURNAL_PAGES.length - 1})`, done: pagesFound(game) >= JOURNAL_PAGES.length - 1 },
       ];
   }

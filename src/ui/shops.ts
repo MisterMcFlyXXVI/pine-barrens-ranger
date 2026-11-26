@@ -209,7 +209,7 @@ export class MerchantMenu extends ListMenu {
 /** Agnes Vance's donation desk + milestone list. */
 export class DonateMenu extends ListMenu {
   override tabs(): string[] { return ['DONATE', 'MILESTONES']; }
-  title(game: Game): string { return `HISTORICAL SOCIETY  ${game.progress.donations}/36`; }
+  title(game: Game): string { return `HISTORICAL SOCIETY  ${game.progress.donations}/${CRYPTIDS.length}`; }
   override showGold(): boolean { return false; }
   override footer(): string { return this.tab === 0 ? 'L/R: TAB  A: DONATE  B: CLOSE' : 'L/R: TAB  B: CLOSE'; }
   rows(game: Game): Row[] {

@@ -195,6 +195,8 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.SLAG: return OBJ.slag[0];
     case O.DEAD_TREE: return pick(OBJ.deadtree, h);
     case O.CRAN_BUSH: return OBJ.cranbush[0];
+    case O.RED_SPRUCE: return pick(OBJ.spruce, h);
+    case O.SKUNK_CABBAGE: return OBJ.skunkcabbage[0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
