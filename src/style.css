@@ -263,29 +263,34 @@ body {
     border-top: 3px solid var(--pine);
     border-radius: 14px 14px 0 0;
     padding-bottom: env(safe-area-inset-bottom);
-    --dpad: min(42vw, 30vh, 170px);
-    --btn: min(17vw, 11vh, 74px);
+    /* Reserved strips: SND/PAD toggles + label on top, DEX/BAG pills at the bottom.
+       The D-pad and A/B live only in the space between, so nothing can overlap. */
+    --deck-top: 48px;
+    --deck-bot: calc(58px + env(safe-area-inset-bottom));
+    --deck-mid: calc(var(--deck-top) + (100% - var(--deck-top) - var(--deck-bot)) / 2);
+    --dpad: min(42vw, calc(42dvh - 116px), 170px);
+    --btn: min(17vw, calc((42dvh - 140px) / 1.9), 74px);
   }
   body.touch-on .dpad {
     left: 5vw;
-    top: 50%;
-    transform: translateY(-58%);
+    top: var(--deck-mid);
+    transform: translateY(-50%);
   }
   body.touch-on .btn.a {
     right: 5vw;
-    top: 50%;
-    transform: translateY(-95%);
+    top: var(--deck-mid);
+    transform: translateY(-85%);
   }
   body.touch-on .btn.a.down {
-    transform: translateY(calc(-95% + 2px)) scale(0.95);
+    transform: translateY(calc(-85% + 2px)) scale(0.95);
   }
   body.touch-on .btn.b {
     right: calc(5vw + var(--btn) * 1.12);
-    top: 50%;
-    transform: translateY(-30%);
+    top: var(--deck-mid);
+    transform: translateY(-15%);
   }
   body.touch-on .btn.b.down {
-    transform: translateY(calc(-30% + 2px)) scale(0.95);
+    transform: translateY(calc(-15% + 2px)) scale(0.95);
   }
   body.touch-on .pills {
     left: 50%;
@@ -293,9 +298,8 @@ body {
     transform: translateX(-50%);
   }
   body.touch-on .deck-label {
-    left: 50%;
-    top: 10px;
-    transform: translateX(-50%);
+    right: 14px;
+    top: 18px;
   }
   body.touch-on .grille {
     right: 6vw;
