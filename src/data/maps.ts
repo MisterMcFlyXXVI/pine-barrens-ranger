@@ -12,6 +12,7 @@ import { P } from '../graphics/palette';
 import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } from './wilds';
 import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
 import { placeStop } from './handcar';
+import { decorate } from './decor';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
@@ -125,6 +126,9 @@ function buildCabinYard(): MapDef {
   b.setO(34, 22, O.MAILBOX);
   b.setO(36, 18, O.WOODPILE);
   b.setO(41, 17, O.CRATE);
+  b.setO(26, 19, O.ROCKER);  // porch rocker
+  b.setO(30, 19, O.CHIMES);  // hung from the porch eave
+  b.place(42, 20, O.CLOTHESLINE, 3, 1);
   b.sign(21, 22, 'HOMESTEAD GARDEN. Till plots with the Hoe, plant lure seeds, and water them every day. Rocky and overgrown plots can be cleared with the Hoe or Machete.');
   b.sign(28, 9, 'NORTH TRAIL: Pine Trail & Orchard. Heirloom apples, clover meadows... and something that hops.');
   b.sign(54, 31, 'EAST ROAD: Pine Hollow Town. The Whistle-Stop Diner, Outfitter, and Historical Society.');
@@ -276,6 +280,7 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'MUSEUM_INT') m = buildMuseum();
     else if (id === 'MUSEUM_BASEMENT') m = buildBasement();
     else throw new Error(`Region ${id} is not built yet`);
+    decorate(m);
     placeStop(m);
     cache.set(id, m);
   }

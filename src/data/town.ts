@@ -109,6 +109,13 @@ export function buildTown(): MapDef {
   b.sign(65, 37, 'PINE HOLLOW STATION. C&O branch line. Service suspended since the storm of \'79.');
   b.sign(51, 8, 'DANGER: MINE ENTRANCE SEALED BY ORDER OF THE TOWN COUNCIL.');
   b.sign(6, 18, 'WEST: Pine Trail & Orchard.');
+  // Old coal-company signs: the store was the company store, and the mine still has its safety board.
+  const oldSign = (spots: Array<[number, number]>, text: string) => {
+    const at = spots.find(([x, y]) => b.o(x, y) === O.NONE && b.g(x, y) !== T.PATH && b.g(x, y) !== T.WATER && !b.structAt.has(b.i(x, y)));
+    if (at) b.sign(at[0], at[1], text);
+  };
+  oldSign([[49, 34], [58, 34], [49, 33], [58, 33], [49, 35], [58, 35]], 'PINE HOLLOW COAL & COKE CO. -- COMPANY STORE. (Paint shows through the newer sign. Old-timers still call it "the commissary.") Scrip no longer accepted.');
+  oldSign([[57, 7], [51, 7], [58, 7], [50, 7], [57, 8], [53, 8], [55, 8], [56, 8], [58, 6], [50, 6], [57, 9], [50, 8]], 'PINE HOLLOW COAL & COKE CO. -- SAFETY FIRST. This mine has worked ___ days without a lost-time accident. (The number has been scratched out.)');
 
   return wrap(b, 'PINE_HOLLOW_TOWN', 'Pine Hollow Town', {
     portals: [

@@ -144,6 +144,27 @@ export const O = {
   // ---- Barney's handcar stops ----
   HANDCAR: 76,
   STOP_SIGN: 77,
+  // ---- Wildflowers & plants (seasonal looks) ----
+  FORGET_ME_NOT: 78,
+  THISTLE: 79,
+  RHODODENDRON: 80,
+  TRILLIUM: 81,
+  MAYAPPLE: 82,
+  INDIAN_PIPE: 83,
+  PITCHER_PLANT: 84,
+  CHICORY: 85,
+  QUEEN_ANNE: 86,
+  RAMP_PATCH: 87,
+  ASTER: 88,
+  // ---- Railroad, trail & homestead props ----
+  CROSSBUCK: 89,
+  MILEPOST: 90,
+  WHISTLE_POST: 91,
+  TRAILHEAD: 92,
+  ROCKER: 93,
+  CHIMES: 94,
+  CLOTHESLINE: 95,
+  CREEK_STONE: 96,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -159,7 +180,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'snare' | 'handcar' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'handcar' | 'rocker' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -237,6 +258,25 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.SKUNK_CABBAGE]: { name: 'Skunk Cabbage', solid: false },
   [O.SNARE]: { name: 'Snare Trap', solid: true, interact: 'snare' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
+  [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
+  [O.THISTLE]: { name: 'Thistle', solid: false },
+  [O.RHODODENDRON]: { name: 'Rhododendron', solid: true, tool: 'machete', hp: 3, drops: [{ item: 'plant_fiber', chance: 0.6, min: 1, max: 2 }] },
+  [O.TRILLIUM]: { name: 'Trillium', solid: false },
+  [O.MAYAPPLE]: { name: 'Mayapple', solid: false },
+  [O.INDIAN_PIPE]: { name: 'Indian Pipe', solid: false },
+  [O.PITCHER_PLANT]: { name: 'Pitcher Plant', solid: false },
+  [O.CHICORY]: { name: 'Chicory', solid: false },
+  [O.QUEEN_ANNE]: { name: "Queen Anne's Lace", solid: false },
+  [O.RAMP_PATCH]: { name: 'Ramp Patch', solid: false },
+  [O.ASTER]: { name: 'Asters', solid: false },
+  [O.CROSSBUCK]: { name: 'Railroad Crossing', solid: true, interact: 'sign' },
+  [O.MILEPOST]: { name: 'Milepost', solid: true, interact: 'sign' },
+  [O.WHISTLE_POST]: { name: 'Whistle Post', solid: true, interact: 'sign' },
+  [O.TRAILHEAD]: { name: 'Trailhead Board', solid: true, interact: 'sign' },
+  [O.ROCKER]: { name: 'Rocking Chair', solid: true, interact: 'rocker' },
+  [O.CHIMES]: { name: 'Wind Chimes', solid: false },
+  [O.CLOTHESLINE]: { name: 'Clothesline', solid: true, fw: 3 },
+  [O.CREEK_STONE]: { name: 'Creek Stones', solid: false },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

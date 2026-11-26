@@ -13,12 +13,18 @@ import { hex, P } from '../graphics/palette';
 import { O, T, objProps } from '../data/tiles';
 import { CROP_BY_ID } from '../data/items';
 import type { ToolKind } from '../data/items';
-import { hash2 } from '../util';
+import { hash2, valueNoise } from '../util';
 import { cryptidSilhouette } from '../graphics/cryptidSprites';
 import type { Dir } from '../util';
 import { deerKey } from '../graphics/outdoorSprites';
 import { STOPS } from '../data/handcar';
 import { NPCS_BY_ID } from '../data/npcs';
+import { DECOR, PROP, DECAL } from '../graphics/decorSprites';
+import { drawAmbient, drawFireflies } from '../graphics/ambient';
+import type { View } from '../graphics/ambient';
+import { SEASONS } from './clock';
+import { makeCanvas, recolor } from '../graphics/canvas';
+import { rgbOf } from '../graphics/palette';
 
 interface Drawable {
   y: number;
@@ -131,6 +137,62 @@ const flags = { grant: false, gift: false };
 
 /** Set each frame: is this map's handcar stop repaired? (objSprite has no game handle.) */
 let stopFixed = false;
+/** Set each frame: 0 Spring, 1 Summer, 2 Fall, 3 Winter (outdoors only for seasonal looks). */
+let season = 0;
+
+/** Things that wear a cap of snow in winter. */
+const SNOWCAP: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.ROCK, O.BOULDER, O.STUMP, O.LOG, O.HEMLOCK_TREE, O.RED_SPRUCE, O.DEAD_TREE,
+  O.WILLOW, O.APPLE_TREE, O.RHODODENDRON, O.BRUSH, O.FENCE, O.STONE_WALL, O.SLAG, O.HOLLOW_LOG, O.LUMBER, O.MAILBOX, O.WOODPILE, O.SHIP_BIN,
+  O.STOP_SIGN, O.HANDCAR, O.CROSSBUCK, O.TRAILHEAD, O.HEDGE, O.BENCH]);
+const snowCache = new WeakMap<Canv, Canv>();
+/** A copy of a sprite with snow settled on every upward-facing edge. */
+function snowy(src: Canv): Canv {
+  const hit = snowCache.get(src);
+  if (hit) return hit;
+  const { c, g } = makeCanvas(src.width, src.height);
+  g.drawImage(src, 0, 0);
+  const img = g.getImageData(0, 0, c.width, c.height);
+  const d = img.data, W = c.width;
+  const [fr, fg, fb] = rgbOf(P.FOG), [mr, mg, mb] = rgbOf(P.MOON);
+  const solid = (x: number, y: number) => y >= 0 && d[(y * W + x) * 4 + 3] > 0;
+  for (let x = 0; x < W; x++) {
+    for (let y = 0; y < c.height; y++) {
+      if (!solid(x, y) || solid(x, y - 1)) continue;
+      // Settle 3px of snow just under the dark outline of every upward-facing surface.
+      for (let k = 1; k < 4; k++) {
+        const yy = y + k;
+        if (yy >= c.height || !solid(x, yy)) break;
+        const o = (yy * W + x) * 4;
+        const shade = k === 3 || (x + y) % 5 === 0;
+        d[o] = shade ? mr : fr; d[o + 1] = shade ? mg : fg; d[o + 2] = shade ? mb : fb;
+      }
+    }
+  }
+  g.putImageData(img, 0, 0);
+  snowCache.set(src, c);
+  return c;
+}
+
+/** Broadleaf things that turn in the fall (pines, hemlock and spruce stay green). */
+const AUTUMN: ReadonlySet<number> = new Set<number>([O.OAK, O.BRUSH, O.WILLOW, O.APPLE_TREE, O.BRIAR]);
+const autumnCache = [new WeakMap<Canv, Canv>(), new WeakMap<Canv, Canv>()];
+/** Fall colours: some trees go amber-gold, others rust-red. */
+function autumn(src: Canv, h: number): Canv {
+  const k = h < 0.5 ? 0 : 1;
+  const hit = autumnCache[k].get(src);
+  if (hit) return hit;
+  const c = recolor(src, k === 0
+    ? [[P.FOREST, P.RUST], [P.MOSS, P.AMBER], [P.FERN, P.LANTERN]]
+    : [[P.FOREST, P.CRAN], [P.MOSS, P.RUST], [P.FERN, P.AMBER]]);
+  autumnCache[k].set(src, c);
+  return c;
+}
+
+/** Trail-blaze colours per region (painted on trees beside the trails). */
+const BLAZE: Partial<Record<string, number>> = {
+  PINE_TRAIL_AND_ORCHARD: P.LANTERN, OLD_GROWTH_AND_SAWMILL: P.FOG, RADIO_RIDGE_AND_CROSSROADS: P.RED, CABIN_YARD: P.MIST,
+};
+const BLAZE_TREES: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.HEMLOCK_TREE, O.RED_SPRUCE]);
 
 function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number, night: boolean, rustling: boolean): Canv | null {
   const h = hash2(x, y, 3);
@@ -206,6 +268,25 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.SNARE: return OBJ.snare[m.snares.get(m.idx(x, y)) ? 1 : 0];
     case O.HANDCAR: return OBJ.handcar[stopFixed ? 0 : 1];
     case O.STOP_SIGN: return OBJ.stopsign[0];
+    case O.FORGET_ME_NOT: return DECOR.forgetmenot[season];
+    case O.THISTLE: return DECOR.thistle[season];
+    case O.RHODODENDRON: return DECOR.rhododendron[season];
+    case O.TRILLIUM: return DECOR.trillium[season];
+    case O.MAYAPPLE: return DECOR.mayapple[season];
+    case O.INDIAN_PIPE: return DECOR.indianpipe[season];
+    case O.PITCHER_PLANT: return DECOR.pitcher[season];
+    case O.CHICORY: return DECOR.chicory[season];
+    case O.QUEEN_ANNE: return DECOR.queenanne[season];
+    case O.RAMP_PATCH: return DECOR.ramps[season];
+    case O.ASTER: return DECOR.aster[season];
+    case O.CROSSBUCK: return PROP.crossbuck[0];
+    case O.MILEPOST: return PROP.milepost[0];
+    case O.WHISTLE_POST: return PROP.whistle[0];
+    case O.TRAILHEAD: return PROP.trailhead[0];
+    case O.ROCKER: return PROP.rocker[Math.floor(time * 0.9 + h) % 4 === 0 ? 1 : 0];
+    case O.CHIMES: return PROP.chimes[Math.floor(time * 2 + h) % 2];
+    case O.CLOTHESLINE: return PROP.clothesline[Math.floor(time * 1.1) % 2];
+    case O.CREEK_STONE: return PROP.creekstones[0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -216,7 +297,20 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
 }
 
 /** Flat decals drawn with the ground layer (never occlude actors). */
-const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER]);
+const SNOW_GROUND: ReadonlySet<number> = new Set<number>([T.GRASS, T.FOREST, T.CLOVER, T.HEMLOCK, T.ROCKY, T.SLOPE, T.PATH, T.BOG, T.RUIN_FLOOR, T.PLAZA, T.SOIL]);
+/** How deep the winter snow lies on a tile (0..1): open ground deepest, trails and gardens trampled. */
+function snowDepth(m: MapRuntime, x: number, y: number): number {
+  const gt = m.ground(x, y);
+  if (!SNOW_GROUND.has(gt)) return 0;
+  if (gt === T.PATH || gt === T.PLAZA || gt === T.SOIL) return 0.2;
+  return valueNoise(x / 5, y / 5, 61) + (gt === T.FOREST || gt === T.HEMLOCK ? -0.05 : 0.1);
+}
+const LITTER_GROUND: ReadonlySet<number> = new Set<number>([T.GRASS, T.FOREST, T.CLOVER, T.HEMLOCK, T.PATH, T.PLAZA]);
+
+/** Barn-quilt height on the shed's gable (px from the sprite top). */
+const QUILT_Y = 14;
+
+const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER, O.CREEK_STONE]);
 
 const SWING: Record<Dir, Array<[number, number]>> = {
   right: [[-120, 1], [-55, 1], [25, 1]],
@@ -276,6 +370,12 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const m = game.cur;
   stopFixed = game.stopRepaired(m.id);
   const railBits = STOPS.get(m.id) ?? null;
+  season = m.def.indoor ? 1 : Math.max(0, SEASONS.indexOf(game.clock.season as typeof SEASONS[number]));
+  const winter = season === 3, fall = season === 2;
+  const wNow = game.weatherNow();
+  const rainy = (w: string) => w === 'RAIN' || w === 'STORM';
+  const wet = !m.def.indoor && !winter && (rainy(wNow) || (rainy(game.dayWeather.morning) && game.clock.minutes >= 720));
+  const blaze = BLAZE[m.id];
   const cam = game.cam;
   const cx = cam.ix, cy = cam.iy;
   const time = game.time;
@@ -291,6 +391,23 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     for (let x = x0; x <= x1; x++) {
       const sx = x * 16 - cx, sy = y * 16 - cy;
       drawGround(g, m, x, y, sx, sy, time);
+      if (!m.def.indoor) {
+        const gt = m.ground(x, y);
+        if (winter && SNOW_GROUND.has(gt)) {
+          // Deep snow in the open, drifts at its edges, a dusting on trails.
+          const depth = snowDepth(m, x, y);
+          const hs = hash2(x, y, 31);
+          if (depth > 0.55) g.drawImage(pick(DECAL.snowFull, hs), sx, sy);
+          else if (depth > 0.38) {
+            let side = 0, best = -1;
+            NEIGH.forEach(([, ddx, ddy], k) => { const dd = snowDepth(m, x + ddx, y + ddy); if (dd > best) { best = dd; side = [0, 2, 3, 1][k]; } });
+            g.drawImage(pick(DECAL[`snowDrift${side}`], hs), sx, sy);
+            g.drawImage(pick(DECAL.snowLight, hs), sx, sy);
+          } else g.drawImage(pick(DECAL.snowLight, hs), sx, sy);
+        }
+        else if (fall && LITTER_GROUND.has(gt) && hash2(x, y, 9) < 0.6) g.drawImage(pick(DECAL.leaves, hash2(x, y, 10)), sx, sy);
+        if (wet && gt === T.PATH && hash2(x, y, 13) < 0.13) g.drawImage(pick(DECAL.puddle, hash2(x, y, 14)), sx, sy);
+      }
       // Bits of the old C&O spur peeking through the woods (drawn under trees and objects).
       if (railBits) {
         const ri = m.idx(x, y);
@@ -364,11 +481,12 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       if (o !== O.NONE && o !== O.BLOCK && !FLAT.has(o)) {
         const shakeUntil = m.shake.get(i) ?? 0;
         const shaking = shakeUntil > time;
-        const img = objSprite(m, o, x, y, time, night, shaking);
+        const base = objSprite(m, o, x, y, time, night, shaking);
+        const img = base && winter && SNOWCAP.has(o) ? snowy(base) : base && fall && AUTUMN.has(o) ? autumn(base, hash2(x, y, 41)) : base;
         if (img) {
           const fw = objProps(o).fw ?? 1;
           let dx = x * 16 + Math.floor((fw * 16 - img.width) / 2) - cx;
-          const dy = (y + 1) * 16 - img.height - cy;
+          const dy = (y + 1) * 16 - img.height - cy - (o === O.CHIMES ? 11 : 0);
           if (shaking && o !== O.TALLGRASS) dx += Math.round(Math.sin(time * 70));
           let extra: Canv | null = null;
           let ex = 0, ey = 0, es = 16;
@@ -386,7 +504,15 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
             }
           }
           const ext = extra;
-          list.push({ y: (y + 1) * 16, fn: () => { g.drawImage(img, dx, dy); if (ext) g.drawImage(ext, ex, ey, es, es); } });
+          // Paint blazes on trailside trees.
+          const bl = blaze !== undefined && BLAZE_TREES.has(o) && hash2(x, y, 21) < 0.3
+            && NEIGH.some(([, ddx, ddy]) => m.ground(x + ddx, y + ddy) === T.PATH) ? blaze : -1;
+          const bx = x * 16 + 7 - cx, by = (y + 1) * 16 - 11 - cy;
+          list.push({ y: (y + 1) * 16, fn: () => {
+            g.drawImage(img, dx, dy);
+            if (ext) g.drawImage(ext, ex, ey, es, es);
+            if (bl >= 0) { g.fillStyle = hex(P.VOID); g.fillRect(bx - 1, by - 1, 4, 5); g.fillStyle = hex(bl); g.fillRect(bx, by, 2, 3); }
+          } });
         }
         if (o === O.LAMP && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 10 - cy, r: 46, flicker: true });
         if (o === O.PYLON && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 12 - cy, r: 30, flicker: true });
@@ -439,7 +565,9 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           : frames[night && frames.length > 1 ? 1 : 0];
     const dx = s.x * 16 - cx, dy = (s.y + s.h) * 16 - img.height - cy;
     if (dx > game.w || dy > game.h || dx + img.width < 0 || dy + img.height < 0) continue;
-    list.push({ y: (s.y + s.h) * 16, fn: () => g.drawImage(img, dx, dy) });
+    const simg = winter && !m.def.indoor ? snowy(img) : img;
+    const quilt = s.kind === 'shed' ? PROP.barnquilt[0] : null;
+    list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
     if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
   }
   // Townsfolk
@@ -527,6 +655,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   list.sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
 
+  const view: View = { x0, x1, y0, y1, cx, cy, season, time };
+  drawAmbient(game, g, view);
   game.particles.draw(g, cx, cy);
   if (festival) {
     const S = TOWN_SQUARE;
@@ -545,6 +675,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     lights.push({ x: px + 12, y: py + 12, r: lr, flicker: true });
   }
   game.lighting.render(g, game.w, game.h, game.clock.minutes, m.def.indoor, lights, time);
+  drawFireflies(game, g, view);
   if (outdoors) {
     game.weatherFx.drawParticles(g, game.w, game.h, wthr, time, cx, cy);
     game.weatherFx.drawFlash(g, game.w, game.h);

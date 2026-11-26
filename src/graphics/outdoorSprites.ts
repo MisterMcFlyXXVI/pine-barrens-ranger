@@ -170,9 +170,14 @@ function stopSign(): Canv {
   const { c, g } = makeCanvas(16, 16);
   const p = new Pen(g);
   p.vline(8, 7, 15, RUST);
-  p.rect(3, 1, 11, 7, FOREST); p.rect(4, 2, 9, 5, MOSS);
-  // "H" for handcar
-  p.vline(6, 3, 5, LANTERN); p.vline(10, 3, 5, LANTERN); p.hline(6, 10, 4, LANTERN);
+  // Black-on-yellow railroad pictogram: a little steam locomotive.
+  p.rect(1, 0, 15, 8, AMBER); p.rect(2, 1, 13, 6, LANTERN);
+  p.vline(4, 1, 3, SHADOW);                       // smokestack
+  p.px(7, 3, SHADOW);                             // dome
+  p.rect(3, 4, 8, 2, SHADOW);                     // boiler
+  p.rect(10, 2, 4, 4, SHADOW); p.px(11, 3, LANTERN); // cab + window
+  p.px(2, 5, SHADOW);                             // cowcatcher
+  for (const x of [4, 6, 9, 12]) p.px(x, 6, SHADOW); // drivers
   return outline(c);
 }
 

@@ -187,6 +187,12 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 
 ---
 
+### Small details & seasons
+- **Decor pass** (`src/data/decor.ts`, run in `getMapDef` before `placeStop`): seasonal wildflowers (`O.FORGET_ME_NOT`..`O.ASTER`), creek stones and trailhead boards; `unblock()` swaps out any solid decor that cuts off ground. New plants belong in `CLEARABLE`/`LINE_CLEARABLE` (handcar.ts).
+- **Rail props** (`railProps` in handcar.ts): crossbucks, whistle posts, mileposts beside the traced line (sign text in `def.signs`).
+- **Art** (`src/graphics/decorSprites.ts`): `DECOR[key][season]` (null = not showing), `PROP`, `DECAL`. Render sets a module-level `season`; winter snow caps and fall colours are cached recolours of existing sprites.
+- **Ambient life** (`src/graphics/ambient.ts`): stateless, hash/clock driven; fireflies drawn after lighting.
+
 ## 8. Phased Implementation Plan for Claude Code  
 Build and verify cleanly in phases so the repository always compiles with zero TypeScript errors:  
 - **Phase 1:** Scaffold Vite + TypeScript project (`vercel.json` if needed, strict `tsconfig.json`). Build the 16-color sprite baker, modular player outfit renderer, particle system, Web Audio chiptune synthesizer, smooth scrolling camera, `CABIN_YARD` (64x64) + `CABIN_INTERIOR`, 36 farmable garden plots, tool swings (Hoe, Watering Can, Machete), and Day/Dusk/Night clock.  

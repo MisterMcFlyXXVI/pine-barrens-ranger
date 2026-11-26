@@ -10,6 +10,7 @@ import { bakeWild } from './wildSprites';
 import { bakeCryptids } from './cryptidSprites';
 import { bakeTown } from './townSprites';
 import { bakeOutdoors } from './outdoorSprites';
+import { bakeDecor } from './decorSprites';
 
 export const TILE = 16;
 
@@ -1307,5 +1308,6 @@ export function bakeAll(): void {
   bakeWild();
   bakeTown();
   bakeOutdoors();
+  bakeDecor();
   bakeCryptids();
 }

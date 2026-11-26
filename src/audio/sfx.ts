@@ -116,6 +116,10 @@ class Sfx {
     }
   }
 
+  /** A frog hopping into the water. */
+  plop(): void { this.tone('triangle', 620, 180, 0.09, 0.07); this.noise(0.08, 0.05, 'bandpass', 900, 400, 2, 0.03); }
+  /** Porch wind chimes. */
+  chimes(): void { for (const [k, f] of [[0, 1568], [1, 1976], [2, 1760], [3, 2349]] as const) this.tone('triangle', f, f, 0.5, 0.025, k * 0.11 + Math.random() * 0.05); }
   bump(): void { this.tone('square', 90, 70, 0.06, 0.05); }
 
   rustle(): void {

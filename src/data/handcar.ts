@@ -9,6 +9,7 @@
  */
 import type { MapDef, MapId } from './mapgen';
 import { O, T, objProps } from './tiles';
+import { unblock } from './decor';
 
 export interface StopDef {
   map: MapId;
@@ -29,7 +30,8 @@ export const LINK = { N: 1, E: 2, S: 4, W: 8 } as const;
 
 /** Growth that sits on the old line until its stop is repaired (then cleared off the rails). */
 export const LINE_CLEARABLE: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.BRUSH, O.ROCK, O.STUMP, O.LOG, O.BOULDER, O.TALLGRASS,
-  O.FERN, O.FLOWERS, O.MUSHROOMS, O.RED_SPRUCE, O.SKUNK_CABBAGE, O.DEAD_TREE, O.HEMLOCK_TREE, O.REEDS, O.CRAN_BUSH, O.WILLOW, O.BRIAR]);
+  O.FERN, O.FLOWERS, O.MUSHROOMS, O.RED_SPRUCE, O.SKUNK_CABBAGE, O.DEAD_TREE, O.HEMLOCK_TREE, O.REEDS, O.CRAN_BUSH, O.WILLOW, O.BRIAR,
+  O.FORGET_ME_NOT, O.THISTLE, O.RHODODENDRON, O.TRILLIUM, O.MAYAPPLE, O.INDIAN_PIPE, O.PITCHER_PLANT, O.CHICORY, O.QUEEN_ANNE, O.RAMP_PATCH, O.ASTER]);
 
 /**
  * The C&O spur through the valley: Town <-> Cabin <-> Pine Trail, branching to the
@@ -136,6 +138,7 @@ function traceLine(def: MapDef, stop: StopDef, seed: number): void {
   }
 
   const DIRS: Array<[number, number]> = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const legTiles: number[][] = [];
   for (const leg of legs) {
     if (leg.sx < 0 || leg.sy < 0 || leg.sx >= W || leg.sy >= H) continue;
     // State = tile * 4 + arriving direction (for the turning penalty).
@@ -161,6 +164,7 @@ function traceLine(def: MapDef, stop: StopDef, seed: number): void {
     const tiles: number[] = [];
     for (let st = end; st >= 0; st = prev[st]) tiles.push(st >> 2);
     tiles.reverse();
+    legTiles.push(tiles);
     // Record which way each tile's track runs, so corners and junctions can be drawn properly.
     const join = (a: number, b: number) => {
       const ax = a % W, ay = (a / W) | 0, bx = b % W, by = (b / W) | 0;
@@ -176,7 +180,10 @@ function traceLine(def: MapDef, stop: StopDef, seed: number): void {
       const a = tiles[Math.max(0, k - 1)], b = tiles[Math.min(tiles.length - 1, k + 1)];
       const horiz = Math.abs((b % W) - (a % W)) >= Math.abs(((b / W) | 0) - ((a / W) | 0));
       if (!stop.route.has(t)) stop.route.set(t, horiz ? 0 : 1);
-      if (WATERY.has(def.ground[t])) stop.trestle.add(t);
+      if (WATERY.has(def.ground[t])) {
+        stop.trestle.add(t);
+        if (def.objects[t] === O.CREEK_STONE || def.objects[t] === O.LILYPAD) def.objects[t] = O.NONE;
+      }
     });
   }
   // Until the stop is repaired the line is overgrown: tall grass and brush creep over it here and there.
@@ -187,7 +194,65 @@ function traceLine(def: MapDef, stop: StopDef, seed: number): void {
     if (roll < 0.22) def.objects[t] = O.TALLGRASS;
     else if (roll < 0.3) def.objects[t] = O.FERN;
   }
+  railProps(def, stop, legTiles, blocked);
   for (const fg of def.forage) fg.spots = fg.spots.filter((t) => !stop.route.has(t));
+}
+
+/** Where each region's stretch of the spur starts counting miles from the Pine Hollow depot. */
+const BASE_MILE: Partial<Record<MapId, number>> = {
+  CABIN_YARD: 2, PINE_TRAIL_AND_ORCHARD: 4, CRANBERRY_BOG_AND_SPRINGS: 9, OLD_GROWTH_AND_SAWMILL: 7, RADIO_RIDGE_AND_CROSSROADS: 11,
+};
+const PROP_GROUND = new Set<number>([T.GRASS, T.FOREST, T.CLOVER, T.HEMLOCK, T.ROCKY, T.BOG]);
+
+/**
+ * Lineside furniture along the old route: crossbucks where it crosses a trail,
+ * whistle posts before each crossing, and mileposts every couple dozen tiles.
+ * Each sits beside the track on open ground with room to walk around it.
+ */
+function railProps(def: MapDef, stop: StopDef, legs: number[][], blocked: (x: number, y: number) => boolean): void {
+  const W = def.w;
+  const used: number[] = [];
+  const passable = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= W || y >= def.h) return false;
+    const t = y * W + x;
+    return !WATERY.has(def.ground[t]) && !NO_GO_GROUND.has(def.ground[t]) && def.ground[t] !== T.CLIFF && !objProps(def.objects[t]).solid;
+  };
+  const place = (near: number, o: number, text: string, wantTrail = false): void => {
+    const nx = near % W, ny = (near / W) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      const x = nx + dx, y = ny + dy;
+      if (x < 2 || y < 2 || x >= W - 2 || y >= def.h - 2) continue;
+      const t = y * W + x;
+      if (stop.route.has(t) || !PROP_GROUND.has(def.ground[t]) || blocked(x, y)) continue;
+      const ob = def.objects[t];
+      if (ob !== O.NONE && (objProps(ob).solid || !LINE_CLEARABLE.has(ob))) continue;
+      if (used.some((u) => Math.abs((u % W) - x) <= 2 && Math.abs(((u / W) | 0) - y) <= 2)) continue;
+      if ([[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([ax, ay]) => passable(x + ax, y + ay)).length < 3) continue;
+      if (wantTrail && ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([ax, ay]) => TRAILISH.has(def.ground[(y + ay) * W + x + ax]))) continue;
+      def.objects[t] = o;
+      def.signs.set(t, text);
+      used.push(t);
+      for (const fg of def.forage) fg.spots = fg.spots.filter((s) => s !== t);
+      return;
+    }
+  };
+  let mile = BASE_MILE[def.id] ?? 1;
+  for (const tiles of legs) {
+    let since = 0;
+    for (let k = 1; k < tiles.length; k++) {
+      const t = tiles[k], prev = tiles[k - 1];
+      if (TRAILISH.has(def.ground[t]) && !TRAILISH.has(def.ground[prev]) && def.ground[t] !== T.BRIDGE) {
+        place(prev, O.CROSSBUCK, 'RAILROAD CROSSING. The paint is mostly gone. The C&O hasn\'t run a train up this spur since 1958, but Barney says to look both ways anyway.', true);
+        if (k >= 8 && !TRAILISH.has(def.ground[tiles[k - 8]])) place(tiles[k - 8], O.WHISTLE_POST, 'A whistle post marked "W". Engineers blew two long, one short and one long here for the crossing ahead.');
+      }
+      if (++since >= 24 && !TRAILISH.has(def.ground[t]) && !stop.trestle.has(t)) {
+        since = 0;
+        mile++;
+        place(t, O.MILEPOST, `C&O RAILWAY -- PINE HOLLOW SPUR. MILEPOST ${mile}. (Miles from the Pine Hollow depot.)`);
+      }
+    }
+  }
+  unblock(def, new Set([O.CROSSBUCK, O.WHISTLE_POST, O.MILEPOST]), () => O.NONE);
 }
 
 export const STOP_MAPS: readonly MapId[] = [
@@ -210,7 +275,8 @@ export const stopFlag = (id: MapId) => `stop_${id}`;
 const OPEN = new Set<number>([T.GRASS, T.FOREST, T.CLOVER, T.HEMLOCK, T.ROCKY, T.BOG]);
 /** Plain vegetation/rocks that may be cleared to make room. */
 const CLEARABLE = new Set<number>([O.NONE, O.PINE, O.OAK, O.BRUSH, O.ROCK, O.STUMP, O.LOG, O.TALLGRASS, O.FERN, O.FLOWERS, O.MUSHROOMS,
-  O.RED_SPRUCE, O.SKUNK_CABBAGE, O.DEAD_TREE, O.HEMLOCK_TREE, O.REEDS, O.CRAN_BUSH]);
+  O.RED_SPRUCE, O.SKUNK_CABBAGE, O.DEAD_TREE, O.HEMLOCK_TREE, O.REEDS, O.CRAN_BUSH,
+  O.FORGET_ME_NOT, O.THISTLE, O.RHODODENDRON, O.TRILLIUM, O.MAYAPPLE, O.INDIAN_PIPE, O.PITCHER_PLANT, O.CHICORY, O.QUEEN_ANNE, O.RAMP_PATCH, O.ASTER]);
 
 /** Find and build this region's stop (mutates the map). Call once per built map. */
 export function placeStop(def: MapDef): void {

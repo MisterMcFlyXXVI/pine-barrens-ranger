@@ -51,16 +51,34 @@ No environment variables or API keys are needed.
   (pathfound: it crosses trails, goes around buildings/gardens/cliffs, and crosses water on timber trestles that stay
   unwalkable). Until the stop is repaired, trees, tall grass and ferns sit on the line; repairing clears them so the
   rails are a walkable route. The local map draws it as a railroad symbol where explored; the valley map shows the C&O SPUR.
+- **Lineside details**: crossbucks where the old line crosses a trail, "W" whistle posts before crossings and
+  C&O mileposts along the track (all readable). Handcar stop signs carry a black-on-yellow locomotive.
 - **Music**: procedural chiptune (no audio files) for the title, cabin, town, woods, glades, Radio Ridge, nights,
   interiors, encounters and the festival. The SND button (or M) cycles music+sound -> sound effects only -> off.
 - **Pocket Map** (MAP pill / P), styled like a national-park trail brochure: REGION map with red dashed trails,
   labeled landmarks and trailheads, compass, scale bar and fog over ground you haven't explored yet (fog clears as
-  you walk and is saved); VALLEY overview with fog over unexplored regions. **Barney's handcar** fast-travels to any explored region (about an hour) once you finish his
-  Telegraph Repair quest or reach 2 hearts with him.
+  you walk and is saved); VALLEY overview with fog over unexplored regions (info only: travel is by handcar, from a stop).
 - **Townsfolk friendships**: chat daily and give one gift a day (talk while holding an item). Mabel, Gideon, Agnes,
   Barney, Dr. Okafor, Pippa, Sam and Toby each have 5 hearts, loves/likes/dislikes, and rewards at 2 and 4 hearts
   (e.g. Mabel's skillet doubles stove meals, Barney's handcar, Agnes's lucky brooch, discounts). The Journal's
   Townsfolk page shows hearts and the tastes you've discovered.
+
+## Wildflowers, little life & seasons
+- **Regional wildflowers** (`src/data/decor.ts`, art in `src/graphics/decorSprites.ts`) with a different look each
+  season: forget-me-nots on wet banks, thistle and asters in the meadows and on the ridge, rhododendron thickets
+  (WV's state flower, blooming in summer; cut with the Machete), trillium, mayapple and ramps on the woodland floor in
+  spring, Indian pipe in deep shade, pitcher plants on the Glades, chicory and Queen Anne's lace along the roads.
+  Placement is deterministic and never walls off ground; creek stones line the shallows.
+- **Trail details**: painted blazes on trailside trees (a colour per region), trailhead boards at region entrances,
+  and old Pine Hollow Coal & Coke Co. signs at the company store and the mine.
+- **Homestead**: porch rocking chair (sit a spell), wind chimes that ring when you're near, a clothesline of laundry
+  and a barn quilt on the shed.
+- **Little life** (`src/graphics/ambient.ts`): butterflies over meadows by day, fireflies on summer evenings,
+  dragonflies over water, frogs that plop off the bank as you come close, ripples, dawn mist over creeks before 8am,
+  leaves drifting down in fall and puddles on trails after rain.
+- **Seasons**: flowers bloom in their season; fall turns oaks, brush, willows and apple trees gold and rust with
+  leaf litter on the ground; winter lays snow (deep in the open, drifts at the edges, trampled on trails) and caps
+  trees, rocks, fences and roofs.
 
 ## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
