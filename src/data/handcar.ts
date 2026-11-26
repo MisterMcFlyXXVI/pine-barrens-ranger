@@ -21,7 +21,11 @@ export interface StopDef {
   route: Map<number, 0 | 1>;
   /** Route tiles over water: drawn as a wooden trestle (never walkable). */
   trestle: Set<number>;
+  /** Which neighbours each route tile's track actually joins: bits N=1, E=2, S=4, W=8 (for corners & junctions). */
+  links: Map<number, number>;
 }
+
+export const LINK = { N: 1, E: 2, S: 4, W: 8 } as const;
 
 /** Growth that sits on the old line until its stop is repaired (then cleared off the rails). */
 export const LINE_CLEARABLE: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.BRUSH, O.ROCK, O.STUMP, O.LOG, O.BOULDER, O.TALLGRASS,
@@ -157,6 +161,17 @@ function traceLine(def: MapDef, stop: StopDef, seed: number): void {
     const tiles: number[] = [];
     for (let st = end; st >= 0; st = prev[st]) tiles.push(st >> 2);
     tiles.reverse();
+    // Record which way each tile's track runs, so corners and junctions can be drawn properly.
+    const join = (a: number, b: number) => {
+      const ax = a % W, ay = (a / W) | 0, bx = b % W, by = (b / W) | 0;
+      const bit = bx > ax ? LINK.E : bx < ax ? LINK.W : by > ay ? LINK.S : LINK.N;
+      const back = bit === LINK.E ? LINK.W : bit === LINK.W ? LINK.E : bit === LINK.S ? LINK.N : LINK.S;
+      stop.links.set(a, (stop.links.get(a) ?? 0) | bit);
+      stop.links.set(b, (stop.links.get(b) ?? 0) | back);
+    };
+    // The first tile joins the stop's spur.
+    if (tiles.length) stop.links.set(tiles[0], (stop.links.get(tiles[0]) ?? 0) | (leg.sy < stop.car.y ? LINK.S : LINK.N));
+    for (let k = 1; k < tiles.length; k++) join(tiles[k - 1], tiles[k]);
     tiles.forEach((t, k) => {
       const a = tiles[Math.max(0, k - 1)], b = tiles[Math.min(tiles.length - 1, k + 1)];
       const horiz = Math.abs((b % W) - (a % W)) >= Math.abs(((b / W) | 0) - ((a / W) | 0));
@@ -207,7 +222,7 @@ export function placeStop(def: MapDef): void {
   if (def.id === 'PINE_HOLLOW_TOWN') {
     // The station: a free rail tile with platform beside it.
     let best: StopDef | null = null, bestD = Infinity;
-    const fresh = () => ({ route: new Map<number, 0 | 1>(), trestle: new Set<number>() });
+    const fresh = () => ({ route: new Map<number, 0 | 1>(), trestle: new Set<number>(), links: new Map<number, number>() });
     for (let y = 4; y < def.h - 4; y++) for (let x = 1; x < def.w - 1; x++) {
       if (g(x, y) !== T.RAIL || o(x, y) !== O.NONE) continue;
       const side = g(x - 1, y) === T.PLATFORM && o(x - 1, y) === O.NONE ? -1 : g(x + 1, y) === T.PLATFORM && o(x + 1, y) === O.NONE ? 1 : 0;
@@ -259,7 +274,7 @@ export function placeStop(def: MapDef): void {
     car: { x: railX, y: y + 1 },
     sign: { x: platX, y: y + 3 },
     arrive: { x: platX, y: y + 1, dir: platX > railX ? 'left' : 'right' },
-    route: new Map(), trestle: new Set(),
+    route: new Map(), trestle: new Set(), links: new Map(),
   };
   def.objects[i(stop.car.x, stop.car.y)] = O.HANDCAR;
   def.objects[i(stop.sign!.x, stop.sign!.y)] = O.STOP_SIGN;

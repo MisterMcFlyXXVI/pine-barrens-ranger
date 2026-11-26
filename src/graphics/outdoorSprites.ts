@@ -111,6 +111,46 @@ function oldRail(vertical: boolean, seed: number): Canv {
   return c;
 }
 
+/**
+ * A curved corner of old track joining the top edge to the right edge (the other three
+ * corners are mirrors of it). Rails follow quarter-circles that meet the straight pieces'
+ * rails (5 and 10 px in from the edge); ties fan out along the curve.
+ */
+function oldRailCorner(flipX: boolean, flipY: boolean, seed: number): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  let a = seed;
+  const r = () => { a = (a * 9301 + 49297) % 233280; return a / 233280; };
+  const put = (x: number, y: number, col: number) => {
+    if (x < 0 || y < 0 || x > 15 || y > 15) return;
+    p.px(flipX ? 15 - x : x, flipY ? 15 - y : y, col);
+  };
+  // Centre of the curve: the top-right corner of the tile.
+  const cx = 15.5, cy = -0.5;
+  // Ties: chunky radial planks fanning around the bend (a couple rotted away).
+  for (let k = 0; k < 4; k++) {
+    if (r() < 0.15) continue;
+    const ang = Math.PI / 2 + (k + 0.5) * (Math.PI / 2 / 4); // from pointing down to pointing left
+    const col = r() < 0.6 ? RUST : CRAN;
+    for (let rad = 3.5; rad <= 12.5; rad += 0.5) {
+      const x = cx + Math.cos(ang) * rad, y = cy + Math.sin(ang) * rad;
+      put(Math.round(x), Math.round(y), col);
+      put(Math.round(x + Math.sin(ang)), Math.round(y - Math.cos(ang)), col); // 2px wide
+    }
+  }
+  // Rails: two solid quarter-circles (light top, dark underside), rust in places.
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const d = Math.hypot(x - cx, y - cy);
+    for (const rad of [5.5, 10.5]) {
+      const e = d - rad;
+      if (Math.abs(e) < 0.5) put(x, y, r() < 0.15 ? RUST : MIST);
+      else if (e >= 0.5 && e < 1.2) put(x, y, SHADOW);
+    }
+  }
+  for (let k = 0; k < 4; k++) { const x = Math.floor(r() * 16), y = Math.floor(r() * 16); if (Math.abs(Math.hypot(x - cx, y - cy) - 8) > 4) { put(x, y, FERN); put(x, Math.max(0, y - 1), MOSS); } }
+  return c;
+}
+
 /** A weathered timber trestle carrying the line over water (purely visual; the water stays unwalkable). */
 function trestle(vertical: boolean): Canv {
   const { c, g } = makeCanvas(16, 16);
@@ -172,6 +212,9 @@ export function bakeOutdoors(): void {
   MISC.oldRailH0 = oldRail(false, 11); MISC.oldRailH1 = oldRail(false, 29);
   MISC.oldRailV0 = oldRail(true, 47); MISC.oldRailV1 = oldRail(true, 83);
   MISC.trestleH = trestle(false); MISC.trestleV = trestle(true);
+  // Corners by the two directions they join: NE, NW, SE, SW.
+  MISC.oldRailNE = oldRailCorner(false, false, 101); MISC.oldRailNW = oldRailCorner(true, false, 113);
+  MISC.oldRailSE = oldRailCorner(false, true, 127); MISC.oldRailSW = oldRailCorner(true, true, 139);
   for (const buck of [false, true]) for (const grazing of [false, true]) for (const f of [0, 1]) {
     const right = deer(f, buck, grazing);
     MISC[deerKey(buck, false, grazing, f)] = right;

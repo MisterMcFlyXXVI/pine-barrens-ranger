@@ -296,8 +296,14 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
         const ri = m.idx(x, y);
         const dir = railBits.route.get(ri);
         if (dir !== undefined) {
-          if (railBits.trestle.has(ri)) g.drawImage(dir === 1 ? MISC.trestleV : MISC.trestleH, sx, sy);
-          else g.drawImage(dir === 1 ? ((x + y) % 2 ? MISC.oldRailV0 : MISC.oldRailV1) : ((x + y) % 2 ? MISC.oldRailH0 : MISC.oldRailH1), sx, sy);
+          const lk = railBits.links.get(ri) ?? 0;
+          const vert = (lk & 5) !== 0, horiz = (lk & 10) !== 0;
+          const nBits = (lk & 1) + ((lk >> 1) & 1) + ((lk >> 2) & 1) + ((lk >> 3) & 1);
+          const straightV = (x + y) % 2 ? MISC.oldRailV0 : MISC.oldRailV1, straightH = (x + y) % 2 ? MISC.oldRailH0 : MISC.oldRailH1;
+          if (railBits.trestle.has(ri)) g.drawImage(vert && !horiz ? MISC.trestleV : MISC.trestleH, sx, sy);
+          else if (nBits === 2 && vert && horiz) g.drawImage(MISC[`oldRail${lk & 1 ? 'N' : 'S'}${lk & 2 ? 'E' : 'W'}`], sx, sy); // curve
+          else if (nBits >= 3) { g.drawImage(straightH, sx, sy); g.drawImage(straightV, sx, sy); } // junction / crossing
+          else g.drawImage(vert || (!horiz && dir === 1) ? straightV : straightH, sx, sy);
         }
       }
       const o = m.obj(x, y);
