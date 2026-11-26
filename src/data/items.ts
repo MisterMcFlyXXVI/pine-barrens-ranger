@@ -1,6 +1,7 @@
 /** Items, lure crops and economy data. */
+import { CRYPTIDS } from './cryptids';
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material';
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen';
 export type ToolKind = 'hoe' | 'can' | 'machete';
 
 export interface ItemDef {
@@ -68,7 +69,48 @@ const base: ItemDef[] = [
   { id: 'charred_wood', name: 'Charred Wood', kind: 'material', price: 10, stack: 99, desc: 'Lightning-scorched timber. Lure: Hodag.' },
   { id: 'crushed_quartz', name: 'Crushed Quartz', kind: 'material', price: 30, stack: 99, desc: 'Glittering crystal grit from broken rocks.' },
   { id: 'mineral_salt', name: 'Mineral Salt', kind: 'material', price: 25, stack: 99, desc: 'Coarse salt crust. Lure: Slide-Rock Bolter.' },
+
+  // ---- Phase 2 wilderness forage & salvage ----
+  { id: 'wild_apple', name: 'Wild Apple', kind: 'forage', price: 20, stack: 99, edible: 10, desc: 'Heirloom apple from the grove. Lure: Albatwitch.' },
+  { id: 'sweet_sap', name: 'Sweet Sap', kind: 'forage', price: 22, stack: 99, desc: 'Sugary pine sap. Lure: Hoop Snake.' },
+  { id: 'foraged_meat', name: 'Foraged Meat', kind: 'forage', price: 30, stack: 99, desc: 'Game left by something bigger. Lure: Thunderbird.' },
+  { id: 'foraged_egg', name: 'Foraged Egg', kind: 'forage', price: 18, stack: 99, edible: 8, desc: 'A speckled wild egg.' },
+  { id: 'sulfur_crust', name: 'Sulfur Crust', kind: 'material', price: 28, stack: 99, desc: 'Yellow crust from the Mineral Springs.' },
+  { id: 'scrap_copper', name: 'Scrap Copper', kind: 'material', price: 25, stack: 99, desc: 'Salvaged copper wire and fittings.' },
+  { id: 'iron_nail', name: 'Iron Nail', kind: 'material', price: 8, stack: 99, desc: 'Square-cut sawmill nail. Lure: Snarly Yow.' },
+
+  // ---- Crafted lures (mail-order until the Phase 3 workbench) ----
+  { id: 'smoked_venison', name: 'Smoked Venison', kind: 'bait', price: 60, stack: 99, desc: 'Predator lure. Howler, Yow, Dwayyo, Wendigo...' },
+  { id: 'fermented_mash', name: 'Fermented Berry Mash', kind: 'bait', price: 45, stack: 99, desc: 'Lure: Skunk Ape, Snallygaster, Pigman.' },
+  { id: 'sulfur_egg', name: 'Sulfur Rotten Egg', kind: 'bait', price: 40, stack: 99, desc: 'Lure: Ole Slippery Skin. Pinch your nose.' },
+  { id: 'battery_pack', name: 'Ionized Battery Pack', kind: 'bait', price: 80, stack: 99, desc: 'Lure: Goblins, Flatwoods Monster, Indrid Cold.' },
+  { id: 'smoked_fish', name: 'Smoked Fish', kind: 'bait', price: 35, stack: 99, desc: 'Lure: Altamaha-ha, Thunderbird.' },
+  { id: 'apple_cider', name: 'Apple Cider', kind: 'bait', price: 30, stack: 99, desc: 'Lure: Albatwitch.' },
+  { id: 'wisp_oil', name: 'Wisp-Light Lantern Oil', kind: 'bait', price: 175, stack: 99, desc: 'Lures spectral cryptids and stops them phasing out tonight.' },
+  { id: 'brimstone_incense', name: 'Brimstone & Cedar Incense', kind: 'bait', price: 150, stack: 99, desc: 'Halves Startle spikes from predators for 5 turns.' },
+  { id: 'lunar_dew', name: 'Lunar Dew Distillate', kind: 'bait', price: 225, stack: 99, desc: 'Universal Tier 3/4 lure (+45%) and 3x Rare Variants tonight.' },
+
+  // ---- Field Kit gear (owning it unlocks the kit move) ----
+  { id: 'bog_waders', name: 'Bog Waders', kind: 'gear', price: 0, stack: 1, desc: 'Lets you wade through shallow bog water and spring pools.' },
+  { id: 'scent_mask', name: 'Scent Mask', kind: 'gear', price: 0, stack: 1, desc: 'Blocks odor Startle (Skunk Ape, Slippery Skin).' },
+  { id: 'thermal_lens', name: 'Thermal Lens', kind: 'gear', price: 0, stack: 1, desc: 'Pierces the Flatwoods mist shield.' },
+  { id: 'brass_bell', name: 'Brass Bell', kind: 'gear', price: 0, stack: 1, desc: 'Signal: counters AGITATED and PRIDEFUL stances.' },
+  { id: 'silver_bell', name: 'Silver Bell', kind: 'gear', price: 0, stack: 1, desc: 'Signal: counters SPECTRAL and AGITATED stances.' },
+  { id: 'static_radio', name: 'Static Radio', kind: 'gear', price: 0, stack: 1, desc: 'Signal: counters AGITATED/SPECTRAL. Tunes Indrid Cold.' },
+  { id: 'parabolic_dish', name: 'Parabolic Sound Dish', kind: 'gear', price: 0, stack: 1, desc: 'Reveals stance on Turn 1; +30% Trust on vocal cryptids.' },
+  { id: 'chronos_shutter', name: 'Chronos Shutter Mod', kind: 'gear', price: 0, stack: 1, desc: 'Flash Photo causes no Startle and always yields Gold.' },
+
+  // ---- Placeable lure mounts ----
+  { id: 'lure_totem', name: 'Wooden Lure Totem', kind: 'placeable', price: 0, stack: 9, desc: 'Place 3 in the Old Growth and visit at dusk...' },
+  { id: 'lightning_rod', name: 'Copper Lightning Rod', kind: 'placeable', price: 0, stack: 9, desc: 'Place on Radio Ridge. Calls down storms\' guardian.' },
+  { id: 'antler_chime', name: 'Bone & Antler Chime', kind: 'placeable', price: 0, stack: 9, desc: 'Place in the Old Growth. Rings in the witching fog.' },
+  { id: 'tesla_pylon', name: 'Tesla Coil Pylon', kind: 'placeable', price: 0, stack: 9, desc: 'Forces Static-Charged variants and draws electric cryptids nearby.' },
 ];
+
+for (const c of CRYPTIDS) {
+  if (base.some((b) => b.id === c.drop.id)) continue;
+  base.push({ id: c.drop.id, name: c.drop.name, kind: 'specimen', price: c.drop.price, stack: 99, desc: `${c.drop.desc} (Specimen: ${c.name})` });
+}
 
 for (const c of CROPS) {
   base.push({
@@ -94,6 +136,32 @@ export function item(id: string): ItemDef {
 export const CATALOG_SEEDS: readonly string[] = [
   'seed_clover', 'seed_catnip', 'seed_moss', 'seed_corn', 'seed_pepper', 'seed_cranberry',
 ];
+
+export interface CatalogTab {
+  name: string;
+  entries: ReadonlyArray<{ id: string; cost: number }>;
+}
+
+/** Ranger Supply mail-order catalog (Porch Workbench). Crafting replaces much of this in Phase 3. */
+export const CATALOG: readonly CatalogTab[] = [
+  { name: 'SEEDS', entries: CATALOG_SEEDS.map((id) => ({ id, cost: CROPS.find((c) => c.seed === id)?.seedPrice ?? 0 })) },
+  { name: 'BAIT', entries: [
+    { id: 'smoked_venison', cost: 120 }, { id: 'fermented_mash', cost: 90 }, { id: 'sulfur_egg', cost: 80 },
+    { id: 'battery_pack', cost: 160 }, { id: 'smoked_fish', cost: 70 }, { id: 'apple_cider', cost: 60 },
+    { id: 'wisp_oil', cost: 350 }, { id: 'brimstone_incense', cost: 300 }, { id: 'lunar_dew', cost: 450 },
+  ] },
+  { name: 'GEAR', entries: [
+    { id: 'bog_waders', cost: 800 }, { id: 'scent_mask', cost: 250 }, { id: 'brass_bell', cost: 300 },
+    { id: 'silver_bell', cost: 450 }, { id: 'static_radio', cost: 500 }, { id: 'thermal_lens', cost: 600 },
+    { id: 'parabolic_dish', cost: 750 }, { id: 'chronos_shutter', cost: 900 },
+  ] },
+  { name: 'MOUNTS', entries: [
+    { id: 'lure_totem', cost: 220 }, { id: 'lightning_rod', cost: 400 }, { id: 'antler_chime', cost: 650 }, { id: 'tesla_pylon', cost: 1200 },
+  ] },
+];
+
+/** Inventory kinds that can be thrown as bait in an encounter. */
+export const BAIT_KINDS: ReadonlySet<ItemKind> = new Set<ItemKind>(['crop', 'forage', 'bait', 'material']);
 
 export const STARTING_ITEMS: ReadonlyArray<[string, number]> = [
   ['hoe', 1], ['watering_can', 1], ['machete', 1],

@@ -6,6 +6,27 @@ import { ICON } from '../graphics/sprites';
 import { ITEMS } from '../data/items';
 import { HOTBAR_SIZE } from '../engine/inventory';
 import { panel, slotBox, bar, inRect, Rect } from './panel';
+import type { Weather } from '../data/weather';
+import { moonPhase } from '../data/weather';
+
+/** 8x6 pixel weather glyph. */
+function weatherIcon(g: CanvasRenderingContext2D, x: number, y: number, w: Weather, night: boolean): void {
+  const px = (xx: number, yy: number, c: number) => { g.fillStyle = hex(c); g.fillRect(x + xx, y + yy, 1, 1); };
+  const cloud = (c: number) => { for (const [xx, yy] of [[2, 0], [3, 0], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2]]) px(xx, yy, c); };
+  if (w === 'CLEAR') {
+    const c = night ? P.MOON : P.LANTERN;
+    for (let yy = 1; yy < 4; yy++) for (let xx = 2; xx < 5; xx++) px(xx, yy, c);
+    if (!night) { px(3, 0, c); px(3, 5, c); px(0, 2, c); px(6, 2, c); } else { px(4, 1, P.SHADOW); px(4, 2, P.SHADOW); }
+  } else if (w === 'FOG') {
+    for (const yy of [0, 2, 4]) for (let xx = (yy % 4) ? 1 : 0; xx < 7; xx++) px(xx, yy, P.FOG);
+  } else if (w === 'SNOW') {
+    cloud(P.FOG); px(1, 4, P.FOG); px(4, 4, P.FOG); px(2, 5, P.MOON); px(6, 4, P.MOON);
+  } else {
+    cloud(w === 'STORM' ? P.MIST : P.FOG);
+    if (w === 'RAIN') { px(1, 4, P.MIST); px(3, 5, P.MIST); px(5, 4, P.MIST); }
+    else { px(4, 3, P.LANTERN); px(3, 4, P.LANTERN); px(4, 4, P.LANTERN); px(3, 5, P.LANTERN); }
+  }
+}
 
 export const SLOT = 18;
 
@@ -53,6 +74,8 @@ export function drawHud(game: Game, g: CanvasRenderingContext2D): void {
   panel(g, px, py, pw, ph);
   const c = game.clock;
   drawText(g, `${c.season.slice(0, 3)} ${c.dayOfSeason} ${c.weekday}`, px + 4, py + 4, P.FOG);
+  const night = c.minutes >= 1140;
+  weatherIcon(g, px + pw - 12, py + 4, game.weatherNow(), night);
   const phase = c.phase();
   const iconC = phase === 'day' ? P.LANTERN : phase === 'dusk' ? P.AMBER : phase === 'night' ? P.MOON : P.RED;
   g.fillStyle = hex(iconC);
@@ -68,7 +91,9 @@ export function drawHud(game: Game, g: CanvasRenderingContext2D): void {
   drawText(g, '{', px + 4, ey + 3, P.RED);
   const frac = game.stamina / game.maxStamina;
   bar(g, px + 10, ey + 3, pw - 14, 5, frac, frac > 0.5 ? P.FERN : frac > 0.25 ? P.AMBER : P.RED);
-  drawText(g, c.phaseLabel(), px, ey + 13, phase === 'witching' ? P.RED : P.MIST, P.VOID);
+  const moon = moonPhase(c.day);
+  const tag = c.phaseLabel() + (night && moon.full ? ' FULL MOON' : '');
+  drawText(g, tag, px, ey + 13, phase === 'witching' ? P.RED : moon.full && night ? P.MOON : P.MIST, P.VOID);
 
   // ---- Location banner ----
   if (game.banner.t > 0) {

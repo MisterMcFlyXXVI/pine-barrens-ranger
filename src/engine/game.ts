@@ -15,8 +15,15 @@ import { MapRuntime } from './world';
 import { Player, TOOL_DURATION } from './player';
 import { SaveData, Stats, writeSave, SAVE_VERSION, MapSave } from './save';
 import { BUILT_MAPS, BED_SPAWN, MapId, MAP_NAMES } from '../data/maps';
-import { O, T, objProps, Interact } from '../data/tiles';
-import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind } from '../data/items';
+import { O, T, objProps, Interact, SLOW_GROUND, WADE_GROUND, COVER_OBJECTS, MOUNT_OBJECT } from '../data/tiles';
+import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind, CATALOG } from '../data/items';
+import { CRYPTID_BY_ID, CryptidDef, Variant } from '../data/cryptids';
+import { DayWeather, rollWeather, weatherAt, moonPhase, Weather, WEATHER_LABEL } from '../data/weather';
+import { Dex, Kit, newDex, loadDex, defaultKit } from './dex';
+import { pickCryptid, rollVariant, encounterChance, eligible, SpawnCtx } from './spawn';
+import { Encounter } from './encounter';
+import { DexMenu } from '../ui/dex';
+import { WeatherFx } from '../graphics/weatherFx';
 import { OUTFITS, HATS } from '../data/outfits';
 import type { Dir } from '../util';
 import { DIR_VEC, randInt } from '../util';
@@ -75,6 +82,18 @@ export class Game {
   private smokeT = 0;
   private lowStaminaWarned = false;
   private title = new TitleScreen();
+  // ---- Phase 2: weather, Dex, Field Kit, encounters ----
+  dayWeather: DayWeather = { morning: 'CLEAR', evening: 'CLEAR' };
+  dex: Dex = newDex();
+  kit: Kit = defaultKit();
+  /** Day numbers on which Wisp-Light Oil / Lunar Dew were used (effects last that night). */
+  wispNight = 0;
+  lunarNight = 0;
+  /** Mythic summons already answered today ("MAP:cryptid"). */
+  summoned = new Set<string>();
+  readonly weatherFx = new WeatherFx();
+  private encounterCd = 6;
+  private rainT = 0;
 
   constructor(readonly canvas: HTMLCanvasElement, readonly g: CanvasRenderingContext2D) {}
 
@@ -84,7 +103,7 @@ export class Game {
 
   getMap(id: MapId): MapRuntime {
     let m = this.maps.get(id);
-    if (!m) { m = new MapRuntime(id); this.maps.set(id, m); }
+    if (!m) { m = new MapRuntime(id); m.spawnForage(this.clock.day); this.maps.set(id, m); }
     return m;
   }
 
@@ -110,7 +129,16 @@ export class Game {
     this.shipped = [];
     this.stats = freshStats();
     this.mailRead = 0;
-    this.getMap('CABIN_YARD').spawnForage(1);
+    this.dex = newDex();
+    this.kit = defaultKit();
+    this.wispNight = 0;
+    this.lunarNight = 0;
+    this.summoned.clear();
+    this.rollDayWeather();
+    if (new URLSearchParams(location.search).get('dev') === '1') {
+      this.gold = 50000;
+      for (const tab of CATALOG) for (const e of tab.entries) if (ITEMS[e.id].kind === 'gear') this.inv.add(e.id, 1);
+    }
     this.enterMap(BED_SPAWN.map, BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
     this.mode = 'play';
     this.overlays = [];
@@ -137,14 +165,22 @@ export class Game {
       if (!BUILT_MAPS.has(id)) continue;
       const m = this.getMap(id);
       m.applyRemoved(ms.removed);
-      for (const [i, item] of ms.forage) m.forage.set(i, item);
       ms.plots.forEach((p, i) => { if (m.plots[i]) Object.assign(m.plots[i], p); });
       for (const [i, hp] of ms.hp) m.hp.set(i, hp);
+      for (const [i, o] of ms.placed ?? []) m.placeObject(i, o);
+      m.forage.clear();
+      for (const [i, item] of ms.forage) if (ITEMS[item]) m.forage.set(i, item);
     }
     this.getMap('CABIN_YARD');
     this.shipped = d.shipped ?? [];
     this.stats = { ...freshStats(), ...d.stats };
     this.mailRead = d.mailRead ?? 0;
+    this.dex = loadDex(d.dex);
+    this.kit = { ...defaultKit(), ...d.kit };
+    this.wispNight = d.wispNight ?? 0;
+    this.lunarNight = d.lunarNight ?? 0;
+    this.summoned.clear();
+    this.rollDayWeather();
     const map = BUILT_MAPS.has(d.map) ? d.map : BED_SPAWN.map;
     this.enterMap(map, d.px, d.py, d.dir);
     this.mode = 'play';
@@ -160,6 +196,7 @@ export class Game {
         forage: [...m.forage.entries()],
         plots: m.plots.map((p) => ({ ...p })),
         hp: [...m.hp.entries()],
+        placed: [...m.placed.entries()],
       };
     }
     return {
@@ -181,6 +218,10 @@ export class Game {
       shipped: this.shipped.map((s) => ({ ...s })),
       stats: { ...this.stats },
       mailRead: this.mailRead,
+      dex: this.dex,
+      kit: { ...this.kit },
+      wispNight: this.wispNight,
+      lunarNight: this.lunarNight,
     };
   }
 
@@ -202,6 +243,22 @@ export class Game {
     this.cam.viewW = w;
     this.cam.viewH = h;
     if (this.mode === 'play') this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, 0, true);
+  }
+
+  /* ------------------------------------------------------------ */
+  /* Weather                                                       */
+  /* ------------------------------------------------------------ */
+
+  private rollDayWeather(): void {
+    this.dayWeather = rollWeather(this.clock.day, Math.floor((this.clock.day - 1) / 28) % 4);
+  }
+
+  weatherNow(): Weather {
+    return weatherAt(this.dayWeather, this.clock.minutes);
+  }
+
+  hasGear(id: string): boolean {
+    return this.inv.count(id) > 0;
   }
 
   /* ------------------------------------------------------------ */
@@ -290,6 +347,8 @@ export class Game {
       this.updateAmbience(dt);
     }
 
+    const outdoors = !this.cur.def.indoor;
+    if (this.weatherFx.update(dt, this.weatherNow(), outdoors) && outdoors) sfx.thunder();
     this.particles.update(dt);
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, dt);
     this.prompt = this.overlays.length || this.fadeDir ? '' : this.computePrompt();
@@ -357,7 +416,7 @@ export class Game {
       if (hit >= 0) this.selectSlot(hit);
     }
     if (inp.pressed('bag')) { sfx.open(); this.openOverlay(new BagMenu()); }
-    else if (inp.pressed('dex')) { sfx.open(); this.openOverlay(new JournalMenu()); }
+    else if (inp.pressed('dex')) { sfx.open(); this.openOverlay(new DexMenu()); }
   }
 
   /* ------------------------------------------------------------ */
@@ -421,17 +480,22 @@ export class Game {
       p.chain = false;
       return;
     }
-    if (this.cur.blocked(nx, ny)) {
+    if (this.cur.blocked(nx, ny, this.hasGear('bog_waders'))) {
       if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; }
+      if (WADE_GROUND.has(this.cur.ground(nx, ny))) this.notice('The water is deep, cold muck. You need Bog Waders to wade through (Porch Workbench catalog).');
+      else if (this.cur.ground(nx, ny) === T.CLIFF) this.notice('A sheer rock face. Look for a switchback trail.');
       p.chain = false;
       return;
     }
     const run = this.input.held('b');
-    p.beginStep(nx, ny, run);
+    p.beginStep(nx, ny, run, SLOW_GROUND[this.cur.ground(nx, ny)] ?? 1);
     p.chain = true;
     const surf = this.surfaceAt(p.tx - dx, p.ty - dy);
-    sfx.step(surf);
+    if (WADE_GROUND.has(this.cur.ground(nx, ny))) { sfx.wade(); this.particles.splash(nx * 16 + 8, ny * 16 + 12); }
+    else sfx.step(surf);
     if (surf !== 'wood' && !this.cur.def.indoor) this.particles.dust((p.tx - dx) * 16 + 8, (p.ty - dy) * 16 + 15, d);
+    const cover = this.cur.obj(nx, ny);
+    if (COVER_OBJECTS.has(cover) && cover !== O.TALLGRASS) { this.particles.leaves(nx * 16 + 8, ny * 16 + 12, cover === O.REEDS ? [3, 9, 4] : undefined); sfx.rustle(); }
     if (this.cur.obj(nx, ny) === O.TALLGRASS) {
       const i = this.cur.idx(nx, ny);
       this.cur.shake.set(i, this.time + 0.45);
@@ -442,8 +506,9 @@ export class Game {
 
   private surfaceAt(x: number, y: number): Surface {
     const t = this.cur.ground(x, y);
-    if (t === T.PORCH || t === T.FLOOR || t === T.BRIDGE || t === T.RUG || t === T.DOORMAT) return 'wood';
-    if (t === T.PATH) return 'sand';
+    if (t === T.PORCH || t === T.FLOOR || t === T.BRIDGE || t === T.RUG || t === T.DOORMAT || t === T.BOARDWALK || t === T.RUIN_FLOOR) return 'wood';
+    if (t === T.PATH || t === T.ROCKY || t === T.SLOPE) return 'sand';
+    if (t === T.BOG || t === T.SHALLOW || t === T.SPRING) return 'bog';
     if (t === T.SOIL) {
       const pi = this.cur.plotIndex(x, y);
       if (pi >= 0 && (this.cur.def.plots[pi].bog || this.cur.plots[pi].watered)) return 'bog';
@@ -458,7 +523,67 @@ export class Game {
     if (portal && BUILT_MAPS.has(portal.to)) {
       sfx.door();
       this.transition(() => this.enterMap(portal.to, portal.tx, portal.ty, portal.dir));
+      return;
     }
+    this.checkEncounter(x, y);
+  }
+
+  /* ------------------------------------------------------------ */
+  /* Encounters                                                    */
+  /* ------------------------------------------------------------ */
+
+  spawnCtx(x: number, y: number): SpawnCtx {
+    return {
+      map: this.cur.id,
+      zones: this.cur.zonesAt(x, y),
+      minutes: this.clock.minutes,
+      weather: this.weatherNow(),
+      fullMoon: moonPhase(this.clock.day).full,
+      dex: this.dex,
+      has: (id) => this.inv.count(id) > 0,
+      pylonHere: this.cur.countPlaced(O.PYLON) > 0,
+    };
+  }
+
+  private checkEncounter(x: number, y: number): void {
+    const m = this.cur;
+    if (!m.def.wild) return;
+    if (this.encounterCd > 0) { this.encounterCd--; return; }
+    const nearDeep = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]].some(([dx, dy]) => m.ground(x + dx, y + dy) === T.WATER);
+    const chance = encounterChance(m.ground(x, y), m.obj(x, y), this.weatherNow(), nearDeep);
+    if (chance <= 0 || Math.random() >= chance) return;
+    const ctx = this.spawnCtx(x, y);
+    const def = pickCryptid(ctx, Math.random);
+    if (!def) return;
+    const variant = rollVariant(Math.random, this.lunarNight === this.clock.day, ctx.pylonHere);
+    this.startEncounter(def, variant, m.ground(x, y) === T.SLOPE, false);
+  }
+
+  startEncounter(def: CryptidDef, variant: Variant, slope: boolean, summoned: boolean): void {
+    this.player.chain = false;
+    this.openOverlay(new Encounter(this, { def, variant, slope, summoned }));
+  }
+
+  /** Called by the encounter as it closes. */
+  encounterEnded(): void {
+    this.encounterCd = 8;
+  }
+
+  /** Which mythic (if any) a placed mount can summon right now. */
+  summonAt(o: number): CryptidDef | null {
+    const id = this.cur.id;
+    const ph = this.clock.phase();
+    const w = this.weatherNow();
+    let c: CryptidDef | null = null;
+    if (o === O.TOTEM && id === 'OLD_GROWTH_AND_SAWMILL' && ph === 'dusk' && this.cur.countPlaced(O.TOTEM) >= 3) c = CRYPTID_BY_ID.sasquatch;
+    else if (o === O.CHIME && id === 'OLD_GROWTH_AND_SAWMILL' && ph === 'witching' && (w === 'FOG' || w === 'SNOW')) c = CRYPTID_BY_ID.wendigo;
+    else if (o === O.ROD && id === 'RADIO_RIDGE_AND_CROSSROADS' && w === 'STORM') c = CRYPTID_BY_ID.thunderbird;
+    else if (o === O.PYLON && (ph === 'night' || ph === 'witching') && w === 'CLEAR') {
+      const ctx = this.spawnCtx(this.player.tx, this.player.ty);
+      c = ['thunderbird', 'hopkinsville_goblin', 'mothman'].map((k) => CRYPTID_BY_ID[k]).find((k) => k.maps.includes(id) && eligible(k, { ...ctx, zones: k.zones ?? [] }, true)) ?? null;
+    }
+    if (c && this.summoned.has(`${id}:${c.id}`)) return null;
+    return c;
   }
 
   /** A button: interact with what's in front, else use the selected item. */
@@ -476,8 +601,27 @@ export class Game {
     }
     if (repeat) return;
     if (def.kind === 'seed') { this.plant(tx, ty); return; }
+    if (def.kind === 'placeable') { this.placeMount(st.id, tx, ty); return; }
     if (def.edible) { this.eat(); return; }
-    this.notice(`${def.name}: ship it in the bin, or save it as cryptid lure.`);
+    if (def.kind === 'gear') { this.notice(`${def.name} is part of your Field Kit. Carry it into encounters.`); return; }
+    this.notice(`${def.name}: ship it in the bin, or use it as cryptid bait.`);
+  }
+
+  private placeMount(id: string, tx: number, ty: number): void {
+    const m = this.cur;
+    const o = MOUNT_OBJECT[id];
+    if (!m.def.wild || m.id === 'CABIN_YARD') { sfx.error(); this.notice('Lure mounts only work out in the wilderness regions.'); return; }
+    const g = m.ground(tx, ty);
+    const ok = m.inBounds(tx, ty) && m.obj(tx, ty) === O.NONE && !m.forage.has(m.idx(tx, ty)) && !m.portalAt(tx, ty)
+      && !m.blocked(tx, ty) && g !== T.PATH && g !== T.BOARDWALK && g !== T.BRIDGE;
+    if (!ok) { sfx.error(); this.notice('Place mounts on open ground beside the trail (not on the path).'); return; }
+    m.placeObject(m.idx(tx, ty), o);
+    this.inv.removeAt(this.sel, 1);
+    sfx.till();
+    this.particles.clods(tx * 16 + 8, ty * 16 + 12, [8, 9, 7]);
+    const name = ITEMS[id].name;
+    if (o === O.TOTEM) this.toast(`${name} placed. Totems here: ${m.countPlaced(O.TOTEM)}/3${m.id === 'OLD_GROWTH_AND_SAWMILL' ? '' : ' (they matter in the Old Growth)'}`);
+    else this.toast(`${name} placed.`);
   }
 
   private startTool(tool: ToolKind, tx: number, ty: number): void {
@@ -636,7 +780,7 @@ export class Game {
     }
     const anchor = m.anchorIdx(i);
     const o = m.objects[anchor];
-    if (o === O.BLOCK) return m.structureAt(tx, ty) ? 'structure' : null;
+    if (o === O.BLOCK) { const s = m.structureAt(tx, ty); return s && !s.open ? 'structure' : null; }
     const k = objProps(o).interact;
     if (k) return k;
     return null;
@@ -740,7 +884,80 @@ export class Game {
         sfx.blip();
         this.openOverlay(new Dialog(['A leafy fern in a clay pot. It seems happy.']));
         return true;
+      case 'apple': {
+        const ai = m.anchorIdx(i);
+        m.shake.set(ai, this.time + 0.5);
+        sfx.shake();
+        this.particles.leaves(cx, cy - 10);
+        if (m.shaken.has(ai)) { this.notice('No more ripe apples on this tree today.'); return true; }
+        m.shaken.add(ai);
+        this.give('wild_apple', 1 + (Math.random() < 0.4 ? 1 : 0), cx, cy - 4);
+        this.toast('A Wild Apple drops!');
+        return true;
+      }
+      case 'hollow': {
+        sfx.blip();
+        const day = this.clock.day;
+        const lucky = (i * 31 + day * 17) % 5 === 0;
+        if (lucky && !m.shaken.has(i)) {
+          m.shaken.add(i);
+          const pick = ['wild_honeycomb', 'foraged_egg', 'charred_wood', 'scrap_copper'][(i + day) % 4];
+          this.give(pick, 1, cx, cy);
+          this.toast(`Something was tucked inside: ${ITEMS[pick].name}!`);
+        } else this.openOverlay(new Dialog(['You peer into the hollow log. Musty darkness... and a few long, coarse hairs.']));
+        return true;
+      }
+      case 'sawblade':
+        sfx.blip();
+        this.openOverlay(new Dialog(['A rusted six-foot saw blade. Deep gouges on it look like... claw marks? Something sharpened itself here.']));
+        return true;
+      case 'rodbase':
+        sfx.blip();
+        this.openOverlay(new Dialog(['A concrete lightning-rod mount. Place a Copper Lightning Rod on open ground here on Radio Ridge, then wait for a thunderstorm.']));
+        return true;
+      case 'mount':
+        this.interactMount(m.anchorIdx(i));
+        return true;
     }
+  }
+
+  private interactMount(i: number): void {
+    const m = this.cur;
+    const o = m.objects[i];
+    const name = objProps(o).name;
+    const summon = this.summonAt(o);
+    if (summon) {
+      sfx.summon();
+      this.summoned.add(`${m.id}:${summon.id}`);
+      const variant = rollVariant(Math.random, this.lunarNight === this.clock.day, o === O.PYLON || m.countPlaced(O.PYLON) > 0);
+      this.openOverlay(new Dialog([`The ${name} ${o === O.CHIME ? 'rings by itself in the fog' : o === O.ROD ? 'crackles as lightning arcs into it' : o === O.PYLON ? 'hums and arcs violet light' : 'creaks... the forest goes silent'}. Something answers.`], [
+        { label: 'Investigate', fn: () => this.startEncounter(summon, variant, false, true) },
+        { label: 'Back away', fn: () => this.summoned.delete(`${m.id}:${summon.id}`) },
+      ]));
+      return;
+    }
+    const hint: Record<number, string> = {
+      [O.TOTEM]: `Totems in this region: ${m.countPlaced(O.TOTEM)}/3. In the Old Growth, three totems at dusk call something enormous.`,
+      [O.CHIME]: 'The chime hangs still. In the Old Growth it rings for something during the foggy (or snowy) Witching Hour.',
+      [O.ROD]: 'The copper rod waits. On Radio Ridge, a thunderstorm brings its guardian down.',
+      [O.PYLON]: 'The coil hums. On clear nights it draws electric cryptids, and nearby rare variants come out Static-Charged.',
+    };
+    sfx.blip();
+    this.openOverlay(new Dialog([hint[o] ?? `A ${name}.`], [
+      { label: 'Leave it', fn: () => undefined },
+      { label: 'Take it down', fn: () => this.takeDownMount(i) },
+    ]));
+  }
+
+  private takeDownMount(i: number): void {
+    const m = this.cur;
+    const o = m.objects[i];
+    const id = Object.keys(MOUNT_OBJECT).find((k) => MOUNT_OBJECT[k] === o);
+    if (!id) return;
+    m.removeObject(i);
+    const x = i % m.w, y = Math.floor(i / m.w);
+    this.give(id, 1, x * 16 + 8, y * 16 + 8);
+    sfx.confirm();
   }
 
   private harvest(tx: number, ty: number): void {
@@ -796,8 +1013,12 @@ export class Game {
     const labels: Partial<Record<string, string>> = {
       forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'CATALOG',
       ship: 'SHIP', barrel: 'REFILL', sign: 'READ', mailbox: 'MAIL', fireplace: 'LOOK', pedestal: 'LOOK',
-      bookshelf: 'READ', structure: 'LOOK',
+      bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
     };
+    if (kind === 'mount') {
+      const o = this.cur.objects[this.cur.anchorIdx(this.cur.idx(tx, ty))];
+      return this.summonAt(o) ? 'INVESTIGATE!' : 'CHECK MOUNT';
+    }
     if (kind && labels[kind]) return labels[kind]!;
     const st = this.selected;
     if (!st) return '';
@@ -818,6 +1039,7 @@ export class Game {
     }
     if (def.tool === 'machete') return props.tool === 'machete' ? 'CUT' : '';
     if (def.kind === 'seed' && pi >= 0 && m.plots[pi].tilled && !m.plots[pi].crop && o === O.NONE) return 'PLANT';
+    if (def.kind === 'placeable' && this.cur.def.wild && o === O.NONE && !this.cur.blocked(tx, ty)) return 'PLACE';
     if (def.edible && kind === null && o === O.NONE) return 'EAT';
     return '';
   }
@@ -877,6 +1099,16 @@ export class Game {
 
     this.clock.newDay();
     this.clock.minutes = DAY_START;
+    this.summoned.clear();
+    this.rollDayWeather();
+    const wm = this.dayWeather.morning;
+    if (wm === 'RAIN' || wm === 'STORM') {
+      let n = 0;
+      for (const mm of this.maps.values()) for (const plot of mm.plots) if (plot.tilled) { plot.watered = true; n++; }
+      if (n) lines.push('Rain is falling -- the garden is watered.');
+    }
+    const moon = moonPhase(this.clock.day);
+    lines.push(`Forecast: ${WEATHER_LABEL[wm]}${this.dayWeather.evening !== wm ? `, ${WEATHER_LABEL[this.dayWeather.evening]} tonight` : ''}. ${moon.label}.`);
     this.stamina = passOut ? Math.floor(this.maxStamina * 0.6) : this.maxStamina;
     this.lowStaminaWarned = false;
     this.stats.daysPlayed++;
@@ -893,11 +1125,18 @@ export class Game {
 
   private updateAmbience(dt: number): void {
     const m = this.cur;
+    const wNow = this.weatherNow();
+    if (!m.def.indoor && (wNow === 'RAIN' || wNow === 'STORM')) {
+      this.rainT -= dt;
+      if (this.rainT <= 0) { this.rainT = 0.35; sfx.rain(); }
+    }
     this.ambientT -= dt;
     if (this.ambientT <= 0) {
       this.ambientT = 2 + Math.random() * 5;
       if (!m.def.indoor) {
         const ph = this.clock.phase();
+        const w = this.weatherNow();
+        if (w === 'STORM' || w === 'RAIN' || w === 'SNOW' || w === 'FOG') { this.ambientT = 3 + Math.random() * 4; return; }
         if (ph === 'night' || ph === 'witching') sfx.cricket();
         else if (ph === 'day' && Math.random() < 0.6) sfx.bird();
       }
@@ -907,6 +1146,12 @@ export class Game {
     if (this.smokeT <= 0) {
       this.smokeT = 0.3;
       for (const s of m.def.structures) if (s.chimney) this.particles.smoke(s.x * 16 + s.chimney[0], s.y * 16 + s.chimney[1]);
+      // Mineral-spring steam
+      for (let k = 0; k < 6; k++) {
+        const x = Math.floor(this.cam.x / 16) + Math.floor(Math.random() * (this.w / 16 + 1));
+        const y = Math.floor(this.cam.y / 16) + Math.floor(Math.random() * (this.h / 16 + 1));
+        if (m.ground(x, y) === T.SPRING) this.particles.smoke(x * 16 + 8, y * 16 + 10);
+      }
       if (Math.random() < 0.5) {
         m.def.plots.forEach((pd, i) => {
           const plot = m.plots[i];

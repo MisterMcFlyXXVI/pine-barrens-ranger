@@ -301,6 +301,11 @@ body {
     right: 6vw;
     bottom: calc(env(safe-area-inset-bottom) + 10px);
   }
+  /* In handheld mode the corner toggles live on the deck, never over the screen. */
+  body.touch-on #corner {
+    top: calc(env(safe-area-inset-top) + 58% + 10px);
+    left: calc(env(safe-area-inset-left) + 10px);
+  }
 }
 
 /* ---------- Touch ON: landscape = translucent thumb-arc overlay ---------- */

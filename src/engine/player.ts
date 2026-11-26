@@ -46,13 +46,13 @@ export class Player {
     this.chain = false;
   }
 
-  beginStep(nx: number, ny: number, run: boolean): void {
+  beginStep(nx: number, ny: number, run: boolean, terrain = 1): void {
     this.fromX = this.tx * 16; this.fromY = this.ty * 16;
     this.toX = nx * 16; this.toY = ny * 16;
     this.tx = nx; this.ty = ny;
     this.t = 0;
     this.moving = true;
-    this.stepTime = run ? RUN_STEP : WALK_STEP;
+    this.stepTime = (run ? RUN_STEP : WALK_STEP) * terrain;
     this.stepParity ^= 1;
   }
 

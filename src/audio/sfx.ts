@@ -202,7 +202,31 @@ class Sfx {
     this.tone('sine', b * 1.2, b * 0.9, 0.09, 0.025, 0.1);
   }
 
-  /* ---- encounter-ready cues (used from Phase 2) ---- */
+  thunder(): void {
+    this.noise(1.6, 0.3, 'lowpass', 420, 60, 0.7);
+    this.noise(0.9, 0.18, 'lowpass', 900, 120, 1, 0.08);
+  }
+
+  rain(): void {
+    for (let i = 0; i < 4; i++) this.noise(0.05, 0.03, 'highpass', 4000 + Math.random() * 2000, 3000, 1, Math.random() * 0.4);
+  }
+
+  wade(): void {
+    this.noise(0.18, 0.1, 'bandpass', 900, 300, 2);
+    this.tone('sine', 300, 180, 0.08, 0.05, 0.04);
+  }
+
+  shake(): void {
+    this.noise(0.3, 0.1, 'bandpass', 2600, 1200, 1.5);
+    this.tone('triangle', 200, 120, 0.1, 0.06, 0.18);
+  }
+
+  summon(): void {
+    [196, 233, 185, 147].forEach((f, i) => this.tone('triangle', f, f * 0.98, 0.4, 0.09, i * 0.22));
+    this.noise(1.2, 0.06, 'bandpass', 300, 900, 4, 0.2);
+  }
+
+  /* ---- encounter cues ---- */
   alert(): void { this.tone('square', 880, 1760, 0.06, 0.09); this.tone('square', 1760, 1760, 0.1, 0.07, 0.07); }
   shutter(): void { this.noise(0.04, 0.2, 'highpass', 5000); this.tone('square', 2000, 400, 0.05, 0.06, 0.04); }
   trustChime(): void { [784, 988, 1175].forEach((f, i) => this.tone('triangle', f, f, 0.2, 0.08, i * 0.07)); }

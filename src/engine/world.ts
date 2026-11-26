@@ -1,6 +1,7 @@
 /** Runtime (mutable) state layered over a generated MapDef. */
 import { getMapDef, MapDef, MapId, Portal, Structure } from '../data/maps';
-import { O, T, SOLID_GROUND, objProps } from '../data/tiles';
+import { O, T, SOLID_GROUND, WADE_GROUND, objProps } from '../data/tiles';
+import type { Zone } from '../data/cryptids';
 
 export interface PlotState {
   tilled: boolean;
@@ -20,6 +21,10 @@ export class MapRuntime {
   readonly plotAt = new Map<number, number>();
   /** Visual-only timers (shake on hit, grass rustle). */
   readonly shake = new Map<number, number>();
+  /** Player-placed lure mounts: tile index -> object id. */
+  readonly placed = new Map<number, number>();
+  /** Apple trees already shaken today. */
+  readonly shaken = new Set<number>();
 
   constructor(id: MapId) {
     this.def = getMapDef(id);
@@ -55,17 +60,39 @@ export class MapRuntime {
     return this.inBounds(x, y) ? this.plotAt.get(this.idx(x, y)) ?? -1 : -1;
   }
 
-  blocked(x: number, y: number): boolean {
+  /** Sub-zones (orchard, sawmill, crossroads...) covering a tile; slope tiles add 'slope'. */
+  zonesAt(x: number, y: number): Zone[] {
+    const out: Zone[] = [];
+    for (const z of this.def.zones) if (x >= z.x && y >= z.y && x < z.x + z.w && y < z.y + z.h) out.push(z.zone);
+    if (this.ground(x, y) === T.SLOPE) out.push('slope');
+    return out;
+  }
+
+  blocked(x: number, y: number, waders = false): boolean {
     if (!this.inBounds(x, y)) return true;
-    if (SOLID_GROUND.has(this.ground(x, y))) return true;
+    const g = this.ground(x, y);
+    if (SOLID_GROUND.has(g)) return true;
+    if (!waders && WADE_GROUND.has(g)) return true;
     if (objProps(this.obj(x, y)).solid) return true;
     return false;
   }
 
   removeObject(i: number): void {
     this.objects[i] = O.NONE;
-    this.removed.add(i);
+    if (this.placed.has(i)) this.placed.delete(i);
+    else this.removed.add(i);
     this.hp.delete(i);
+  }
+
+  placeObject(i: number, o: number): void {
+    this.objects[i] = o;
+    this.placed.set(i, o);
+  }
+
+  countPlaced(o: number): number {
+    let n = 0;
+    for (const v of this.placed.values()) if (v === o) n++;
+    return n;
   }
 
   plotsCleared(): number {
@@ -79,26 +106,19 @@ export class MapRuntime {
     for (const i of list) { this.objects[i] = O.NONE; this.removed.add(i); }
   }
 
-  /** New-day forage spawn: guaranteed nook finds + a few scattered ones. */
+  /** New-day forage spawn from each forage group (deterministic per day & map). */
   spawnForage(day: number): void {
-    const d = this.def;
-    if (!d.forageTable.length) return;
     this.forage.clear();
-    let seed = (day * 2654435761) >>> 0;
-    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    const pick = () => d.forageTable[Math.floor(rnd() * d.forageTable.length)];
-    const free = (i: number) => this.objects[i] === O.NONE && !this.forage.has(i);
-    const nook = d.nookSpots.filter(free);
-    for (let k = 0; k < 3 && nook.length; k++) {
-      const j = Math.floor(rnd() * nook.length);
-      this.forage.set(nook[j], pick());
-      nook.splice(j, 1);
-    }
-    const spots = d.forageSpots.filter(free);
-    for (let k = 0; k < 6 && spots.length; k++) {
-      const j = Math.floor(rnd() * spots.length);
-      this.forage.set(spots[j], pick());
-      spots.splice(j, 1);
+    this.shaken.clear();
+    let seed = (Math.imul(day, 2654435761) ^ (this.def.w * 977 + this.def.h)) >>> 0;
+    const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+    for (const grp of this.def.forage) {
+      const spots = grp.spots.filter((i) => this.objects[i] === O.NONE && !this.forage.has(i));
+      for (let k = 0; k < grp.count && spots.length; k++) {
+        const j = Math.floor(rnd() * spots.length);
+        this.forage.set(spots[j], grp.table[Math.floor(rnd() * grp.table.length)]);
+        spots.splice(j, 1);
+      }
     }
   }
 }

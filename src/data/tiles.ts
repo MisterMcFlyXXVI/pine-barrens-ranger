@@ -19,10 +19,37 @@ export const T = {
   DOORMAT: 14,
   DOOR: 15,
   HEARTH: 16,
+  // ---- Phase 2 wilderness biomes ----
+  BOG: 17,
+  SHALLOW: 18,
+  SPRING: 19,
+  BOARDWALK: 20,
+  HEMLOCK: 21,
+  ROCKY: 22,
+  SLOPE: 23,
+  CLIFF: 24,
+  RUIN_FLOOR: 25,
+  CLOVER: 26,
 } as const;
 
+/** Wadeable water: blocked unless the player owns Bog Waders. */
+export const WADE_GROUND: ReadonlySet<number> = new Set<number>([T.SHALLOW, T.SPRING]);
+
+/** Natural ground where fog can hide an encounter. */
+export const WILD_GROUND: ReadonlySet<number> = new Set<number>([
+  T.GRASS, T.FOREST, T.BOG, T.HEMLOCK, T.ROCKY, T.SLOPE, T.CLOVER, T.RUIN_FLOOR,
+]);
+
+/** Step-time multiplier for heavy terrain. */
+export const SLOW_GROUND: Readonly<Record<number, number>> = {
+  [T.SLOPE]: 1.55,
+  [T.SHALLOW]: 1.4,
+  [T.SPRING]: 1.4,
+  [T.BOG]: 1.15,
+};
+
 export const SOLID_GROUND: ReadonlySet<number> = new Set<number>([
-  T.VOID, T.WATER, T.WALL_TOP, T.WALL_FACE, T.WALL_BASE, T.WALL_SIDE,
+  T.VOID, T.WATER, T.WALL_TOP, T.WALL_FACE, T.WALL_BASE, T.WALL_SIDE, T.CLIFF,
 ]);
 
 export const O = {
@@ -62,11 +89,41 @@ export const O = {
   CRATE: 33,
   WINDOW: 34,
   WOODPILE: 35,
+  // ---- Phase 2 wilderness ----
+  APPLE_TREE: 36,
+  STONE_WALL: 37,
+  WILLOW: 38,
+  HEMLOCK_TREE: 39,
+  HOLLOW_LOG: 40,
+  RUIN_WALL: 41,
+  LUMBER: 42,
+  SAW_BLADE: 43,
+  SLAG: 44,
+  DEAD_TREE: 45,
+  CRAN_BUSH: 46,
+  // placeable lure mounts
+  TOTEM: 47,
+  ROD: 48,
+  CHIME: 49,
+  PYLON: 50,
+  ROD_BASE: 51,
 } as const;
+
+/** Objects that count as encounter cover when stepped through. */
+export const COVER_OBJECTS: ReadonlySet<number> = new Set<number>([O.TALLGRASS, O.REEDS, O.FERN, O.CRAN_BUSH]);
+
+/** Placeable lure-mount item id -> object id. */
+export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
+  lure_totem: O.TOTEM,
+  lightning_rod: O.ROD,
+  antler_chime: O.CHIME,
+  tesla_pylon: O.PYLON,
+};
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant';
+  | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase';
 
 export interface Drop {
   item: string;
@@ -126,6 +183,22 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.CRATE]: { name: 'Crate', solid: true, interact: 'crate' },
   [O.WINDOW]: { name: 'Window', solid: true },
   [O.WOODPILE]: { name: 'Woodpile', solid: true, interact: 'woodpile' },
+  [O.APPLE_TREE]: { name: 'Heirloom Apple Tree', solid: true, interact: 'apple' },
+  [O.STONE_WALL]: { name: 'Stone Wall', solid: true },
+  [O.WILLOW]: { name: 'Weeping Willow', solid: true },
+  [O.HEMLOCK_TREE]: { name: 'Ancient Hemlock', solid: true },
+  [O.HOLLOW_LOG]: { name: 'Hollow Log', solid: true, interact: 'hollow' },
+  [O.RUIN_WALL]: { name: 'Sawmill Ruin', solid: true },
+  [O.LUMBER]: { name: 'Rotting Lumber', solid: true, tool: 'machete', hp: 3, drops: [{ item: 'iron_nail', chance: 0.6, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.3, min: 1, max: 1 }] },
+  [O.SAW_BLADE]: { name: 'Rusted Saw Blade', solid: true, interact: 'sawblade' },
+  [O.SLAG]: { name: 'Slag Heap', solid: true, tool: 'hoe', hp: 4, drops: [{ item: 'scrap_copper', chance: 0.7, min: 1, max: 2 }, { item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }] },
+  [O.DEAD_TREE]: { name: 'Lightning-Struck Snag', solid: true },
+  [O.CRAN_BUSH]: { name: 'Wild Cranberry', solid: false },
+  [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
+  [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },
+  [O.CHIME]: { name: 'Bone & Antler Chime', solid: true, interact: 'mount' },
+  [O.PYLON]: { name: 'Tesla Coil Pylon', solid: true, interact: 'mount' },
+  [O.ROD_BASE]: { name: 'Lightning-Rod Mount', solid: true, interact: 'rodbase' },
 };
 
 export function objProps(o: number): ObjProps {

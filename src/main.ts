@@ -69,3 +69,6 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// Dev-only debug handle for automated playtesting (stripped from production builds).
+if (import.meta.env.DEV) (window as unknown as { __pbr: Game }).__pbr = game;

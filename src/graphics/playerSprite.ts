@@ -144,7 +144,7 @@ function drawFrontBack(p: Pen, o: OutfitDef, h: HatDef, back: boolean, frame: nu
   } else {
     p.rect(8, hy, 8, 8, HAIR);
     p.hline(9, 14, hy + 7, HAIR_SH); p.vline(15, hy + 1, hy + 7, HAIR_SH);
-    p.px(10, hy + 3, HAIR_SH); p.px(12, hy + 5, HAIR_SH);
+    p.px(9, hy + 1, P.AMBER); p.px(10, hy + 1, P.AMBER);
   }
   drawHat(p, h, back ? 'up' : 'down', hy);
 }

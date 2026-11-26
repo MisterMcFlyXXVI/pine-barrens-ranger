@@ -6,69 +6,17 @@
 import { T, O } from './tiles';
 import type { Dir } from '../util';
 import { mulberry32, valueNoise, hash2 } from '../util';
+import { Builder } from './mapgen';
+import type { MapDef, MapId, PlotDef } from './mapgen';
+import { P } from '../graphics/palette';
+import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } from './wilds';
 
-export type MapId =
-  | 'CABIN_YARD'
-  | 'CABIN_INTERIOR'
-  | 'PINE_TRAIL_AND_ORCHARD'
-  | 'PINE_HOLLOW_TOWN'
-  | 'CRANBERRY_BOG_AND_SPRINGS'
-  | 'OLD_GROWTH_AND_SAWMILL'
-  | 'RADIO_RIDGE_AND_CROSSROADS';
-
-export interface Portal {
-  x: number; y: number; w: number; h: number;
-  to: MapId;
-  tx: number; ty: number;
-  dir: Dir;
-  /** Shown when the destination region isn't open yet. */
-  closedMsg: string;
-}
-
-export interface Structure {
-  kind: 'cabin' | 'shed';
-  x: number; y: number; w: number; h: number;
-  door: { x: number; y: number };
-  /** Door leads somewhere via a portal (else it is locked). */
-  open: boolean;
-  lockedMsg?: string;
-  /** Night light sources, pixel offsets from the footprint's top-left corner. */
-  windows: Array<[number, number]>;
-  chimney?: [number, number];
-}
-
-export interface PlotDef {
-  x: number;
-  y: number;
-  bog: boolean;
-  /** Cleared at the start of a new game. */
-  starter: boolean;
-}
-
-export interface MapDef {
-  id: MapId;
-  name: string;
-  w: number;
-  h: number;
-  indoor: boolean;
-  ground: Uint8Array;
-  objects: Uint8Array;
-  /** Filler tile index -> anchor tile index for multi-tile objects. */
-  anchors: Map<number, number>;
-  /** Tile index -> structure index for building footprints. */
-  structAt: Map<number, number>;
-  structures: Structure[];
-  portals: Portal[];
-  plots: PlotDef[];
-  signs: Map<number, string>;
-  forageSpots: number[];
-  /** Guaranteed daily forage nook spots. */
-  nookSpots: number[];
-  forageTable: string[];
-}
+export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
 /** Regions that are fully built in this version. Others are portal stubs. */
-export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>(['CABIN_YARD', 'CABIN_INTERIOR']);
+export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>([
+  'CABIN_YARD', 'CABIN_INTERIOR', 'PINE_TRAIL_AND_ORCHARD', 'CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL', 'RADIO_RIDGE_AND_CROSSROADS',
+]);
 
 export const MAP_NAMES: Record<MapId, string> = {
   CABIN_YARD: 'Cabin Yard',
@@ -78,90 +26,8 @@ export const MAP_NAMES: Record<MapId, string> = {
   CRANBERRY_BOG_AND_SPRINGS: 'Cranberry Bog & Springs',
   OLD_GROWTH_AND_SAWMILL: 'Old Growth & Sawmill',
   RADIO_RIDGE_AND_CROSSROADS: 'Radio Ridge & Crossroads',
+  COAL_MINE: 'Abandoned Coal Mine',
 };
-
-class Builder {
-  ground: Uint8Array;
-  objects: Uint8Array;
-  anchors = new Map<number, number>();
-  structAt = new Map<number, number>();
-  structures: Structure[] = [];
-  signs = new Map<number, string>();
-
-  constructor(readonly w: number, readonly h: number, fill: number) {
-    this.ground = new Uint8Array(w * h).fill(fill);
-    this.objects = new Uint8Array(w * h);
-  }
-
-  in(x: number, y: number): boolean { return x >= 0 && y >= 0 && x < this.w && y < this.h; }
-  i(x: number, y: number): number { return y * this.w + x; }
-  g(x: number, y: number): number { return this.in(x, y) ? this.ground[this.i(x, y)] : T.VOID; }
-  o(x: number, y: number): number { return this.in(x, y) ? this.objects[this.i(x, y)] : O.NONE; }
-  setG(x: number, y: number, t: number): void { if (this.in(x, y)) this.ground[this.i(x, y)] = t; }
-  setO(x: number, y: number, o: number): void { if (this.in(x, y)) this.objects[this.i(x, y)] = o; }
-
-  rectG(x: number, y: number, w: number, h: number, t: number): void {
-    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) this.setG(xx, yy, t);
-  }
-
-  /** Multi-tile object: anchor at bottom-left, fillers become solid BLOCKs. */
-  place(x: number, y: number, o: number, fw = 1, fh = 1): void {
-    const ax = x, ay = y + fh - 1;
-    for (let yy = y; yy < y + fh; yy++) {
-      for (let xx = x; xx < x + fw; xx++) {
-        if (xx === ax && yy === ay) continue;
-        this.setO(xx, yy, O.BLOCK);
-        this.anchors.set(this.i(xx, yy), this.i(ax, ay));
-      }
-    }
-    this.setO(ax, ay, o);
-  }
-
-  structure(s: Structure): void {
-    const idx = this.structures.length;
-    this.structures.push(s);
-    for (let yy = s.y; yy < s.y + s.h; yy++) {
-      for (let xx = s.x; xx < s.x + s.w; xx++) {
-        this.structAt.set(this.i(xx, yy), idx);
-        if (s.open && xx === s.door.x && yy === s.door.y) { this.setO(xx, yy, O.NONE); continue; }
-        this.setO(xx, yy, O.BLOCK);
-      }
-    }
-  }
-
-  sign(x: number, y: number, text: string): void {
-    this.setO(x, y, O.SIGN);
-    this.signs.set(this.i(x, y), text);
-  }
-
-  /** Catmull-Rom spline trail through waypoints. Water becomes bridge. */
-  trail(pts: Array<[number, number]>, width = 2): void {
-    const P = [pts[0], ...pts, pts[pts.length - 1]];
-    for (let s = 1; s < P.length - 2; s++) {
-      const [p0, p1, p2, p3] = [P[s - 1], P[s], P[s + 1], P[s + 2]];
-      const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
-      const steps = Math.max(2, Math.ceil(len * 3));
-      for (let k = 0; k <= steps; k++) {
-        const t = k / steps, t2 = t * t, t3 = t2 * t;
-        const cr = (a: number, b: number, c: number, d: number) =>
-          0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
-        const x = cr(p0[0], p1[0], p2[0], p3[0]);
-        const y = cr(p0[1], p1[1], p2[1], p3[1]);
-        for (let oy = 0; oy < width; oy++) {
-          for (let ox = 0; ox < width; ox++) {
-            const tx = Math.floor(x) + ox, ty = Math.floor(y) + oy;
-            if (!this.in(tx, ty) || this.structAt.has(this.i(tx, ty))) continue;
-            const cur = this.g(tx, ty);
-            if (cur === T.WATER || cur === T.BRIDGE) this.setG(tx, ty, T.BRIDGE);
-            else if (cur !== T.PORCH) this.setG(tx, ty, T.PATH);
-            const o = this.o(tx, ty);
-            if (o !== O.BLOCK) this.setO(tx, ty, O.NONE);
-          }
-        }
-      }
-    }
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /* CABIN_YARD — 64x64 homestead clearing                               */
@@ -324,15 +190,18 @@ function buildCabinYard(): MapDef {
   }
 
   return {
-    id: 'CABIN_YARD', name: MAP_NAMES.CABIN_YARD, w: W, h: H, indoor: false,
+    id: 'CABIN_YARD', name: MAP_NAMES.CABIN_YARD, w: W, h: H, indoor: false, wild: true,
     ground: b.ground, objects: b.objects, anchors: b.anchors, structAt: b.structAt, structures: b.structures,
     portals: [
       { x: 28, y: 18, w: 1, h: 1, to: 'CABIN_INTERIOR', tx: 10, ty: 14, dir: 'up', closedMsg: '' },
-      { x: 28, y: 0, w: 7, h: 1, to: 'PINE_TRAIL_AND_ORCHARD', tx: 40, ty: 78, dir: 'up', closedMsg: 'A storm-felled hemlock blocks the trail north to Pine Trail & Orchard. Crews are clearing it... (new regions coming soon!)' },
+      { x: 28, y: 0, w: 7, h: 1, to: 'PINE_TRAIL_AND_ORCHARD', tx: 39, ty: 78, dir: 'up', closedMsg: '' },
       { x: 63, y: 31, w: 1, h: 7, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 36, dir: 'right', closedMsg: 'The road to Pine Hollow Town is washed out past the bridge. (Town opens in a future update!)' },
     ],
-    plots, signs: b.signs, forageSpots, nookSpots: nook,
-    forageTable: ['pine_resin', 'pine_resin', 'wild_acorn', 'wild_acorn', 'wild_onion', 'wild_onion', 'wild_honeycomb'],
+    plots, signs: b.signs, zones: [], battleColors: [P.FOG, P.MOSS],
+    forage: [
+      { spots: nook, count: 3, table: ['pine_resin', 'wild_acorn', 'wild_onion', 'wild_honeycomb'] },
+      { spots: forageSpots, count: 6, table: ['pine_resin', 'pine_resin', 'wild_acorn', 'wild_acorn', 'wild_onion', 'wild_onion', 'wild_honeycomb'] },
+    ],
   };
 }
 
@@ -375,10 +244,10 @@ function buildCabinInterior(): MapDef {
   b.setO(1, 13, O.WOODPILE);
 
   return {
-    id: 'CABIN_INTERIOR', name: MAP_NAMES.CABIN_INTERIOR, w: W, h: H, indoor: true,
+    id: 'CABIN_INTERIOR', name: MAP_NAMES.CABIN_INTERIOR, w: W, h: H, indoor: true, wild: false,
     ground: b.ground, objects: b.objects, anchors: b.anchors, structAt: b.structAt, structures: [],
     portals: [{ x: 10, y: 15, w: 1, h: 1, to: 'CABIN_YARD', tx: 28, ty: 19, dir: 'down', closedMsg: '' }],
-    plots: [], signs: b.signs, forageSpots: [], nookSpots: [], forageTable: [],
+    plots: [], signs: b.signs, forage: [], zones: [], battleColors: [P.AMBER, P.RUST],
   };
 }
 
@@ -389,6 +258,10 @@ export function getMapDef(id: MapId): MapDef {
   if (!m) {
     if (id === 'CABIN_YARD') m = buildCabinYard();
     else if (id === 'CABIN_INTERIOR') m = buildCabinInterior();
+    else if (id === 'PINE_TRAIL_AND_ORCHARD') m = buildPineTrail();
+    else if (id === 'CRANBERRY_BOG_AND_SPRINGS') m = buildCranberryBog();
+    else if (id === 'OLD_GROWTH_AND_SAWMILL') m = buildOldGrowth();
+    else if (id === 'RADIO_RIDGE_AND_CROSSROADS') m = buildRadioRidge();
     else throw new Error(`Region ${id} is not built yet`);
     cache.set(id, m);
   }

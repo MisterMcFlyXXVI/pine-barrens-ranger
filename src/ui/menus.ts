@@ -6,7 +6,10 @@ import { hex, P } from '../graphics/palette';
 import { ICON } from '../graphics/sprites';
 import { playerFrame } from '../graphics/playerSprite';
 import { sfx } from '../audio/sfx';
-import { ITEMS, CATALOG_SEEDS, CROP_BY_ID } from '../data/items';
+import { ITEMS, CATALOG, CROP_BY_ID } from '../data/items';
+import { moonPhase, WEATHER_LABEL } from '../data/weather';
+import { dexTotals } from '../engine/dex';
+import { moveName } from '../engine/encounter';
 import { OUTFITS, HATS, outfitById, hatById } from '../data/outfits';
 import { BAG_SIZE, HOTBAR_SIZE } from '../engine/inventory';
 import { panel, slotBox, inRect, Rect } from './panel';
@@ -214,37 +217,49 @@ export class BagMenu implements Overlay {
 
 export class CatalogMenu implements Overlay {
   closed = false;
+  private tab = 0;
   private cursor = 0;
+  private scroll = 0;
 
-  private layout(game: Game): Rect & { rows: Rect[] } {
-    const w = Math.min(game.w - 8, 230);
+  private layout(game: Game): Rect & { rows: Rect[]; tabs: Rect[]; visible: number } {
+    const w = Math.min(game.w - 8, 236);
     const rowH = 18;
-    const h = 16 + CATALOG_SEEDS.length * rowH + 36;
+    const visible = Math.max(3, Math.min(6, Math.floor((game.h - 90) / rowH)));
+    const h = 28 + visible * rowH + 33;
     const x = Math.floor((game.w - w) / 2);
     const y = Math.max(2, Math.floor((game.h - h) / 2) - 10);
-    const rows = CATALOG_SEEDS.map((_, i) => ({ x: x + 4, y: y + 14 + i * rowH, w: w - 8, h: rowH - 1 }));
-    return { x, y, w, h, rows };
+    const rows = Array.from({ length: visible }, (_, i) => ({ x: x + 4, y: y + 26 + i * rowH, w: w - 8, h: rowH - 1 }));
+    const tw = Math.floor((w - 8) / CATALOG.length);
+    const tabs = CATALOG.map((_, i) => ({ x: x + 4 + i * tw, y: y + 13, w: tw - 2, h: 10 }));
+    return { x, y, w, h, rows, tabs, visible };
   }
 
   update(game: Game): void {
     const inp = game.input;
-    const n = CATALOG_SEEDS.length;
+    const entries = CATALOG[this.tab].entries;
+    const n = entries.length;
+    if (inp.repeat('left')) { this.tab = (this.tab + CATALOG.length - 1) % CATALOG.length; this.cursor = 0; this.scroll = 0; sfx.blip(); return; }
+    if (inp.repeat('right')) { this.tab = (this.tab + 1) % CATALOG.length; this.cursor = 0; this.scroll = 0; sfx.blip(); return; }
     if (inp.repeat('up')) { this.cursor = (this.cursor + n - 1) % n; sfx.blip(); }
     if (inp.repeat('down')) { this.cursor = (this.cursor + 1) % n; sfx.blip(); }
     let buy = inp.repeat('a');
     const L = this.layout(game);
     for (const t of inp.taps) {
+      const th = L.tabs.findIndex((r) => inRect(r, t.x, t.y));
+      if (th >= 0) { this.tab = th; this.cursor = 0; this.scroll = 0; sfx.blip(); return; }
       const hit = L.rows.findIndex((r) => inRect(r, t.x, t.y));
-      if (hit >= 0) { if (hit === this.cursor) buy = true; this.cursor = hit; sfx.blip(); }
+      if (hit >= 0 && hit + this.scroll < n) { const i = hit + this.scroll; if (i === this.cursor) buy = true; this.cursor = i; sfx.blip(); }
       else if (!inRect(L, t.x, t.y)) { this.closed = true; sfx.cancel(); return; }
     }
+    if (this.cursor < this.scroll) this.scroll = this.cursor;
+    if (this.cursor >= this.scroll + L.visible) this.scroll = this.cursor - L.visible + 1;
     if (buy) {
-      const id = CATALOG_SEEDS[this.cursor];
-      const crop = CROP_BY_ID[ITEMS[id].crop ?? ''];
-      const cost = crop?.seedPrice ?? 0;
-      if (game.gold < cost) { sfx.error(); game.toast('Not enough gold.'); }
-      else if (!game.inv.canFit(id)) { sfx.error(); game.toast('Your bag is full.'); }
-      else { game.gold -= cost; game.inv.add(id, 1); sfx.coin(); }
+      const e = entries[this.cursor];
+      const def = ITEMS[e.id];
+      if (def.kind === 'gear' && game.inv.count(e.id) > 0) { sfx.error(); game.toast(`You already own the ${def.name}.`); }
+      else if (game.gold < e.cost) { sfx.error(); game.toast('Not enough gold.'); }
+      else if (!game.inv.canFit(e.id)) { sfx.error(); game.toast('Your bag is full.'); }
+      else { game.gold -= e.cost; game.inv.add(e.id, 1); sfx.coin(); if (def.kind === 'gear') game.toast(`${def.name} added to your Field Kit gear!`); }
     }
     if (inp.pressed('b')) { this.closed = true; sfx.cancel(); }
   }
@@ -252,25 +267,35 @@ export class CatalogMenu implements Overlay {
   draw(game: Game, g: CanvasRenderingContext2D): void {
     const L = this.layout(game);
     panel(g, L.x, L.y, L.w, L.h, 'paper');
-    drawText(g, 'MAIL-ORDER SEEDS', L.x + 5, L.y + 5, P.CRAN);
+    drawText(g, 'RANGER SUPPLY CATALOG', L.x + 5, L.y + 5, P.CRAN);
     drawTextRight(g, `${game.gold}G`, L.x + L.w - 5, L.y + 5, P.RUST);
-    L.rows.forEach((r, i) => {
-      const id = CATALOG_SEEDS[i];
-      const def = ITEMS[id];
-      const crop = CROP_BY_ID[def.crop ?? ''];
+    L.tabs.forEach((r, i) => {
+      const sel = i === this.tab;
+      g.fillStyle = hex(sel ? P.CRAN : P.AMBER); g.fillRect(r.x, r.y, r.w, r.h);
+      drawTextCentered(g, CATALOG[i].name, r.x + r.w / 2, r.y + 3, sel ? P.LANTERN : P.RUST);
+    });
+    const entries = CATALOG[this.tab].entries;
+    L.rows.forEach((r, k) => {
+      const i = k + this.scroll;
+      const e = entries[i];
+      if (!e) return;
+      const def = ITEMS[e.id];
+      const crop = def.crop ? CROP_BY_ID[def.crop] : undefined;
       const sel = i === this.cursor;
       if (sel) { g.fillStyle = hex(P.AMBER); g.fillRect(r.x, r.y, r.w, r.h); }
-      const icon = ICON[id];
+      const icon = ICON[e.id];
       if (icon) g.drawImage(icon, r.x + 1, r.y);
+      const owned = game.inv.count(e.id);
       drawText(g, crop?.name ?? def.name, r.x + 19, r.y + 2, sel ? P.VOID : P.CRAN);
-      drawText(g, `${crop?.days ?? 0}D${crop?.regrow ? ' REGROWS' : ''}${crop?.bogOnly ? ' BOG' : ''}  OWNED ${game.inv.count(id)}`, r.x + 19, r.y + 9, sel ? P.CRAN : P.RUST);
-      drawTextRight(g, `${crop?.seedPrice ?? 0}G`, r.x + r.w - 2, r.y + 5, sel ? P.VOID : P.RUST);
+      const sub = crop ? `${crop.days}D${crop.regrow ? ' REGROWS' : ''}${crop.bogOnly ? ' BOG' : ''}  OWNED ${owned}` : def.kind === 'gear' ? (owned ? 'OWNED' : 'FIELD KIT GEAR') : `OWNED ${owned}`;
+      drawText(g, sub, r.x + 19, r.y + 9, sel ? P.CRAN : P.RUST);
+      drawTextRight(g, `${e.cost}G`, r.x + r.w - 2, r.y + 5, sel ? P.VOID : P.RUST);
     });
-    const fy = L.y + L.h - 22;
-    const def = ITEMS[CATALOG_SEEDS[this.cursor]];
-    wrapText(CROP_BY_ID[def.crop ?? '']?.lore ?? '', L.w - 10).slice(0, 1).forEach((l) => drawText(g, l, L.x + 5, fy, P.CRAN));
-    drawText(g, 'A: BUY (HOLD)  B: CLOSE', L.x + 5, fy + 8, P.RUST);
-    drawText(g, 'CRAFTING SCHEMATICS: COMING SOON', L.x + 5, fy + 15, P.AMBER);
+    if (entries.length > L.visible) drawTextRight(g, `${this.cursor + 1}/${entries.length}`, L.x + L.w - 5, L.y + L.h - 11, P.RUST);
+    const def = ITEMS[entries[this.cursor].id];
+    const desc = def.crop ? CROP_BY_ID[def.crop]?.lore ?? def.desc : def.desc;
+    wrapText(desc, L.w - 10).slice(0, 2).forEach((l, k) => drawText(g, l, L.x + 5, L.y + L.h - 28 + k * 7, P.CRAN));
+    drawText(g, 'L/R: TAB  A: BUY (HOLD)  B: CLOSE', L.x + 5, L.y + L.h - 11, P.RUST);
   }
 }
 
@@ -356,10 +381,10 @@ export class JournalMenu implements Overlay {
   }
 
   draw(game: Game, g: CanvasRenderingContext2D): void {
-    const w = Math.min(game.w - 8, 220), h = Math.min(game.h - 30, 124);
+    const w = Math.min(game.w - 8, 230), h = Math.min(game.h - 30, 132);
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
-    const titles = ['FIELD JOURNAL', 'CRYPTID-DEX', 'CONTROLS'];
+    const titles = ['FIELD JOURNAL', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
@@ -379,22 +404,23 @@ export class JournalMenu implements Overlay {
       ly += 2;
       wrapText('Lure crops draw specific cryptids. Keep a stock of each before venturing past the trails.', w - 12).forEach((l) => line(l, P.CRAN));
     } else if (this.page === 1) {
-      line('LOGGED: 0/36   VARIANTS: 0/36', P.CRAN);
-      const cols = 12, cell = Math.min(15, Math.floor((w - 12) / cols));
-      for (let i = 0; i < 36; i++) {
-        const cx = lx + (i % cols) * cell, cy = ly + Math.floor(i / cols) * (cell + 1);
-        g.fillStyle = hex(P.AMBER);
-        g.fillRect(cx, cy, cell - 2, cell - 2);
-        g.fillStyle = hex(P.RUST);
-        g.fillRect(cx + 1, cy + 1, cell - 4, cell - 4);
-        drawTextCentered(g, '?', cx + (cell - 2) / 2, cy + Math.floor((cell - 2) / 2) - 2, P.LANTERN);
-      }
-      ly += 3 * (cell + 1) + 4;
-      wrapText('No cryptids logged yet. Rustling grass, bog reeds and fog patches hold secrets once the wider valley opens...', w - 12).forEach((l) => line(l, P.CRAN));
+      const c = game.clock;
+      const moon = moonPhase(c.day);
+      const tot = dexTotals(game.dex);
+      line(`WEATHER: ${WEATHER_LABEL[game.dayWeather.morning].toUpperCase()} / TONIGHT ${WEATHER_LABEL[game.dayWeather.evening].toUpperCase()}`, P.CRAN);
+      line(`MOON: ${moon.label.toUpperCase()}${moon.full ? ' (!)' : ''}`);
+      line(`DEX: LOGGED ${tot.logged}/36  RARE ${tot.rare}/36  GOLD ${tot.gold}`);
+      line(`KIT: ${moveName(game.kit.bait)} / ${moveName(game.kit.signal)}`);
+      line(`     ${moveName(game.kit.document)} / ${moveName(game.kit.stealth)}`);
+      const gear = ['bog_waders', 'scent_mask', 'thermal_lens', 'brass_bell', 'silver_bell', 'static_radio', 'parabolic_dish', 'chronos_shutter'].filter((id) => game.inv.count(id) > 0);
+      wrapText(`GEAR: ${gear.length ? gear.map((id) => ITEMS[id].name).join(', ') : 'none yet (Porch Workbench catalog)'}`, w - 12).forEach((l) => line(l));
+      if (game.wispNight === c.day) line('WISP-LIGHT OIL ACTIVE TONIGHT', P.VIOLET);
+      if (game.lunarNight === c.day) line('LUNAR DEW: 3X RARE VARIANTS TONIGHT', P.VIOLET);
     } else {
       const rows = [
         'MOVE: WASD / ARROWS / D-PAD', 'A: SPACE / E / ENTER - USE, TALK', 'B: SHIFT / ESC - RUN, CANCEL',
-        '1-9 / WHEEL / TAP: HOTBAR', 'I or B: BAG   TAB or J: JOURNAL', 'M: MUTE   PAD: TOUCH CONTROLS',
+        '1-9 / WHEEL / TAP: HOTBAR', 'I or B: BAG   TAB or J: CRYPTID-DEX', 'M: MUTE   PAD: TOUCH CONTROLS',
+        'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',
         'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
       ];
       rows.forEach((r) => line(r));

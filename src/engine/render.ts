@@ -11,6 +11,7 @@ import { O, T, objProps } from '../data/tiles';
 import { CROP_BY_ID } from '../data/items';
 import type { ToolKind } from '../data/items';
 import { hash2 } from '../util';
+import { cryptidSilhouette } from '../graphics/cryptidSprites';
 import type { Dir } from '../util';
 
 interface Drawable {
@@ -58,10 +59,32 @@ function drawGround(g: CanvasRenderingContext2D, m: MapRuntime, x: number, y: nu
       for (const [side, dx, dy] of NEIGH) {
         if (!m.inBounds(x + dx, y + dy)) continue;
         const n = m.ground(x + dx, y + dy);
-        if (n !== T.WATER && n !== T.BRIDGE) g.drawImage(OVER[`bank${side}`], sx, sy);
+        if (n !== T.WATER && n !== T.BRIDGE && n !== T.SHALLOW && n !== T.SPRING && n !== T.BOARDWALK) g.drawImage(OVER[`bank${side}`], sx, sy);
       }
       return;
     }
+    case T.BOG: g.drawImage(pick(GROUND.bog, h), sx, sy); return;
+    case T.SHALLOW:
+    case T.SPRING: {
+      const arr = t === T.SHALLOW ? GROUND.shallow : GROUND.spring;
+      g.drawImage(arr[Math.floor(time * 1.2 + h * 2) % 2], sx, sy);
+      for (const [side, dx, dy] of NEIGH) {
+        const n = m.ground(x + dx, y + dy);
+        if (m.inBounds(x + dx, y + dy) && n !== T.SHALLOW && n !== T.SPRING && n !== T.WATER && n !== T.BOARDWALK) g.drawImage(OVER[`shallow${side}`], sx, sy);
+      }
+      return;
+    }
+    case T.BOARDWALK: g.drawImage(GROUND.boardwalk[0], sx, sy); return;
+    case T.HEMLOCK: g.drawImage(pick(GROUND.hemlock, h), sx, sy); return;
+    case T.ROCKY: g.drawImage(pick(GROUND.rocky, h), sx, sy); return;
+    case T.SLOPE: g.drawImage(pick(GROUND.slope, h), sx, sy); return;
+    case T.CLIFF:
+      g.drawImage(pick(GROUND.cliff, h), sx, sy);
+      if (m.ground(x, y - 1) !== T.CLIFF) g.drawImage(OVER.cliffLip, sx, sy);
+      if (m.ground(x, y + 1) !== T.CLIFF) g.drawImage(OVER.cliffEdgeS, sx, sy);
+      return;
+    case T.RUIN_FLOOR: g.drawImage(pick(GROUND.ruin, h), sx, sy); return;
+    case T.CLOVER: g.drawImage(pick(GROUND.clover, h), sx, sy); return;
     case T.BRIDGE:
       g.drawImage(GROUND.water[0], sx, sy);
       g.drawImage(GROUND.bridge[0], sx, sy);
@@ -128,6 +151,22 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.WOODPILE: return OBJ.woodpile[0];
     case O.WINDOW: return OBJ.window[night ? 1 : 0];
     case O.LILYPAD: return OBJ.lilypad[h < 0.2 ? 1 : 0];
+    case O.APPLE_TREE: return pick(OBJ.apple, h);
+    case O.STONE_WALL: return OBJ.stonewall[0];
+    case O.WILLOW: return pick(OBJ.willow, h);
+    case O.HEMLOCK_TREE: return pick(OBJ.hemlock, h);
+    case O.HOLLOW_LOG: return OBJ.hollowlog[0];
+    case O.RUIN_WALL: return pick(OBJ.ruinwall, h);
+    case O.LUMBER: return OBJ.lumber[0];
+    case O.SAW_BLADE: return OBJ.sawblade[0];
+    case O.SLAG: return OBJ.slag[0];
+    case O.DEAD_TREE: return pick(OBJ.deadtree, h);
+    case O.CRAN_BUSH: return OBJ.cranbush[0];
+    case O.TOTEM: return OBJ.totem[0];
+    case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
+    case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
+    case O.PYLON: return OBJ.pylon[Math.floor(time * 6) % 2];
+    case O.ROD_BASE: return OBJ.rodbase[0];
     default: return null;
   }
 }
@@ -199,6 +238,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const x0 = Math.max(0, Math.floor(cx / 16) - 1), x1 = Math.min(m.w - 1, Math.floor((cx + game.w) / 16) + 1);
   const y0 = Math.max(0, Math.floor(cy / 16) - 1), y1 = Math.min(m.h - 1, Math.floor((cy + game.h) / 16) + 3);
   const lights: Light[] = [];
+  const shadowsDrawn = new Set<string>();
 
   // ---- Ground + flat decals ----
   for (let y = y0; y <= y1; y++) {
@@ -248,6 +288,16 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           list.push({ y: (y + 1) * 16, fn: () => g.drawImage(img, dx, dy) });
         }
         if (o === O.LAMP && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 10 - cy, r: 46, flicker: true });
+        if (o === O.PYLON && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 12 - cy, r: 30, flicker: true });
+        if (o === O.TOTEM || o === O.CHIME || o === O.ROD || o === O.PYLON) {
+          const c = game.summonAt(o);
+          if (c && !shadowsDrawn.has(c.id)) {
+            shadowsDrawn.add(c.id);
+            const sil = cryptidSilhouette(c.id, P.VOID, true);
+            const flick = 0.55 + Math.sin(time * 5) * 0.25;
+            list.push({ y: (y + 1) * 16 - 0.5, fn: () => { g.globalAlpha = flick; g.drawImage(sil, (x + 1) * 16 - 4 - cx, (y + 1) * 16 - 24 - cy); g.globalAlpha = 1; } });
+          }
+        }
         if (o === O.FIREPLACE) lights.push({ x: x * 16 + 16 - cx, y: y * 16 + 4 - cy, r: 68, flicker: true });
       }
       const fi = m.forage.get(i);
@@ -280,11 +330,12 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   });
   // Structures
   for (const s of m.def.structures) {
-    const img = STRUCT[s.kind][night && STRUCT[s.kind].length > 1 ? 1 : 0];
+    const frames = STRUCT[s.kind];
+    const img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2] : frames[night && frames.length > 1 ? 1 : 0];
     const dx = s.x * 16 - cx, dy = (s.y + s.h) * 16 - img.height - cy;
     if (dx > game.w || dy > game.h || dx + img.width < 0 || dy + img.height < 0) continue;
     list.push({ y: (s.y + s.h) * 16, fn: () => g.drawImage(img, dx, dy) });
-    if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: 26 });
+    if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
   }
   // Player
   const px = Math.round(p.x) - 4 - cx, py = Math.round(p.y) - 7 - cy;
@@ -319,6 +370,11 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
 
   game.particles.draw(g, cx, cy);
 
+  // ---- Weather tint (outdoors) ----
+  const wthr = game.weatherNow();
+  const outdoors = !m.def.indoor;
+  if (outdoors) game.weatherFx.drawTint(g, game.w, game.h, wthr);
+
   // ---- Lighting ----
   const ph = game.clock.phase();
   if (ph !== 'day') {
@@ -326,4 +382,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     lights.push({ x: px + 12, y: py + 12, r: lr, flicker: true });
   }
   game.lighting.render(g, game.w, game.h, game.clock.minutes, m.def.indoor, lights, time);
+  if (outdoors) {
+    game.weatherFx.drawParticles(g, game.w, game.h, wthr, time, cx, cy);
+    game.weatherFx.drawFlash(g, game.w, game.h);
+  }
 }

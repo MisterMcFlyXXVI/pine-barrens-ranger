@@ -4,6 +4,7 @@ import type { PlotState } from './world';
 import type { MapId } from '../data/maps';
 import type { Dir } from '../util';
 import type { Look } from '../graphics/playerSprite';
+import type { Dex, Kit } from './dex';
 
 export const SAVE_KEY = 'pbr_save_v1';
 export const SAVE_VERSION = 1;
@@ -13,6 +14,8 @@ export interface MapSave {
   forage: Array<[number, string]>;
   plots: PlotState[];
   hp: Array<[number, number]>;
+  /** Player-placed lure mounts (Phase 2+). */
+  placed?: Array<[number, number]>;
 }
 
 export interface Stats {
@@ -43,6 +46,11 @@ export interface SaveData {
   shipped: Stack[];
   stats: Stats;
   mailRead: number;
+  // Phase 2 (optional so Phase 1 saves still load)
+  dex?: Partial<Dex>;
+  kit?: Partial<Kit>;
+  wispNight?: number;
+  lunarNight?: number;
 }
 
 export function hasSave(): boolean {

@@ -6,6 +6,8 @@ import { makeCanvas, Pen, fromArt, flipH, outline, Canv } from './canvas';
 import { P } from './palette';
 import { mulberry32 } from '../util';
 import { CROPS } from '../data/items';
+import { bakeWild } from './wildSprites';
+import { bakeCryptids } from './cryptidSprites';
 
 export const TILE = 16;
 
@@ -19,7 +21,7 @@ export const MISC: Record<string, Canv> = {};
 
 type Rng = () => number;
 
-function tile(base: number, specks: Array<[number, number]>, seed: number): { c: Canv; p: Pen; r: Rng } {
+export function tile(base: number, specks: Array<[number, number]>, seed: number): { c: Canv; p: Pen; r: Rng } {
   const { c, g } = makeCanvas(TILE, TILE);
   const p = new Pen(g);
   const r = mulberry32(seed);
@@ -109,7 +111,7 @@ function waterTile(frame: number): Canv {
   return c;
 }
 
-function plankTile(base: number, line: number, grain: number, vertical: boolean, seed: number, gap = 4): Canv {
+export function plankTile(base: number, line: number, grain: number, vertical: boolean, seed: number, gap = 4): Canv {
   const { c, p, r } = tile(base, [[grain, 0.05]], seed);
   for (let i = gap - 1; i < 16; i += gap) {
     if (vertical) p.vline(i, 0, 15, line); else p.hline(0, 15, i, line);
@@ -122,10 +124,10 @@ function plankTile(base: number, line: number, grain: number, vertical: boolean,
   return c;
 }
 
-type Side = 'N' | 'S' | 'W' | 'E';
+export type Side = 'N' | 'S' | 'W' | 'E';
 
 /** Generic edge fringe overlay: layers[k] painted at depth k from the side. */
-function edgeOverlay(side: Side, layers: Array<{ c: number[]; p: number }>, seed: number): Canv {
+export function edgeOverlay(side: Side, layers: Array<{ c: number[]; p: number }>, seed: number): Canv {
   const { c, g } = makeCanvas(TILE, TILE);
   const p = new Pen(g);
   const r = mulberry32(seed);
@@ -269,7 +271,7 @@ function bakePine(seed: number): Canv {
   return c;
 }
 
-function bakeOak(seed: number): Canv {
+export function bakeOak(seed: number): Canv {
   const w = 24, h = 30;
   const { c, g } = makeCanvas(w, h);
   const p = new Pen(g);
@@ -1287,4 +1289,6 @@ export function bakeAll(): void {
   STRUCT.shed = [bakeShed()];
   bakeIcons();
   bakeCrops();
+  bakeWild();
+  bakeCryptids();
 }
