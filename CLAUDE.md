@@ -151,6 +151,10 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
   
 ---  
   
+### Fishing, Trapping, Hunting & Stove Cooking (`src/engine/outdoors.ts`, `src/engine/wildlife.ts`, `src/ui/outdoors.ts`)
+- Fishing Rod timing mini-game by water type (creek / lake / deep); Snare Traps checked each morning; deer hunting with a quiet short-range **Hunting Bow** or a long-range **Deer Rifle** whose gunshot suppresses cryptid encounters on that map for the day.
+- Cabin Stove recipes (`station: 'stove'`) add to, not replace, the Diner: hearty meals with buffs (incl. **Lucky**) and lures (Smoked Venison, Rabbit Haunch, Smoked Fish). Cryptid encounters stay non-violent.
+
 ## 7. Historical Society Rewards & Town NPCs (`src/data/npcs.ts`)  
   
 ### Historical Society Donation Milestones (Agnes Vance)  

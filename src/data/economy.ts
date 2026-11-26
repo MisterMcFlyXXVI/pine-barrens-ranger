@@ -11,11 +11,26 @@ export interface Recipe {
   inputs: Array<[string, number]>;
   /** Blueprint id required (merchant-exclusive). */
   blueprint?: string;
+  /** Where it's made: the Porch Workbench (default) or the cabin stove. */
+  station?: 'stove';
 }
 
 /** Standard Porch Workbench recipes (CLAUDE.md §6) + a couple of quality-of-life extras. */
 export const RECIPES: readonly Recipe[] = [
   { id: 'r_venison', out: 'smoked_venison', qty: 1, inputs: [['foraged_meat', 1], ['pine_resin', 1], ['mineral_salt', 1]] },
+  { id: 'r_snare', out: 'snare', qty: 2, inputs: [['plant_fiber', 3], ['iron_nail', 1]] },
+  { id: 'r_arrows', out: 'arrow', qty: 5, inputs: [['plant_fiber', 2], ['iron_nail', 1], ['charred_wood', 1]] },
+  // ---- Cabin stove ----
+  { id: 'c_stew', out: 'venison_stew', qty: 1, station: 'stove', inputs: [['raw_venison', 1], ['wild_onion', 1], ['sweet_corn', 1]] },
+  { id: 'c_trout', out: 'fried_trout', qty: 1, station: 'stove', inputs: [['brook_trout', 1], ['sweet_corn', 1]] },
+  { id: 'c_pie', out: 'rabbit_pot_pie', qty: 1, station: 'stove', inputs: [['cottontail', 1], ['wild_onion', 1], ['foraged_egg', 1]] },
+  { id: 'c_dumplings', out: 'squirrel_dumplings', qty: 1, station: 'stove', inputs: [['squirrel', 1], ['sweet_corn', 1]] },
+  { id: 'c_catfish', out: 'catfish_hushpuppies', qty: 1, station: 'stove', inputs: [['channel_catfish', 1], ['sweet_corn', 1], ['foraged_egg', 1]] },
+  { id: 'c_grouse', out: 'grouse_apples', qty: 1, station: 'stove', inputs: [['grouse', 1], ['wild_apple', 2]] },
+  { id: 'c_pawpaw', out: 'pawpaw_bread', qty: 1, station: 'stove', inputs: [['pawpaw', 2], ['foraged_egg', 1]] },
+  { id: 'c_smoke_venison', out: 'smoked_venison', qty: 2, station: 'stove', inputs: [['raw_venison', 1], ['pine_resin', 1], ['mineral_salt', 1]] },
+  { id: 'c_haunch', out: 'rabbit_haunch', qty: 2, station: 'stove', inputs: [['cottontail', 1], ['pine_resin', 1]] },
+  { id: 'c_smoke_fish', out: 'smoked_fish', qty: 2, station: 'stove', inputs: [['creek_chub', 2], ['pine_resin', 1]] },
   { id: 'r_mash', out: 'fermented_mash', qty: 1, inputs: [['cranberries', 1], ['wild_apple', 1]] },
   { id: 'r_egg', out: 'sulfur_egg', qty: 1, inputs: [['foraged_egg', 1], ['mineral_salt', 1]] },
   { id: 'r_battery', out: 'battery_pack', qty: 1, inputs: [['scrap_copper', 1], ['glow_shroom', 1], ['bog_slime', 1]] },
@@ -113,6 +128,8 @@ export const TOOL_LINES: readonly ToolLine[] = ['machete', 'waders', 'lantern', 
 export interface ShopEntry {
   id: string;
   cost: number;
+  /** Sold in a bundle (e.g. 5 cartridges for the listed cost). */
+  qty?: number;
 }
 
 /** General Store counter (Gideon). */
@@ -120,6 +137,8 @@ export const STORE_STOCK: readonly ShopEntry[] = [
   { id: 'seed_clover', cost: 15 }, { id: 'seed_catnip', cost: 25 }, { id: 'seed_moss', cost: 30 }, { id: 'seed_corn', cost: 35 },
   { id: 'seed_pepper', cost: 55 }, { id: 'seed_cranberry', cost: 40 },
   { id: 'mineral_salt', cost: 45 }, { id: 'iron_nail', cost: 18 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
+  { id: 'fishing_rod', cost: 250 }, { id: 'hunting_bow', cost: 700 }, { id: 'arrow', cost: 30, qty: 5 },
+  { id: 'deer_rifle', cost: 1400 }, { id: 'rifle_cartridge', cost: 40, qty: 5 },
 ];
 
 /** Historical Society Gift Shop (unlocks at 16 donations). */

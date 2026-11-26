@@ -174,9 +174,10 @@ function buyRow(game: Game, e: ShopEntry, note = ''): Row {
   const cost = game.priceOf(e.cost);
   const crop = def.crop ? CROP_BY_ID[def.crop] : undefined;
   const sub = crop ? `${crop.days}D${crop.regrow ? ' REGROWS' : ''}${crop.bogOnly ? ' BOG' : ''}  OWNED ${game.inv.count(e.id)}` : `${note}OWNED ${game.inv.count(e.id)}`;
+  const qty = e.qty ?? 1;
   return {
-    icon: e.id, label: crop?.name ?? def.name, sub, right: `${cost}G`, desc: crop?.lore ?? def.desc,
-    act: () => game.buy(e.id, cost),
+    icon: e.id, label: `${crop?.name ?? def.name}${qty > 1 ? ` x${qty}` : ''}`, sub, right: `${cost}G`, desc: crop?.lore ?? def.desc,
+    act: () => game.buy(e.id, cost, qty),
   };
 }
 
@@ -211,14 +212,17 @@ export class StoreMenu extends ListMenu {
   }
 }
 
-/** Porch Workbench: crafting + mail-order seeds. */
+/** Porch Workbench (crafting + mail-order seeds) or, with station 'stove', the cabin stove (cooking). */
 export class CraftMenu extends ListMenu {
-  override tabs(): string[] { return ['CRAFT', 'BLUEPRINTS', 'SEEDS', 'LIST']; }
-  title(): string { return 'PORCH WORKBENCH'; }
+  constructor(private readonly station: 'workbench' | 'stove' = 'workbench') { super(); }
+  override tabs(): string[] { return this.station === 'stove' ? ['COOK', 'LIST'] : ['CRAFT', 'BLUEPRINTS', 'SEEDS', 'LIST']; }
+  title(): string { return this.station === 'stove' ? 'CABIN STOVE' : 'PORCH WORKBENCH'; }
+  private tabName(): string { return this.tabs()[this.tab] ?? ''; }
   override footer(): string {
-    if (this.tab === 2) return 'L/R: TAB  A: BUY  B: CLOSE';
-    if (this.tab === 3) return 'A: CRAFT  DEX: REMOVE  B: CLOSE';
-    return 'A: CRAFT  DEX: +LIST  B: CLOSE';
+    const verb = this.station === 'stove' ? 'COOK' : 'CRAFT';
+    if (this.tabName() === 'SEEDS') return 'L/R: TAB  A: BUY  B: CLOSE';
+    if (this.tabName() === 'LIST') return `A: ${verb}  DEX: REMOVE  B: CLOSE`;
+    return `A: ${verb}  DEX: +LIST  B: CLOSE`;
   }
   private recipeRow(game: Game, r: Recipe): Row {
     const out = ITEMS[r.out];
@@ -228,7 +232,7 @@ export class CraftMenu extends ListMenu {
     const sub = r.inputs.map(([id, n]) => `${n} ${ITEMS[id]?.name ?? id} (${haveCount(game, id)})`).join(' + ');
     const listed = game.needs.find((x) => x.recipe === r.id)?.qty ?? 0;
     return {
-      icon: r.out, label: listed ? `${out.name} [LIST x${listed}]` : out.name, sub, right: owned ? 'OWNED' : can ? 'CRAFT' : '--', dim: !can || owned,
+      icon: r.out, label: listed ? `${out.name} [LIST x${listed}]` : out.name, sub, right: owned ? 'OWNED' : can ? (r.station === 'stove' ? 'COOK' : 'CRAFT') : '--', dim: !can || owned,
       desc: out.desc, act: () => game.craft(r),
       alt: () => { const q = addNeed(game, r.id); sfx.confirm(); game.toast(`Added ${out.name} to your materials list${q > 1 ? ` (x${q})` : ''}.`); },
     };
@@ -237,23 +241,27 @@ export class CraftMenu extends ListMenu {
     const list = listStatus(game);
     if (!list.length) {
       return [{ label: 'YOUR LIST IS EMPTY', sub: 'PICK A RECIPE, THEN TAP +LIST', dim: true,
-        desc: 'On the CRAFT or BLUEPRINTS tab, select a recipe and tap +LIST (or press DEX). Its materials are tracked here and in your Journal, counting your bag and the Storage Crate.' }];
+        desc: 'Select a recipe at the Porch Workbench or the cabin stove and tap +LIST (or press DEX). Its materials are tracked here and in your Journal, counting your bag and the Storage Crate.' }];
     }
     return list.map((st) => ({
       icon: st.recipe.out,
       label: `${st.name}${st.need.qty > 1 ? ` x${st.need.qty}` : ''}`,
       sub: st.parts.map((p) => `${p.name} ${Math.min(p.have, p.need)}/${p.need}`).join(' + '),
-      right: st.ready ? 'READY' : `${st.missing} LEFT`,
+      right: st.ready ? ((st.recipe.station ?? 'workbench') === this.station ? 'READY' : st.recipe.station === 'stove' ? 'STOVE' : 'BENCH') : `${st.missing} LEFT`,
       dim: !st.ready,
       desc: st.parts.map((p) => `${p.name}: ${p.have >= p.need ? 'got' : 'need'} ${p.need} (bag ${p.bag}, crate ${p.crate})`).join('. ') + '.',
-      act: () => game.craft(st.recipe),
+      act: () => {
+        if ((st.recipe.station ?? 'workbench') !== this.station) { sfx.error(); game.toast(st.recipe.station === 'stove' ? 'Cook this at the cabin stove.' : 'Craft this at the Porch Workbench.'); return; }
+        game.craft(st.recipe);
+      },
       alt: () => { removeNeed(game, st.recipe.id); sfx.cancel(); game.toast(`Removed ${st.name} from your list.`); },
       altLabel: 'REMOVE',
     }));
   }
   rows(game: Game): Row[] {
-    if (this.tab === 3) return this.listRows(game);
-    if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint).map((r) => this.recipeRow(game, r));
+    if (this.tabName() === 'LIST') return this.listRows(game);
+    if (this.station === 'stove') return RECIPES.filter((r) => r.station === 'stove').map((r) => this.recipeRow(game, r));
+    if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint && !r.station).map((r) => this.recipeRow(game, r));
     if (this.tab === 1) {
       return RECIPES.filter((r) => r.blueprint).map((r) => {
         if (game.progress.blueprints.has(r.blueprint!)) return this.recipeRow(game, r);

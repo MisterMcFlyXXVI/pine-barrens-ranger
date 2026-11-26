@@ -27,6 +27,21 @@ No environment variables or API keys are needed.
   have/need for every material (bag + crate), crafts when ready, and removes entries. The Journal has a read-only
   Materials List page, and the game toasts your progress as you collect materials.
 
+## Fishing, trapping, hunting & cooking
+- **Fishing Rod** (General Store, 250g): face a creek, the bog lake or the old canal and press A. Wait for the bite,
+  hook it, then reel when the marker is in the green. Creek: Brook Trout, Creek Chub. Lake/canal: Smallmouth Bass,
+  Channel Catfish (dusk/night). Deep pool: rare Muskie.
+- **Snare Traps** (Workbench: 3 Plant Fiber + 1 Iron Nail = 2): set on open grass/forest in the wild or your yard;
+  overnight they may catch a rabbit, squirrel or (deep woods) ruffed grouse.
+- **Hunting**: deer roam the Pine Trail, Old Growth and Radio Ridge, mostly at dawn/dusk and more in fall. Running
+  spooks them. **Hunting Bow** (700g): quiet, 3-tile range, tighter shot, arrows often recovered (craft 5 at the
+  Workbench). **Deer Rifle** (1400g): 6-tile range, easier shot, cartridges, but the gunshot scares cryptids off
+  that map until tomorrow. A deer gives Raw Venison and a Deer Hide (bucks: antlers too).
+- **Cabin Stove** (in addition to the Diner): Venison Stew, Fried Brook Trout, Rabbit Pot Pie, Squirrel &
+  Dumplings, Catfish & Hushpuppies, Grouse & Golden Apples (new Lucky buff: 2x rare variants), Pawpaw Bread, plus
+  lures: Smoked Venison (x2), Rabbit Haunch (Wampus Cat, Hodag, Dwayyo), Smoked Fish. Uses the materials list and
+  Storage Crate.
+
 ## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
 - **Accounts** (title screen → ACCOUNT): Continue with Google, or email + password (with password reset).

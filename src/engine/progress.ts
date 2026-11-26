@@ -19,7 +19,7 @@ export interface ProgressSave {
   claimed: number[];
   blueprints: string[];
   tools: Partial<Record<ToolLine, number>>;
-  buffs: { stealth: number; calm: number; haul?: number };
+  buffs: { stealth: number; calm: number; haul?: number; lucky?: number };
   boardDay: number;
   displays: Record<string, string>;
   archiveRead: boolean;
@@ -44,7 +44,7 @@ export class Progress {
   claimed = new Set<number>();
   blueprints = new Set<string>();
   tools: Record<ToolLine, number> = { machete: 0, waders: 0, lantern: 0, camera: 0, pack: 0, pockets: 0 };
-  buffs = { stealth: 0, calm: 0, haul: 0 };
+  buffs = { stealth: 0, calm: 0, haul: 0, lucky: 0 };
   boardDay = 0;
   /** "MAP:tileIndex" -> displayed specimen item id (cabin pedestals). */
   displays: Record<string, string> = {};
@@ -79,7 +79,7 @@ export class Progress {
     p.claimed = new Set(d.claimed ?? []);
     p.blueprints = new Set(d.blueprints ?? []);
     for (const t of TOOL_LINES) p.tools[t] = d.tools?.[t] ?? 0;
-    p.buffs = { stealth: d.buffs?.stealth ?? 0, calm: d.buffs?.calm ?? 0, haul: d.buffs?.haul ?? 0 };
+    p.buffs = { stealth: d.buffs?.stealth ?? 0, calm: d.buffs?.calm ?? 0, haul: d.buffs?.haul ?? 0, lucky: d.buffs?.lucky ?? 0 };
     p.boardDay = d.boardDay ?? 0;
     p.displays = { ...(d.displays ?? {}) };
     p.archiveRead = !!d.archiveRead;

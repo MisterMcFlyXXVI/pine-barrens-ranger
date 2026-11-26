@@ -23,6 +23,8 @@ export class MapRuntime {
   readonly shake = new Map<number, number>();
   /** Player-placed lure mounts: tile index -> object id. */
   readonly placed = new Map<number, number>();
+  /** Snare traps: tile index -> caught item id ('' = empty). */
+  readonly snares = new Map<number, string>();
   /** Apple trees already shaken today. */
   readonly shaken = new Set<number>();
 

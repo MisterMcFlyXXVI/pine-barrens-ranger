@@ -103,7 +103,7 @@ export const CRYPTIDS: readonly CryptidDef[] = [
   },
   {
     id: 'wampus_cat', num: 7, name: 'Wampus Cat', tier: 1, maps: ['PINE_TRAIL_AND_ORCHARD', 'RADIO_RIDGE_AND_CROSSROADS'], times: ['NIGHT'], weather: 'ANY',
-    lures: ['catnip_mint'], stances: ['CURIOUS', 'AGITATED'], temperament: 'predator', traits: ['dodgeBait'],
+    lures: ['catnip_mint', 'rabbit_haunch'], stances: ['CURIOUS', 'AGITATED'], temperament: 'predator', traits: ['dodgeBait'],
     drop: d('wampus_claw', 'Wampus Claw', 'One of eighteen. It has plenty more.', 70),
     look: 'A six-legged rust-red panther with lantern eyes.',
     notes: 'Bats away bait unless you use Mimic Call first. Catnip Mint is irresistible afterward.',
@@ -231,14 +231,14 @@ export const CRYPTIDS: readonly CryptidDef[] = [
   },
   {
     id: 'dwayyo', num: 25, name: 'Dwayyo', tier: 3, maps: ['OLD_GROWTH_AND_SAWMILL'], times: ['NIGHT'], weather: 'ANY',
-    lures: ['smoked_venison'], stances: ['AGITATED', 'CURIOUS'], temperament: 'predator', traits: ['scentDraw'],
+    lures: ['smoked_venison', 'rabbit_haunch'], stances: ['AGITATED', 'CURIOUS'], temperament: 'predator', traits: ['scentDraw'],
     drop: d('dwayyo_fang', 'Dwayyo Fang', 'Long, yellowed, and still sharp.', 135),
     look: 'An upright dark-red wolf with lantern-yellow fangs.',
     notes: 'Appears far more often when you carry a Moth Scale or Snallygaster Beak Shard.',
   },
   {
     id: 'hodag', num: 26, name: 'Hodag', tier: 3, maps: ['OLD_GROWTH_AND_SAWMILL'], zones: ['timber'], times: ['NIGHT'], weather: 'ANY',
-    lures: ['charred_wood'], stances: ['AGITATED', 'PRIDEFUL'], temperament: 'territorial', traits: ['crouchHate'],
+    lures: ['charred_wood', 'rabbit_haunch'], stances: ['AGITATED', 'PRIDEFUL'], temperament: 'territorial', traits: ['crouchHate'],
     drop: d('hodag_spine', 'Hodag Spine', 'A curved dorsal spike, warm to the touch.', 130),
     look: 'A spiny reptilian bulldog snorting steam.',
     notes: 'Territorial: Crouch Step creeping closer raises Startle. Toss bait from afar.',

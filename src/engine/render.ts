@@ -16,6 +16,7 @@ import type { ToolKind } from '../data/items';
 import { hash2 } from '../util';
 import { cryptidSilhouette } from '../graphics/cryptidSprites';
 import type { Dir } from '../util';
+import { deerKey } from '../graphics/outdoorSprites';
 
 interface Drawable {
   y: number;
@@ -197,6 +198,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.CRAN_BUSH: return OBJ.cranbush[0];
     case O.RED_SPRUCE: return pick(OBJ.spruce, h);
     case O.SKUNK_CABBAGE: return OBJ.skunkcabbage[0];
+    case O.SNARE: return OBJ.snare[m.snares.get(m.idx(x, y)) ? 1 : 0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -452,6 +454,13 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       list.push({ y: (wy - 1) * 16, fn: () => g.drawImage(wagon, wx * 16 - 12 - cx, (wy - 1) * 16 - 36 + 8 - cy) });
       lights.push({ x: wx * 16 + 8 - cx, y: (wy - 1) * 16 - cy, r: 30, flicker: true });
     }
+  }
+  // Deer
+  for (const d of game.wildlife.deer) {
+    const img = MISC[deerKey(d.buck, d.left, d.state === 'graze', d.frame)];
+    const dx = Math.round(d.x) - 4 - cx, dy = Math.round(d.y) + 16 - img.height - cy;
+    if (dx < -30 || dy < -30 || dx > game.w + 30 || dy > game.h + 30) continue;
+    list.push({ y: d.y + 16.3, fn: () => { g.globalAlpha = 0.35; g.fillStyle = hex(P.VOID); g.fillRect(dx + 6, dy + img.height - 2, 12, 2); g.globalAlpha = 1; g.drawImage(img, dx, dy); } });
   }
   // Player
   const px = Math.round(p.x) - 4 - cx, py = Math.round(p.y) - 7 - cy;

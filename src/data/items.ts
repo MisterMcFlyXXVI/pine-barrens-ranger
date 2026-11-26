@@ -2,8 +2,8 @@
 import { CRYPTIDS } from './cryptids';
 
 export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen' | 'food';
-export type Buff = 'stealth' | 'calm' | 'haul';
-export type ToolKind = 'hoe' | 'can' | 'machete';
+export type Buff = 'stealth' | 'calm' | 'haul' | 'lucky';
+export type ToolKind = 'hoe' | 'can' | 'machete' | 'rod' | 'bow' | 'rifle';
 
 export interface ItemDef {
   id: string;
@@ -54,6 +54,24 @@ const base: ItemDef[] = [
   { id: 'hoe', name: 'Hoe', kind: 'tool', tool: 'hoe', price: 0, stack: 1, desc: 'Tills garden plots and breaks small rocks.' },
   { id: 'watering_can', name: 'Watering Can', kind: 'tool', tool: 'can', price: 0, stack: 1, desc: 'Waters crops. Refill at the creek or Rain Barrel.' },
   { id: 'machete', name: 'Brush Machete', kind: 'tool', tool: 'machete', price: 0, stack: 1, desc: 'Clears brush, briars, stumps and tall grass.' },
+  // ---- Fishing, trapping & hunting ----
+  { id: 'fishing_rod', name: 'Fishing Rod', kind: 'tool', tool: 'rod', price: 0, stack: 1, desc: 'Face a creek, the bog lake or the old canal and press A to cast. Different water, different fish.' },
+  { id: 'hunting_bow', name: 'Hunting Bow', kind: 'tool', tool: 'bow', price: 0, stack: 1, desc: 'Quiet: cryptids never hear it. Short range (3 tiles) and a tighter shot, so sneak in close. Uses Arrows, which you can often recover.' },
+  { id: 'deer_rifle', name: 'Deer Rifle', kind: 'tool', tool: 'rifle', price: 0, stack: 1, desc: 'Long range (6 tiles) and an easier shot, but the report scares cryptids away from this area for the rest of the day. Uses Cartridges.' },
+  { id: 'arrow', name: 'Arrow', kind: 'material', price: 4, stack: 99, desc: 'Cedar shaft, iron point. Often recovered after a shot.' },
+  { id: 'rifle_cartridge', name: 'Rifle Cartridge', kind: 'material', price: 5, stack: 99, desc: 'One shot each. Loud.' },
+  { id: 'snare', name: 'Snare Trap', kind: 'placeable', price: 10, stack: 20, desc: 'Set it on open ground in the wild (or your yard). Check it each morning for rabbit, squirrel or grouse.' },
+  { id: 'raw_venison', name: 'Raw Venison', kind: 'material', price: 45, stack: 99, desc: 'Fresh deer meat. Cook it at the cabin stove, or smoke it into bait.' },
+  { id: 'deer_hide', name: 'Deer Hide', kind: 'material', price: 60, stack: 99, desc: 'Sells well in town.' },
+  { id: 'whitetail_antler', name: 'Whitetail Antler', kind: 'material', price: 90, stack: 99, desc: 'From a buck. Collectors pay well.' },
+  { id: 'cottontail', name: 'Raw Rabbit', kind: 'material', price: 30, stack: 99, desc: 'A cottontail from your snare. Pot pie, or bait.' },
+  { id: 'squirrel', name: 'Raw Squirrel', kind: 'material', price: 20, stack: 99, desc: 'Mountain staple. Squirrel and dumplings, anyone?' },
+  { id: 'grouse', name: 'Ruffed Grouse', kind: 'material', price: 55, stack: 99, desc: 'The drummer of the hardwoods. A rare catch.' },
+  { id: 'brook_trout', name: 'Brook Trout', kind: 'forage', price: 40, stack: 99, desc: "West Virginia's state fish. Cold, clear creeks." },
+  { id: 'creek_chub', name: 'Creek Chub', kind: 'forage', price: 12, stack: 99, desc: 'Bony little fish. Better smoked into bait.' },
+  { id: 'smallmouth_bass', name: 'Smallmouth Bass', kind: 'forage', price: 45, stack: 99, desc: 'Bronze fighter of the lake and canal.' },
+  { id: 'channel_catfish', name: 'Channel Catfish', kind: 'forage', price: 50, stack: 99, desc: 'Bites after dark in the bog lake.' },
+  { id: 'muskie', name: 'Muskie', kind: 'forage', price: 160, stack: 99, desc: 'The fish of ten thousand casts. Lurks in the deep pool.' },
 
   { id: 'wild_clover', name: 'Wild Clover', kind: 'crop', price: 28, stack: 99, edible: 6, desc: 'Sweet three-leaf clover. Lure: Jackalope.' },
   { id: 'catnip_mint', name: 'Catnip Mint', kind: 'crop', price: 45, stack: 99, edible: 8, desc: 'Pungent mint. Lure: Wampus Cat.' },
@@ -115,6 +133,15 @@ const base: ItemDef[] = [
   { id: 'black_coffee', name: 'Black Coffee', kind: 'food', price: 10, stack: 20, edible: 30, desc: '+30 energy. Mabel brews it strong.' },
   { id: 'pancakes', name: 'Buckwheat Pancakes', kind: 'food', price: 25, stack: 20, edible: 60, desc: '+60 energy. Buckwheat & maple syrup.' },
   { id: 'cranberry_pie', name: 'Cranberry Pie', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today.' },
+  // ---- Cabin stove cooking ----
+  { id: 'venison_stew', name: 'Venison Stew', kind: 'food', price: 80, stack: 20, edible: 90, buff: 'haul', desc: '+90 energy. Long Haul: tools cost 1 energy today.' },
+  { id: 'fried_trout', name: 'Fried Brook Trout', kind: 'food', price: 70, stack: 20, edible: 55, buff: 'calm', desc: '+55 energy. Steady Nerves: +20% Trust gains today.' },
+  { id: 'rabbit_pot_pie', name: 'Rabbit Pot Pie', kind: 'food', price: 75, stack: 20, edible: 70, buff: 'stealth', desc: '+70 energy. Stealth: -25% Startle gains today.' },
+  { id: 'squirrel_dumplings', name: 'Squirrel & Dumplings', kind: 'food', price: 50, stack: 20, edible: 85, desc: '+85 energy. Stick-to-your-ribs mountain cooking.' },
+  { id: 'catfish_hushpuppies', name: 'Catfish & Hushpuppies', kind: 'food', price: 85, stack: 20, edible: 65, buff: 'calm', desc: '+65 energy. Steady Nerves: +20% Trust gains today.' },
+  { id: 'grouse_apples', name: 'Grouse & Golden Apples', kind: 'food', price: 120, stack: 20, edible: 60, buff: 'lucky', desc: '+60 energy. Lucky: double Rare Variant odds today.' },
+  { id: 'pawpaw_bread', name: 'Pawpaw Bread', kind: 'food', price: 60, stack: 20, edible: 45, buff: 'stealth', desc: '+45 energy. Stealth: -25% Startle gains today.' },
+  { id: 'rabbit_haunch', name: 'Rabbit Haunch', kind: 'bait', price: 40, stack: 99, desc: 'Resin-smoked rabbit. Lure: Wampus Cat, Hodag, Dwayyo.' },
   { id: 'pepperoni_roll', name: 'Pepperoni Roll', kind: 'food', price: 20, stack: 20, edible: 45, buff: 'haul', desc: '+45 energy. Long Haul: tools cost 1 energy today. The coal-camp lunch.' },
   { id: 'soup_beans', name: 'Soup Beans & Cornbread', kind: 'food', price: 35, stack: 20, edible: 90, desc: '+90 energy. Pintos, ham hock, a skillet of cornbread.' },
   { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },

@@ -48,6 +48,9 @@ import { StorageMenu } from '../ui/storage';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
 import { drawHud, hotbarHit } from '../ui/hud';
+import { checkSnares, waterAt, WEAPONS } from './outdoors';
+import { Wildlife } from './wildlife';
+import { AimGame, FishingGame } from '../ui/outdoors';
 
 const MAX_STAMINA = 100;
 const MAX_WATER = 20;
@@ -73,6 +76,10 @@ export class Game {
   storage = Game.newStorage();
   /** Materials list: recipes the player wants to craft. */
   needs: Need[] = [];
+  /** Deer roaming the current map (hunting). */
+  wildlife = new Wildlife();
+  /** A rifle shot scares cryptids off a map for the rest of that day. */
+  private gunshots = new Map<MapId, number>();
 
   static newStorage(): Inventory { const s = new Inventory(); s.resize(36); return s; }
   gold = START_GOLD;
@@ -218,6 +225,7 @@ export class Game {
       ms.plots.forEach((p, i) => { if (m.plots[i]) Object.assign(m.plots[i], p); });
       for (const [i, hp] of ms.hp) m.hp.set(i, hp);
       for (const [i, o] of ms.placed ?? []) m.placeObject(i, o);
+      for (const [i, c] of ms.snares ?? []) if (m.objects[i] === O.SNARE) m.snares.set(i, c && ITEMS[c] ? c : '');
       m.forage.clear();
       for (const [i, item] of ms.forage) if (ITEMS[item]) m.forage.set(i, item);
     }
@@ -255,6 +263,7 @@ export class Game {
         plots: m.plots.map((p) => ({ ...p })),
         hp: [...m.hp.entries()],
         placed: [...m.placed.entries()],
+        snares: [...m.snares.entries()],
       };
     }
     return {
@@ -351,6 +360,7 @@ export class Game {
     if (this.lunarNight === this.clock.day) k *= 3;
     if (this.isFestival()) k *= 3;
     if (this.look.outfit === 'shimmer_suit') k *= 2;
+    if (this.progress.buffs.lucky === this.clock.day) k *= 2;
     return k;
   }
 
@@ -370,12 +380,15 @@ export class Game {
     return b;
   }
 
-  buy(id: string, cost: number): boolean {
+  buy(id: string, cost: number, qty = 1): boolean {
     if (this.gold < cost) { sfx.error(); this.toast('Not enough gold.'); return false; }
-    if (ITEMS[id].kind === 'gear' && this.inv.count(id) > 0) { sfx.error(); this.toast(`You already own the ${ITEMS[id].name}.`); return false; }
+    const def = ITEMS[id];
+    const owned = this.inv.count(id) + this.storage.count(id) > 0;
+    if ((def.kind === 'gear' || def.kind === 'tool') && owned) { sfx.error(); this.toast(`You already own the ${def.name}.`); return false; }
     if (!this.inv.canFit(id)) { sfx.error(); this.toast('Your bag is full.'); return false; }
     this.gold -= cost;
-    this.inv.add(id, 1);
+    const left = this.inv.add(id, qty);
+    if (left) this.storage.add(id, left);
     sfx.coin();
     return true;
   }
@@ -394,7 +407,9 @@ export class Game {
     this.inv.add(r.out, r.qty);
     sfx.harvest();
     const left = craftedNeed(this, r.id);
-    this.toast(left < 0 ? `Crafted ${out.name}!` : left ? `Crafted ${out.name}! (${left} more on your list)` : `Crafted ${out.name}! Crossed off your list.`);
+    const verb = r.station === 'stove' ? 'Cooked' : 'Crafted';
+    if (r.station === 'stove') sfx.eat();
+    this.toast(`${verb} ${r.qty > 1 ? `${r.qty} ` : ''}${out.name}!${left < 0 ? '' : left ? ` (${left} more on your list)` : ' Crossed off your list.'}`);
   }
 
   buyBlueprint(id: string, cost: number): void {
@@ -632,6 +647,7 @@ export class Game {
       this.campaignT -= dt;
       if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
+      this.wildlife.update(this, dt);
       this.updateAmbience(dt);
     }
 
@@ -846,9 +862,18 @@ export class Game {
     };
   }
 
+  /** Called when the rifle fires: no cryptids on this map until tomorrow, and the deer scatter. */
+  gunshot(): void {
+    this.gunshots.set(this.cur.id, this.clock.day);
+    this.wildlife.scatter(this);
+    this.toast('The shot echoes off the ridges. Cryptids here will lie low until tomorrow.');
+  }
+
+  quietToday(): boolean { return this.gunshots.get(this.cur.id) === this.clock.day; }
+
   private checkEncounter(x: number, y: number): void {
     const m = this.cur;
-    if (!m.def.wild) return;
+    if (!m.def.wild || this.quietToday()) return;
     if (this.encounterCd > 0) { this.encounterCd--; return; }
     const nearDeep = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]].some(([dx, dy]) => m.ground(x + dx, y + dy) === T.WATER);
     const chance = encounterChance(m.ground(x, y), m.obj(x, y), this.weatherNow(), nearDeep);
@@ -897,16 +922,76 @@ export class Game {
     const def = ITEMS[st.id];
     if (def.kind === 'tool' && def.tool) {
       if (this.cur.def.indoor) { if (!repeat) this.notice(`Better not swing the ${def.name} indoors.`); return; }
+      if (def.tool === 'rod' || def.tool === 'bow' || def.tool === 'rifle') { if (!repeat) this.useOutdoorTool(def.tool, tx, ty); return; }
       this.startTool(def.tool, tx, ty);
       return;
     }
     if (repeat) return;
     if (def.kind === 'seed') { this.plant(tx, ty); return; }
+    if (st.id === 'snare') { this.placeSnare(tx, ty); return; }
     if (def.kind === 'placeable') { this.placeMount(st.id, tx, ty); return; }
     if (def.edible) { this.eat(); return; }
     if (st.id === 'static_radio' && this.tryFinale()) return;
     if (def.kind === 'gear') { this.notice(`${def.name} is part of your Field Kit. Carry it into encounters.`); return; }
     this.notice(`${def.name}: ship it in the bin, or use it as cryptid bait.`);
+  }
+
+  private useOutdoorTool(tool: 'rod' | 'bow' | 'rifle', tx: number, ty: number): void {
+    const p = this.player;
+    if (tool === 'rod') {
+      // Cast one or two tiles out.
+      const [dx, dy] = DIR_VEC[p.dir];
+      const spot = [[tx, ty], [tx + dx, ty + dy]].find(([x, y]) => waterAt(this.cur, x, y));
+      if (!spot) { this.notice('Face a creek, the bog lake or the canal to cast.'); return; }
+      if (this.stamina < 2) { sfx.error(); this.notice("You're too exhausted to fish. Eat something or get some sleep."); return; }
+      if (!this.inv.slots.some((s) => !s)) { sfx.error(); this.notice('No room in your bag for a fish. Make space first.'); return; }
+      this.stamina -= 2;
+      this.openOverlay(new FishingGame(this, waterAt(this.cur, spot[0], spot[1])!, spot[0], spot[1]));
+      return;
+    }
+    const w = WEAPONS[tool];
+    if (this.inv.count(w.ammo) <= 0) { sfx.error(); this.notice(tool === 'rifle' ? 'No cartridges. The General Store sells them.' : 'No arrows. Craft them at the Porch Workbench or buy them in town.'); return; }
+    const room = this.inv.slots.filter((s) => !s).length + (this.inv.canFit('raw_venison') && this.inv.count('raw_venison') ? 1 : 0) + (this.inv.canFit('deer_hide') && this.inv.count('deer_hide') ? 1 : 0);
+    if (room < 2) { sfx.error(); this.notice('Make room in your bag first: a deer means venison and a hide to carry home.'); return; }
+    const hit = this.wildlife.inSights(this, p.dir, w.range);
+    if (!hit) { this.notice(`No deer in range. Face one within ${w.range} tiles.${tool === 'bow' ? ' Walk, don\'t run, to sneak close.' : ''}`); return; }
+    this.openOverlay(new AimGame(this, hit.deer, w, tool, hit.dist));
+  }
+
+  private placeSnare(tx: number, ty: number): void {
+    const m = this.cur;
+    if (!m.def.wild) { sfx.error(); this.notice('Set snares out in the wild, or in your cabin yard.'); return; }
+    const g = m.ground(tx, ty);
+    const ok = m.inBounds(tx, ty) && m.obj(tx, ty) === O.NONE && !m.forage.has(m.idx(tx, ty)) && !m.portalAt(tx, ty) && !m.blocked(tx, ty)
+      && m.plotIndex(tx, ty) < 0 && (g === T.GRASS || g === T.FOREST || g === T.CLOVER || g === T.HEMLOCK);
+    if (!ok) { sfx.error(); this.notice('Snares go on open grass or forest floor, off the trail.'); return; }
+    const i = m.idx(tx, ty);
+    m.placeObject(i, O.SNARE);
+    m.snares.set(i, '');
+    this.inv.removeAt(this.sel, 1);
+    sfx.till();
+    this.toast(`Snare set. Check it each morning. (${m.countPlaced(O.SNARE)} here)`);
+  }
+
+  private checkSnare(i: number, cx: number, cy: number): void {
+    const m = this.cur;
+    const caught = m.snares.get(i) ?? '';
+    if (caught) {
+      if (!this.inv.canFit(caught)) { sfx.error(); this.notice('Your bag is full. Store things in the cabin crate, or get a bigger bag at the Outfitter.'); return; }
+      m.snares.set(i, '');
+      sfx.harvest();
+      this.give(caught, 1, cx, cy);
+      this.toast(`Caught a ${ITEMS[caught].name.replace(/^Raw /, '')}! The snare is reset.`);
+      return;
+    }
+    sfx.blip();
+    this.openOverlay(new Dialog(['The snare is set, but empty. Small game moves at night: check it in the morning.'], [
+      { label: 'Leave it set', fn: () => undefined },
+      { label: 'Pick it up', fn: () => {
+        if (!this.inv.canFit('snare')) { sfx.error(); this.toast('Your bag is full.'); return; }
+        m.removeObject(i); m.snares.delete(i); this.inv.add('snare', 1); sfx.confirm();
+      } },
+    ]));
   }
 
   private placeMount(id: string, tx: number, ty: number): void {
@@ -1072,7 +1157,7 @@ export class Game {
     this.inv.removeAt(this.sel, 1);
     sfx.eat();
     if (def.buff) this.progress.buffs[def.buff] = this.clock.day;
-    const buffTxt = def.buff === 'stealth' ? ' STEALTH buff today!' : def.buff === 'calm' ? ' STEADY NERVES buff today!' : def.buff === 'haul' ? ' LONG HAUL buff today!' : '';
+    const buffTxt = def.buff === 'stealth' ? ' STEALTH buff today!' : def.buff === 'calm' ? ' STEADY NERVES buff today!' : def.buff === 'haul' ? ' LONG HAUL buff today!' : def.buff === 'lucky' ? ' LUCKY buff today!' : '';
     this.toast(st.id === 'ghost_pepper' ? 'HOT! HOT! +2 energy... and tears.' : `Ate ${def.name}. +${def.edible} energy.${buffTxt}`);
     if (this.stamina >= 20) this.lowStaminaWarned = false;
   }
@@ -1236,8 +1321,12 @@ export class Game {
         ]));
         return true;
       case 'stove':
+        if (m.id === 'CABIN_INTERIOR') { sfx.open(); this.openOverlay(new CraftMenu('stove')); return true; }
         sfx.blip();
         this.openOverlay(new Dialog(['A cast-iron stove, still warm. A kettle hums quietly.']));
+        return true;
+      case 'snare':
+        this.checkSnare(i, cx, cy);
         return true;
       case 'crate':
         if (m.id === 'CABIN_INTERIOR') { sfx.open(); this.openOverlay(new StorageMenu()); return true; }
@@ -1508,6 +1597,11 @@ export class Game {
     if (this.journalPagesOn(this.cur.id).some((pg) => pg.x === tx && pg.y === ty)) return 'PICK UP PAGE';
     if (kind === 'table' && this.cur.id === 'CABIN_INTERIOR') return 'READ JOURNAL';
     if (kind === 'crate' && this.cur.id === 'CABIN_INTERIOR') return 'STORAGE';
+    if (kind === 'stove' && this.cur.id === 'CABIN_INTERIOR') return 'COOK';
+    const held = this.selected ? ITEMS[this.selected.id]?.tool : undefined;
+    if (held === 'rod' && !kind) { const [dx, dy] = DIR_VEC[this.player.dir]; if (waterAt(this.cur, tx, ty) || waterAt(this.cur, tx + dx, ty + dy)) return 'FISH'; }
+    if ((held === 'bow' || held === 'rifle') && this.wildlife.inSights(this, this.player.dir, WEAPONS[held].range)) return 'SHOOT';
+    if (kind === 'snare') return this.cur.snares.get(this.cur.idx(tx, ty)) ? 'COLLECT' : 'CHECK SNARE';
     if (this.selected?.id === 'static_radio' && this.progress.act === 4 && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads')) return 'TUNE RADIO';
     const npc = this.npcFacing(tx, ty);
     if (npc) return `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;
@@ -1612,7 +1706,7 @@ export class Game {
     this.stats.daysPlayed++;
     if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Square!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');
-    for (const m of this.maps.values()) m.spawnForage(this.clock.day);
+    for (const m of this.maps.values()) { m.spawnForage(this.clock.day); checkSnares(m); }
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
     this.cur = this.getMap(BED_SPAWN.map);
     lines.push(this.saveGame() ? 'Field journal saved.' : 'Warning: could not save.');

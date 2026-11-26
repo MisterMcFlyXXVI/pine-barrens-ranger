@@ -33,6 +33,8 @@ export class Player {
   turnHold = 0;
   /** Player was walking last frame (lets held movement continue without a turn pause). */
   chain = false;
+  /** Whether the last step was a run (deer hear you coming). */
+  running = false;
   action: ToolAction | null = null;
   /** Small "bump into wall" cooldown. */
   bumpCd = 0;
@@ -53,6 +55,7 @@ export class Player {
     this.t = 0;
     this.moving = true;
     this.stepTime = (run ? RUN_STEP : WALK_STEP) * terrain;
+    this.running = run;
     this.stepParity ^= 1;
   }
 

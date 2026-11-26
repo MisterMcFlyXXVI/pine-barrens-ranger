@@ -9,6 +9,7 @@ import { CROPS } from '../data/items';
 import { bakeWild } from './wildSprites';
 import { bakeCryptids } from './cryptidSprites';
 import { bakeTown } from './townSprites';
+import { bakeOutdoors } from './outdoorSprites';
 
 export const TILE = 16;
 
@@ -1305,5 +1306,6 @@ export function bakeAll(): void {
   bakeCrops();
   bakeWild();
   bakeTown();
+  bakeOutdoors();
   bakeCryptids();
 }

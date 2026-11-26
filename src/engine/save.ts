@@ -17,6 +17,8 @@ export interface MapSave {
   hp: Array<[number, number]>;
   /** Player-placed lure mounts (Phase 2+). */
   placed?: Array<[number, number]>;
+  /** Snare traps and what's in them ('' = empty). */
+  snares?: Array<[number, string]>;
 }
 
 export interface Stats {

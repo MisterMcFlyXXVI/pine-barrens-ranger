@@ -139,6 +139,8 @@ export const O = {
   // ---- West Virginia glades ----
   RED_SPRUCE: 73,
   SKUNK_CABBAGE: 74,
+  // ---- Trapping ----
+  SNARE: 75,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -154,7 +156,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -230,6 +232,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.CRAN_BUSH]: { name: 'Wild Cranberry', solid: false },
   [O.RED_SPRUCE]: { name: 'Red Spruce', solid: true },
   [O.SKUNK_CABBAGE]: { name: 'Skunk Cabbage', solid: false },
+  [O.SNARE]: { name: 'Snare Trap', solid: true, interact: 'snare' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },
   [O.CHIME]: { name: 'Bone & Antler Chime', solid: true, interact: 'mount' },
