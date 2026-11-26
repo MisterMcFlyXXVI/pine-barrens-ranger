@@ -19,6 +19,8 @@ export interface MapSave {
   placed?: Array<[number, number]>;
   /** Snare traps and what's in them ('' = empty). */
   snares?: Array<[number, string]>;
+  /** Pocket Map fog of war (bit-packed, base64). */
+  seen?: string;
 }
 
 export interface Stats {

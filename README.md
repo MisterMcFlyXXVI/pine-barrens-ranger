@@ -45,8 +45,9 @@ No environment variables or API keys are needed.
 ## Music, map & friendships
 - **Music**: procedural chiptune (no audio files) for the title, cabin, town, woods, glades, Radio Ridge, nights,
   interiors, encounters and the festival. The SND button (or M) cycles music+sound -> sound effects only -> off.
-- **Pocket Map** (MAP pill / P): REGION minimap (you, exits, snares, lure mounts, cryptids seen here) and VALLEY
-  overview. **Barney's handcar** fast-travels to any explored region (about an hour) once you finish his
+- **Pocket Map** (MAP pill / P), styled like a national-park trail brochure: REGION map with red dashed trails,
+  labeled landmarks and trailheads, compass, scale bar and fog over ground you haven't explored yet (fog clears as
+  you walk and is saved); VALLEY overview with fog over unexplored regions. **Barney's handcar** fast-travels to any explored region (about an hour) once you finish his
   Telegraph Repair quest or reach 2 hearts with him.
 - **Townsfolk friendships**: chat daily and give one gift a day (talk while holding an item). Mabel, Gideon, Agnes,
   Barney, Dr. Okafor, Pippa, Sam and Toby each have 5 hearts, loves/likes/dislikes, and rewards at 2 and 4 hearts

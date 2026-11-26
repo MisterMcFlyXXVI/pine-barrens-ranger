@@ -230,6 +230,7 @@ export class Game {
       for (const [i, hp] of ms.hp) m.hp.set(i, hp);
       for (const [i, o] of ms.placed ?? []) m.placeObject(i, o);
       for (const [i, c] of ms.snares ?? []) if (m.objects[i] === O.SNARE) m.snares.set(i, c && ITEMS[c] ? c : '');
+      if (ms.seen) m.seenFromString(ms.seen); else m.revealTrails();
       m.forage.clear();
       for (const [i, item] of ms.forage) if (ITEMS[item]) m.forage.set(i, item);
     }
@@ -268,6 +269,7 @@ export class Game {
         hp: [...m.hp.entries()],
         placed: [...m.placed.entries()],
         snares: [...m.snares.entries()],
+        seen: m.seenToString(),
       };
     }
     return {
@@ -314,6 +316,7 @@ export class Game {
     this.cur = this.getMap(id);
     this.progress.visited.add(id);
     this.player.place(x, y, dir);
+    this.cur.reveal(x, y, 7);
     this.particles.clear();
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, 0, true);
     this.banner = { text: MAP_NAMES[id], t: 2.6 };
@@ -813,6 +816,7 @@ export class Game {
 
     if (p.moving) {
       if (p.advance(dt)) {
+        this.cur.reveal(p.tx, p.ty, 7);
         this.onArrive(p.tx, p.ty);
         if (this.fadeDir !== 0) return;
         const d = inp.dir();
