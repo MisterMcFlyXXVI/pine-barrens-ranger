@@ -179,6 +179,13 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
   
 ---  
   
+### Friendships, Music & Map
+- **Friendships** (`src/data/friends.ts`, `src/engine/friends.ts`): 5 hearts per townsperson; daily chat + one gift a day (loves/likes/dislikes; Agnes loves all specimens); rewards at 2/4 hearts are items or perk flags (`skillet`, `diner_discount`, `gideon_discount`, `agnes_brooch`, `handcar`, `barney_fishing`).
+- **Music** (`src/audio/music.ts`): procedural chiptune loops per region/time/encounter; keep bass above ~98 Hz for phone speakers.
+- **Pocket Map** (`src/ui/worldmap.ts`): REGION minimap + VALLEY overview; handcar fast travel after the Telegraph quest or 2 hearts with Barney.
+
+---
+
 ## 8. Phased Implementation Plan for Claude Code  
 Build and verify cleanly in phases so the repository always compiles with zero TypeScript errors:  
 - **Phase 1:** Scaffold Vite + TypeScript project (`vercel.json` if needed, strict `tsconfig.json`). Build the 16-color sprite baker, modular player outfit renderer, particle system, Web Audio chiptune synthesizer, smooth scrolling camera, `CABIN_YARD` (64x64) + `CABIN_INTERIOR`, 36 farmable garden plots, tool swings (Hoe, Watering Can, Machete), and Day/Dusk/Night clock.  

@@ -37,7 +37,7 @@ export class FishingGame implements Overlay {
   closed = false;
   private phase: 'cast' | 'wait' | 'bite' | 'reel' | 'done' = 'cast';
   private t = 0;
-  private waitFor = 1.5 + Math.random() * 3;
+  private waitFor: number;
   private fish: FishDef;
   private center = 0.5;
   private hits = 0;
@@ -48,6 +48,8 @@ export class FishingGame implements Overlay {
   constructor(game: Game, private readonly water: Water, private readonly bx: number, private readonly by: number) {
     const tags = timeTags(game.clock.minutes);
     this.fish = pickFish(water, tags.includes('NIGHT') || tags.includes('DUSK'));
+    // Barney's fishing secrets (4 hearts): bites come twice as fast.
+    this.waitFor = (1.5 + Math.random() * 3) * (game.progress.flags.has('barney_fishing') ? 0.5 : 1);
     sfx.swing();
   }
 

@@ -367,11 +367,18 @@ export class Game {
     if (this.isFestival()) k *= 3;
     if (this.look.outfit === 'shimmer_suit') k *= 2;
     if (this.progress.buffs.lucky === this.clock.day) k *= 2;
+    if (this.progress.flags.has('agnes_brooch')) k *= 1.5;
     return k;
   }
 
   isFestival(): boolean {
     return this.progress.has('festival') && this.clock.weekday === 'Sun' && this.clock.minutes >= 1080;
+  }
+
+  /** Outfitter upgrade price (Gideon's 4-heart discount stacks with the Shimmer Suit). */
+  upgradePrice(cost: number): number {
+    const c = this.priceOf(cost);
+    return this.progress.flags.has('gideon_discount') ? Math.round(c * 0.75) : c;
   }
 
   priceOf(cost: number): number {
@@ -410,12 +417,15 @@ export class Game {
       if (fromBag) this.inv.remove(id, fromBag);
       if (n - fromBag) this.storage.remove(id, n - fromBag);
     }
-    this.inv.add(r.out, r.qty);
+    // Mabel's skillet (2 hearts): stove meals make two servings.
+    const qty = r.station === 'stove' && out.kind === 'food' && this.progress.flags.has('skillet') ? r.qty * 2 : r.qty;
+    const over = this.inv.add(r.out, qty);
+    if (over) this.storage.add(r.out, over);
     sfx.harvest();
     const left = craftedNeed(this, r.id);
     const verb = r.station === 'stove' ? 'Cooked' : 'Crafted';
     if (r.station === 'stove') sfx.eat();
-    this.toast(`${verb} ${r.qty > 1 ? `${r.qty} ` : ''}${out.name}!${left < 0 ? '' : left ? ` (${left} more on your list)` : ' Crossed off your list.'}`);
+    this.toast(`${verb} ${qty > 1 ? `${qty} ` : ''}${out.name}!${left < 0 ? '' : left ? ` (${left} more on your list)` : ' Crossed off your list.'}`);
   }
 
   buyBlueprint(id: string, cost: number): void {
@@ -437,7 +447,7 @@ export class Game {
     const lv = this.progress.tools[line];
     const next = UPGRADES[line][lv + 1];
     if (!next) return;
-    const cost = this.priceOf(next.cost);
+    const cost = this.upgradePrice(next.cost);
     if (this.gold < cost) { sfx.error(); this.toast('Not enough gold.'); return; }
     if (!next.mats.every(([id, n]) => this.inv.count(id) >= n)) { sfx.error(); this.toast('Gideon: "Bring me the materials first."'); return; }
     this.gold -= cost;

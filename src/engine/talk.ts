@@ -11,6 +11,8 @@ import { stars } from './dex';
 import { sfx } from '../audio/sfx';
 import { hash2 } from '../util';
 import { agnesStory } from './campaign';
+import { dailyChat, giftable, giftedToday, giveGift } from './friends';
+import { isFriend } from '../data/friends';
 
 /** Quest givers (Sam shares Pippa's club quests). */
 function giverMatches(q: QuestDef, npcId: string): boolean {
@@ -112,13 +114,17 @@ export function talkTo(game: Game, npc: NpcRT): void {
     return;
   }
 
-  if (d.id === 'agnes' && agnesStory(game)) return;
+  // Friendship: the first chat each day counts; reaching a heart level plays its scene on top.
+  const scenes = dailyChat(game, d.id);
+  const showScenes = () => { for (const s of [...scenes].reverse()) { sfx.trustChime(); game.openOverlay(new Dialog(s)); } };
+
+  if (d.id === 'agnes' && agnesStory(game)) { showScenes(); return; }
 
   // Quest turn-ins and offers
   for (const q of QUESTS) {
     if (!giverMatches(q, d.id) || p.done(q.id)) continue;
     if (p.active(q.id)) {
-      if (readyToComplete(game, q)) { game.openOverlay(new Dialog(completeQuest(game, q))); return; }
+      if (readyToComplete(game, q)) { game.openOverlay(new Dialog(completeQuest(game, q))); showScenes(); return; }
       continue;
     }
     if (q.after && !p.done(q.after)) continue;
@@ -129,6 +135,7 @@ export function talkTo(game: Game, npc: NpcRT): void {
       { label: 'Accept', fn: () => { p.setStage(q.id, 1); sfx.confirm(); game.toast(`New quest: ${q.title}`); } },
       { label: 'Not now', fn: () => undefined },
     ]));
+    showScenes();
     return;
   }
 
@@ -149,7 +156,8 @@ export function talkTo(game: Game, npc: NpcRT): void {
       choices.push({ label: 'Donate', fn: () => game.openOverlay(new DonateMenu()) });
       break;
     case 'mabel':
-      choices.push({ label: 'Menu', fn: () => game.openOverlay(new ShopMenu('WHISTLE-STOP DINER', () => DINER_MENU)) });
+      // 4 hearts with Mabel: family prices.
+      choices.push({ label: 'Menu', fn: () => game.openOverlay(new ShopMenu('WHISTLE-STOP DINER', () => p.flags.has('diner_discount') ? DINER_MENU.map((e) => ({ ...e, cost: Math.round(e.cost * 0.75) })) : DINER_MENU)) });
       break;
     case 'gideon':
       choices.push({ label: 'Shop', fn: () => game.openOverlay(new StoreMenu(STORE_STOCK)) });
@@ -159,6 +167,23 @@ export function talkTo(game: Game, npc: NpcRT): void {
       choices.push({ label: 'Wares', fn: () => game.openOverlay(new MerchantMenu(d.id as 'ezri' | 'pike')) });
       break;
   }
+  // Gift whatever you're holding (one gift per person per day).
+  const held = game.selected;
+  if (isFriend(d.id) && held && giftable(held.id) && !giftedToday(game, d.id)) {
+    const fid = d.id;
+    choices.unshift({ label: 'Gift', fn: () => {
+      const cur = game.selected;
+      if (!cur || cur.id !== held.id) return;
+      game.inv.removeAt(game.sel, 1);
+      const r = giveGift(game, fid, d.name, held.id);
+      sfx.confirm();
+      // Scenes go underneath so the reaction shows first.
+      for (const s of [...r.scenes].reverse()) game.openOverlay(new Dialog(s));
+      if (r.scenes.length) sfx.trustChime();
+      game.openOverlay(new Dialog(r.pages));
+    } });
+  }
   choices.push({ label: 'Chat', fn: chat }, { label: 'Bye', fn: () => undefined });
   game.openOverlay(new Dialog(pages, choices));
+  showScenes();
 }

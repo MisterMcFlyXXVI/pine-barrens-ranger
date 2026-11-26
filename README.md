@@ -42,6 +42,17 @@ No environment variables or API keys are needed.
   lures: Smoked Venison (x2), Rabbit Haunch (Wampus Cat, Hodag, Dwayyo), Smoked Fish. Uses the materials list and
   Storage Crate.
 
+## Music, map & friendships
+- **Music**: procedural chiptune (no audio files) for the title, cabin, town, woods, glades, Radio Ridge, nights,
+  interiors, encounters and the festival. The SND button (or M) cycles music+sound -> sound effects only -> off.
+- **Pocket Map** (MAP pill / P): REGION minimap (you, exits, snares, lure mounts, cryptids seen here) and VALLEY
+  overview. **Barney's handcar** fast-travels to any explored region (about an hour) once you finish his
+  Telegraph Repair quest or reach 2 hearts with him.
+- **Townsfolk friendships**: chat daily and give one gift a day (talk while holding an item). Mabel, Gideon, Agnes,
+  Barney, Dr. Okafor, Pippa, Sam and Toby each have 5 hearts, loves/likes/dislikes, and rewards at 2 and 4 hearts
+  (e.g. Mabel's skillet doubles stove meals, Barney's handcar, Agnes's lucky brooch, discounts). The Journal's
+  Townsfolk page shows hearts and the tastes you've discovered.
+
 ## Saves & accounts
 - The game saves on the device when you sleep in the bed or use the cabin desk.
 - **Quick resume**: whenever the app is switched away from or closed (and every 90s), the game snapshots exactly

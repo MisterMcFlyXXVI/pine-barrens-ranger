@@ -24,6 +24,8 @@ import { touchOn } from '../util';
 import { accountEmail } from '../engine/account';
 import { drawClipped, More, tapMore } from './readMore';
 import { listStatus } from '../engine/materials';
+import { friendState, giftedToday, hearts, taste } from '../engine/friends';
+import { FRIENDS, FriendId, MAX_HEARTS } from '../data/friends';
 import { UPGRADES } from '../data/economy';
 
 function anyConfirm(game: Game): boolean {
@@ -394,7 +396,7 @@ export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
-  private static readonly PAGES = 6;
+  private static readonly PAGES = 7;
 
   update(game: Game): void {
     const inp = game.input;
@@ -410,7 +412,7 @@ export class JournalMenu implements Overlay {
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
     this.mores = [];
-    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'ALMANAC & KIT', 'CONTROLS'];
+    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'TOWNSFOLK', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
@@ -481,6 +483,29 @@ export class JournalMenu implements Overlay {
       }
       if (shown < list.length) drawText(g, `+${list.length - shown} MORE: SEE THE WORKBENCH LIST TAB`, lx, bottom, P.CRAN);
     } else if (page === 3) {
+      // Townsfolk friendships: hearts, today's gift, and (on tap) tastes found + rewards.
+      const names: Record<FriendId, string> = { mabel: 'MABEL', gideon: 'GIDEON', agnes: 'AGNES', barnaby: 'BARNEY', clara: 'DR. OKAFOR', pippa: 'PIPPA', sam: 'SAM', toby: 'TOBY' };
+      for (const id of Object.keys(names) as FriendId[]) {
+        const h = hearts(game, id);
+        const st = friendState(game, id);
+        drawText(g, names[id], lx, ly, P.CRAN);
+        for (let k = 0; k < MAX_HEARTS; k++) drawHeart(g, lx + 52 + k * 8, ly - 1, k < h);
+        const next = FRIENDS[id].rewards.find((r) => !st.claimed.includes(r.hearts));
+        drawTextRight(g, giftedToday(game, id) ? 'GIFTED TODAY' : next ? `NEXT: ${next.hearts}<3` : 'BEST FRIENDS', x + w - 6, ly, giftedToday(game, id) ? P.FOREST : P.RUST);
+        const tastes = (t: string) => st.known.filter((i) => taste(id, i) === t).map((i) => ITEMS[i]?.name ?? i);
+        const body = [
+          { text: `${h}/${MAX_HEARTS} hearts. Chat daily and give one gift a day.`, color: P.CRAN },
+          { text: `Loves: ${tastes('love').join(', ') || '???'}`, color: P.FOREST },
+          { text: `Likes: ${tastes('like').join(', ') || '???'}`, color: P.SHADOW },
+          { text: `Dislikes: ${tastes('dislike').join(', ') || '???'}`, color: P.RUST },
+          ...FRIENDS[id].rewards.map((r) => ({ text: `${r.hearts} hearts: ${st.claimed.includes(r.hearts) ? r.note : '???'}`, color: st.claimed.includes(r.hearts) ? P.FOREST : P.RUST })),
+        ];
+        this.mores.push({ rect: { x: lx - 2, y: ly - 2, w: w - 10, h: 10 }, title: names[id], body });
+        ly += 11;
+      }
+      ly += 2;
+      wrapText('Hold something and talk to give it as a gift. Tap a name to see what they like.', w - 12).forEach((l) => line(l, P.FOREST));
+    } else if (page === 4) {
       const c = game.clock;
       const moon = moonPhase(c.day);
       const tot = dexTotals(game.dex);
@@ -498,14 +523,15 @@ export class JournalMenu implements Overlay {
     } else {
       const rows = touchOn() ? [
         'MOVE: D-PAD (SLIDE YOUR THUMB TO TURN)', 'A: USE, TALK, PICK   B: CANCEL, HOLD TO RUN',
-        'TAP A HOTBAR SLOT TO HOLD THAT ITEM', 'BAG: INVENTORY   DEX: CRYPTID-DEX', 'TAP DEX TWICE: THIS JOURNAL',
-        'SND: MUTE   PAD: HIDE TOUCH CONTROLS', 'TAP TEXT BOXES, MENU ROWS & BATTLE MOVES',
+        'TAP A HOTBAR SLOT TO HOLD THAT ITEM', 'BAG: INVENTORY  DEX: CRYPTID-DEX  MAP: MAP', 'TAP DEX TWICE: THIS JOURNAL',
+        'SND: MUSIC/SOUND   PAD: HIDE TOUCH CONTROLS', 'TAP TEXT BOXES, MENU ROWS & BATTLE MOVES',
+        'TALK WHILE HOLDING AN ITEM TO GIVE A GIFT',
         'TAP A DESCRIPTION (OR MORE) TO READ IT ALL',
         'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',
         'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
       ] : [
         'MOVE: WASD / ARROWS / D-PAD', 'A: SPACE / E / ENTER - USE, TALK', 'B: SHIFT / ESC - RUN, CANCEL',
-        '1-9 / WHEEL / TAP: HOTBAR', 'I or B: BAG   TAB or J: CRYPTID-DEX', 'M: MUTE   PAD: TOUCH CONTROLS',
+        '1-9 / WHEEL / TAP: HOTBAR', 'I or B: BAG   TAB or J: CRYPTID-DEX   P: MAP', 'M: MUSIC/SOUND   PAD: TOUCH CONTROLS', 'TALK WHILE HOLDING AN ITEM TO GIVE A GIFT',
         'TALL GRASS, REEDS, FERNS, SHALLOWS & FOG HIDE CRYPTIDS',
         'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
       ];
@@ -544,4 +570,14 @@ export class SleepSummary implements Overlay {
     body.forEach((l, i) => drawText(g, l, x + 6, y + 24 + i * 8, P.FOG));
     if (this.t > 0.6 && Math.floor(game.time * 3) % 2 === 0) drawTextCentered(g, 'PRESS A', game.w / 2, y + h - 9, P.MIST);
   }
+}
+
+/** 7x6 pixel heart for the Townsfolk page. */
+function drawHeart(g: CanvasRenderingContext2D, x: number, y: number, full: boolean): void {
+  const rows = ['.xx.xx.', 'xxxxxxx', 'xxxxxxx', '.xxxxx.', '..xxx..', '...x...'];
+  rows.forEach((row, j) => { for (let i = 0; i < 7; i++) if (row[i] === 'x') {
+    const edge = j === 0 || i === 0 || i === 6 || row[i - 1] !== 'x' || row[i + 1] !== 'x' || rows[j + 1]?.[i] !== 'x';
+    g.fillStyle = hex(full ? (edge ? P.CRAN : P.RED) : (edge ? P.RUST : P.LANTERN));
+    g.fillRect(x + i, y + j, 1, 1);
+  } });
 }

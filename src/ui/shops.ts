@@ -205,7 +205,7 @@ export class StoreMenu extends ListMenu {
       if (!next) return { label: cur.name, sub: 'FULLY UPGRADED', right: 'MAX', dim: true, desc: cur.desc };
       const mats = next.mats.map(([id, n]) => `${n} ${ITEMS[id].name} (${game.inv.count(id)})`).join(', ');
       return {
-        label: `${cur.name} > ${next.name}`, sub: mats || 'NO MATERIALS', right: `${game.priceOf(next.cost)}G`,
+        label: `${cur.name} > ${next.name}`, sub: mats || 'NO MATERIALS', right: `${game.upgradePrice(next.cost)}G`,
         desc: next.desc, act: () => game.upgradeTool(line),
       };
     });

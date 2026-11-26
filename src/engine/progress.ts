@@ -28,6 +28,7 @@ export interface ProgressSave {
   flags?: string[];
   pages?: number[];
   visited?: string[];
+  friends?: Record<string, { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }>;
 }
 
 export interface Track {
@@ -56,6 +57,8 @@ export class Progress {
   /** Recovered Vance journal pages (0 = the burned journal itself). */
   pages = new Set<number>([0]);
   visited = new Set<string>();
+  /** Townsfolk friendships (see src/engine/friends.ts). */
+  friends: Record<string, { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }> = {};
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -67,7 +70,7 @@ export class Progress {
     return {
       quests: this.quests, donated: [...this.donated], claimed: [...this.claimed], blueprints: [...this.blueprints],
       tools: { ...this.tools }, buffs: { ...this.buffs }, boardDay: this.boardDay, displays: { ...this.displays }, archiveRead: this.archiveRead,
-      act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited],
+      act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited], friends: JSON.parse(JSON.stringify(this.friends)),
     };
   }
 
@@ -87,6 +90,7 @@ export class Progress {
     p.flags = new Set(d.flags ?? []);
     p.pages = new Set([0, ...(d.pages ?? [])]);
     p.visited = new Set(d.visited ?? []);
+    p.friends = JSON.parse(JSON.stringify(d.friends ?? {}));
     return p;
   }
 
