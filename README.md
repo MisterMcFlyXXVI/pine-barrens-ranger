@@ -23,7 +23,7 @@ No environment variables or API keys are needed.
   While signed in, every save also uploads to the player's account, and signing in on another device (or after
   deleting the app) brings the save back. If the device and the account disagree, the player chooses which to keep.
   The database keeps the previous upload as a spare ("Restore the previous cloud save").
-- Built on **Supabase** (Auth + a `saves` table with Row Level Security, so each player can only read their own
+- Built on **Supabase** (Auth + a `pine_holler_saves` table with Row Level Security, so each player can only read their own
   row). Client code: `src/engine/account.ts`, `src/ui/accountModal.ts`. Database setup: `supabase/schema.sql`.
 - Configuration: `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (the names Vercel's Supabase integration sets
   are accepted too). Only the public key is ever used; the build refuses a secret/service_role key.

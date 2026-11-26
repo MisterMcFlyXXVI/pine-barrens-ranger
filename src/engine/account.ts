@@ -1,7 +1,7 @@
 /**
  * Player accounts (Supabase Auth: Google + email/password) and cloud saves.
  *
- * The save lives in the `saves` table (see supabase/schema.sql); Row Level
+ * The save lives in the `pine_holler_saves` table (see supabase/schema.sql); Row Level
  * Security limits each player to their own row and a trigger keeps the previous
  * upload in `prev`. Supabase's library is loaded lazily, the first time
  * accounts are used, so it never slows the game's start.
@@ -146,7 +146,7 @@ export async function fetchCloudSave(): Promise<CloudSave | null> {
   const c = await ready();
   const uid = session?.user.id;
   if (!uid) throw new Error('Not signed in.');
-  const { data, error } = await c.from('saves').select('data, prev, day, updated_at').eq('user_id', uid).maybeSingle();
+  const { data, error } = await c.from('pine_holler_saves').select('data, prev, day, updated_at').eq('user_id', uid).maybeSingle();
   if (error) throw new Error(friendly(error));
   if (!data) return null;
   const row = data as { data: unknown; prev: unknown; day: number; updated_at: string };
@@ -165,7 +165,7 @@ export async function uploadSave(raw: string | null = localSaveText()): Promise<
   try {
     const c = await ready();
     const parsed = JSON.parse(raw) as { day?: number };
-    const { error } = await c.from('saves').upsert({ user_id: session.user.id, data: parsed, day: parsed.day ?? 0 });
+    const { error } = await c.from('pine_holler_saves').upsert({ user_id: session.user.id, data: parsed, day: parsed.day ?? 0 });
     if (error) return { ok: false, msg: friendly(error) };
     return { ok: true, msg: `Cloud save updated (day ${parsed.day ?? 0}).` };
   } catch (e) {
