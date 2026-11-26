@@ -71,6 +71,33 @@ function deer(frame: number, buck: boolean, grazing: boolean): Canv {
   return outline(c);
 }
 
+/** Barney's rail handcar (top-down on a vertical spur). Broken = tipped, rusted. */
+function handcarObj(broken: boolean): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  if (broken) {
+    p.rect(3, 6, 9, 6, RUST); p.line(3, 6, 12, 11, CRAN); p.px(5, 8, AMBER); p.px(9, 10, AMBER);
+    p.rect(2, 12, 3, 2, SHADOW); p.rect(11, 3, 3, 2, SHADOW); // loose wheels
+    p.line(6, 4, 9, 2, RUST);
+    return outline(c);
+  }
+  p.rect(3, 4, 10, 9, AMBER); p.hline(3, 12, 4, LANTERN); p.vline(3, 4, 12, RUST); p.vline(12, 4, 12, RUST);
+  for (const y of [7, 10]) p.hline(4, 11, y, RUST); // deck boards
+  for (const [x, y] of [[2, 4], [13, 4], [2, 11], [13, 11]]) p.rect(x, y, 1, 2, SHADOW); // wheels
+  p.rect(7, 2, 2, 3, SHADOW); p.hline(4, 11, 1, MIST); // pump handle
+  return outline(c);
+}
+
+function stopSign(): Canv {
+  const { c, g } = makeCanvas(16, 16);
+  const p = new Pen(g);
+  p.vline(8, 7, 15, RUST);
+  p.rect(3, 1, 11, 7, FOREST); p.rect(4, 2, 9, 5, MOSS);
+  // "H" for handcar
+  p.vline(6, 3, 5, LANTERN); p.vline(10, 3, 5, LANTERN); p.hline(6, 10, 4, LANTERN);
+  return outline(c);
+}
+
 export function bakeOutdoors(): void {
   // ---- tools & ammo ----
   ICON.fishing_rod = icon((p) => { p.line(3, 14, 13, 2, RUST); p.line(4, 14, 14, 2, AMBER); p.rect(3, 11, 2, 2, SHADOW); p.line(14, 2, 14, 9, FOG); p.px(14, 10, RED); });
@@ -102,6 +129,8 @@ export function bakeOutdoors(): void {
   ICON.rabbit_haunch = icon((p) => { p.ellipse(9, 8, 4, 3, RUST); p.ellipse(8, 7, 2, 1.5, AMBER); p.line(4, 12, 6, 10, FOG); p.px(3, 13, FOG); p.px(4, 13, FOG); });
 
   OBJ.snare = [snareObj(false), snareObj(true)];
+  OBJ.handcar = [handcarObj(false), handcarObj(true)];
+  OBJ.stopsign = [stopSign()];
   for (const buck of [false, true]) for (const grazing of [false, true]) for (const f of [0, 1]) {
     const right = deer(f, buck, grazing);
     MISC[deerKey(buck, false, grazing, f)] = right;

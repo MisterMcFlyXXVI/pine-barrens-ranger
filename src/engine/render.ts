@@ -17,6 +17,8 @@ import { hash2 } from '../util';
 import { cryptidSilhouette } from '../graphics/cryptidSprites';
 import type { Dir } from '../util';
 import { deerKey } from '../graphics/outdoorSprites';
+import { STOPS } from '../data/handcar';
+import { NPCS_BY_ID } from '../data/npcs';
 
 interface Drawable {
   y: number;
@@ -127,6 +129,9 @@ function fenceMask(m: MapRuntime, x: number, y: number): number {
 /** Progress-dependent visuals, set once per frame by renderWorld. */
 const flags = { grant: false, gift: false };
 
+/** Set each frame: is this map's handcar stop repaired? (objSprite has no game handle.) */
+let stopFixed = false;
+
 function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number, night: boolean, rustling: boolean): Canv | null {
   const h = hash2(x, y, 3);
   switch (o) {
@@ -199,6 +204,8 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.RED_SPRUCE: return pick(OBJ.spruce, h);
     case O.SKUNK_CABBAGE: return OBJ.skunkcabbage[0];
     case O.SNARE: return OBJ.snare[m.snares.get(m.idx(x, y)) ? 1 : 0];
+    case O.HANDCAR: return OBJ.handcar[stopFixed ? 0 : 1];
+    case O.STOP_SIGN: return OBJ.stopsign[0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -267,6 +274,7 @@ function drawTool(g: CanvasRenderingContext2D, tool: ToolKind, dir: Dir, f: numb
 
 export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const m = game.cur;
+  stopFixed = game.stopRepaired(m.id);
   const cam = game.cam;
   const cx = cam.ix, cy = cam.iy;
   const time = game.time;
@@ -453,6 +461,16 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       const [wx, wy] = FESTIVAL_SPOTS[who];
       list.push({ y: (wy - 1) * 16, fn: () => g.drawImage(wagon, wx * 16 - 12 - cx, (wy - 1) * 16 - 36 + 8 - cy) });
       lights.push({ x: wx * 16 + 8 - cx, y: (wy - 1) * 16 - cy, r: 30, flicker: true });
+    }
+  }
+  // Barney waits on his handcar at any working stop (in town he's at the station himself).
+  const stop = STOPS.get(m.id);
+  if (stop && m.id !== 'PINE_HOLLOW_TOWN' && game.stopActive(m.id)) {
+    const bdef = NPCS_BY_ID.barnaby;
+    if (bdef) {
+      const img = personFrame(bdef.body, bdef.look, 'down', 0, 'walk');
+      const bx = stop.car.x * 16 - 4 - cx, by = stop.car.y * 16 - 12 - cy;
+      list.push({ y: (stop.car.y + 1) * 16 + 0.2, fn: () => g.drawImage(img, bx, by) });
     }
   }
   // Deer

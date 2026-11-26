@@ -14,10 +14,11 @@ import { makeCanvas, Canv } from '../graphics/canvas';
 import { valueNoise } from '../util';
 import { sfx } from '../audio/sfx';
 import { T, O, MOUNT_OBJECT } from '../data/tiles';
-import { BUILT_MAPS, MAP_NAMES, getMapDef } from '../data/maps';
+import { MAP_NAMES, getMapDef } from '../data/maps';
 import { CRYPTIDS } from '../data/cryptids';
 import { inRect, panel, Rect } from './panel';
 import { Dialog } from './menus';
+import { STOPS } from '../data/handcar';
 
 /** Outdoor regions on the valley map: position (0..1) and short label. */
 const NODES: Array<{ id: MapId; x: number; y: number; label: string }> = [
@@ -48,17 +49,6 @@ function links(): Array<[MapId, MapId]> {
     }
   }
   return out;
-}
-
-/** Where fast travel drops you in a region: the porch at home, else the first trailhead leading in. */
-function arrival(target: MapId): { x: number; y: number } | null {
-  if (target === 'CABIN_YARD') return { x: 29, y: 19 };
-  for (const id of BUILT_MAPS) {
-    if (id === target) continue;
-    const p = getMapDef(id).portals.find((q) => q.to === target);
-    if (p) return { x: p.tx, y: p.ty };
-  }
-  return null;
 }
 
 /** Barney's handcar: after the Telegraph Repair quest, or once Barney trusts you (2 hearts). */
@@ -172,9 +162,10 @@ export class WorldMap implements Overlay {
   private img: Canv | null = null;
   private imgFor = '';
 
-  constructor(game: Game) {
-    // Indoors there's no minimap worth showing: open on the valley.
-    this.tab = game.cur.def.indoor ? 1 : 0;
+  /** Opened by talking to Barney at a handcar stop: the VALLEY tab picks a destination. */
+  constructor(game: Game, private readonly fromStop: MapId | null = null) {
+    // Indoors (or riding) the valley is what matters.
+    this.tab = game.cur.def.indoor || fromStop ? 1 : 0;
     const here = outdoorOf(game.cur.id);
     this.pick = Math.max(0, NODES.findIndex((n) => n.id === here));
   }
@@ -218,21 +209,20 @@ export class WorldMap implements Overlay {
   }
 
   private travel(game: Game, to: MapId): void {
-    const here = outdoorOf(game.cur.id);
     const name = MAP_NAMES[to];
-    if (to === here && !game.cur.def.indoor) { sfx.blip(); game.toast(`You're already in ${name}.`); return; }
+    if (!this.fromStop) { sfx.error(); game.toast('Fast travel leaves from a handcar stop. Find the one in this region.'); return; }
+    if (to === this.fromStop) { sfx.blip(); game.toast(`You're at the ${name} stop.`); return; }
     if (!game.progress.visited.has(to)) { sfx.error(); game.toast('You haven\'t explored there yet.'); return; }
-    if (!handcarUnlocked(game)) { sfx.error(); game.toast('Fast travel: help Barney fix the telegraph (or win his trust) for a ride on his handcar.'); return; }
-    const dest = arrival(to);
-    if (!dest) return;
+    const stop = STOPS.get(to);
+    if (!stop || !game.stopRepaired(to)) { sfx.error(); game.toast(`The ${name} stop needs repairs first. Walk there and fix it.`); return; }
     sfx.open();
-    game.openOverlay(new Dialog([`Ride Barney's old C&O handcar to ${name}? (Takes about an hour.)`], [
+    game.openOverlay(new Dialog([`Ride Barney's handcar to the ${name} stop? (About an hour.)`], [
       { label: 'Ride the handcar', fn: () => {
         this.closed = true;
         game.transition(() => {
-          game.enterMap(to, dest.x, dest.y, 'down');
+          game.enterMap(to, stop.arrive.x, stop.arrive.y, stop.arrive.dir);
           game.clock.minutes = Math.min(game.clock.minutes + 60, 26 * 60 - 1);
-          game.toast(`The handcar clatters off into the trees. Welcome to ${name}.`);
+          game.toast(`The handcar clatters down the spur. Welcome to ${name}.`);
         });
       } },
       { label: 'Not now', fn: () => undefined },
@@ -254,7 +244,8 @@ export class WorldMap implements Overlay {
     if (this.tab === 0) this.drawRegion(game, g, B.body);
     else this.drawValley(game, g, B.body);
     const foot = this.tab === 0 ? 'L/R: VALLEY  B: CLOSE'
-      : handcarUnlocked(game) ? 'TAP A PLACE TO RIDE THE HANDCAR  B: CLOSE' : 'FAST TRAVEL LOCKED (ASK BARNEY)  B: CLOSE';
+      : this.fromStop ? 'TAP A WORKING STOP TO RIDE  B: CLOSE'
+      : handcarUnlocked(game) ? 'RIDE FROM ANY WORKING HANDCAR STOP' : 'HANDCAR: ASK BARNEY AT THE STATION';
     drawText(g, foot, B.x + 5, B.y + B.h - 9, P.RUST);
   }
 
@@ -286,6 +277,13 @@ export class WorldMap implements Overlay {
       const label = STRUCT_LABEL[st.kind];
       symbol(g, sx(cx) - 2, sy(cy) - 2, st.kind === 'tower' ? 'tower' : st.kind === 'mine' ? 'mine' : st.kind === 'station' ? 'station' : 'house');
       if (label && st.kind !== 'house') drawText(g, label, sx(cx) + 5, sy(cy) - 2, P.VOID, P.LANTERN);
+    }
+    // The handcar stop
+    const stop = STOPS.get(m.id);
+    if (stop && seenAt(stop.car.x, stop.car.y)) {
+      const ok = game.stopRepaired(m.id);
+      plate(g, ok ? 'HANDCAR' : 'STOP (BROKEN)', sx(stop.car.x), sy(stop.car.y) - 6, P.LANTERN, ok ? P.FOREST : P.RUST);
+      symbol(g, sx(stop.car.x) - 2, sy(stop.car.y) - 2, 'station');
     }
     // Trailheads (exits) with where they lead
     const done = new Set<string>();
@@ -373,13 +371,19 @@ export class WorldMap implements Overlay {
       g.fillStyle = hex(sel ? P.LANTERN : P.VOID); g.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
       g.fillStyle = hex(P.VOID); g.fillRect(r.x - 1, r.y - 1, r.w + 2, r.h + 2);
       drawTextCentered(g, n.label, r.x + r.w / 2, r.y + 3, P.FOG);
+      // Handcar stop badge: green = working, rust = needs repair.
+      const fixed = game.stopRepaired(n.id);
+      g.fillStyle = hex(P.VOID); g.fillRect(r.x + r.w - 3, r.y - 5, 9, 9);
+      g.fillStyle = hex(fixed ? P.MOSS : P.RUST); g.fillRect(r.x + r.w - 2, r.y - 4, 7, 7);
+      drawText(g, 'H', r.x + r.w, r.y - 3, fixed ? P.LANTERN : P.VOID);
       if (n.id === here) plate(g, 'YOU ARE HERE', r.x + r.w / 2, r.y + r.h + 7, P.LANTERN, Math.floor(game.time * 3) % 2 ? P.RED : P.CRAN);
     });
     compass(g, R.x + R.w - 9, R.y + 8);
     const n = NODES[this.pick];
     const total = CRYPTIDS.filter((c) => c.maps.includes(n.id)).length;
     const seen = CRYPTIDS.filter((c) => c.maps.includes(n.id) && game.dex[c.id]?.seen).length;
-    const info = game.progress.visited.has(n.id) ? `${MAP_NAMES[n.id].toUpperCase()}: ${seen}/${total} CRYPTIDS SEEN` : 'UNEXPLORED: FOLLOW THE TRAILS TO FIND IT';
+    const stopTxt = game.stopRepaired(n.id) ? 'STOP OK' : 'STOP BROKEN';
+    const info = game.progress.visited.has(n.id) ? `${MAP_NAMES[n.id].toUpperCase()}: ${seen}/${total} SEEN, ${stopTxt}` : 'UNEXPLORED: FOLLOW THE TRAILS TO FIND IT';
     drawText(g, info, R.x + 1, R.y + R.h - 6, P.CRAN);
   }
 }

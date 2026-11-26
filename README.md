@@ -43,6 +43,10 @@ No environment variables or API keys are needed.
   Storage Crate.
 
 ## Music, map & friendships
+- **Handcar stops**: every region has a small platform on a rail spur beside a trail. Each (except Town, the
+  station) starts broken; repair it with materials at its HANDCAR STOP sign. Once Barney's service runs (Telegraph
+  Repair quest or 2 hearts with Barney), he waits at every repaired stop: ride stop-to-stop (about an hour) and get
+  dropped on the destination platform. There's no fast travel from anywhere else.
 - **Music**: procedural chiptune (no audio files) for the title, cabin, town, woods, glades, Radio Ridge, nights,
   interiors, encounters and the festival. The SND button (or M) cycles music+sound -> sound effects only -> off.
 - **Pocket Map** (MAP pill / P), styled like a national-park trail brochure: REGION map with red dashed trails,

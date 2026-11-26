@@ -141,6 +141,9 @@ export const O = {
   SKUNK_CABBAGE: 74,
   // ---- Trapping ----
   SNARE: 75,
+  // ---- Barney's handcar stops ----
+  HANDCAR: 76,
+  STOP_SIGN: 77,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -156,7 +159,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'snare' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'handcar' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -233,6 +236,8 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.RED_SPRUCE]: { name: 'Red Spruce', solid: true },
   [O.SKUNK_CABBAGE]: { name: 'Skunk Cabbage', solid: false },
   [O.SNARE]: { name: 'Snare Trap', solid: true, interact: 'snare' },
+  [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
+  [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },
   [O.CHIME]: { name: 'Bone & Antler Chime', solid: true, interact: 'mount' },

@@ -47,7 +47,8 @@ import type { Overlay } from '../ui/overlay';
 import { Dialog, BagMenu, DresserMenu, JournalMenu, SleepSummary } from '../ui/menus';
 import { TitleScreen } from '../ui/title';
 import { StorageMenu } from '../ui/storage';
-import { WorldMap } from '../ui/worldmap';
+import { WorldMap, handcarUnlocked } from '../ui/worldmap';
+import { REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
 import { drawHud, hotbarHit } from '../ui/hud';
@@ -1026,6 +1027,53 @@ export class Game {
     this.openOverlay(new AimGame(this, hit.deer, w, tool, hit.dist));
   }
 
+  /** Is this region's handcar stop repaired (Town's is the station: always)? */
+  stopRepaired(id: MapId): boolean {
+    return id === 'PINE_HOLLOW_TOWN' ? STOPS.has(id) : this.progress.flags.has(stopFlag(id));
+  }
+
+  /** Repaired and Barney is running the handcar: he waits here for you. */
+  stopActive(id: MapId): boolean { return STOPS.has(id) && this.stopRepaired(id) && handcarUnlocked(this); }
+
+  private useHandcarStop(): void {
+    const id = this.cur.id;
+    const name = MAP_NAMES[id];
+    if (!this.stopRepaired(id)) {
+      const need = REPAIRS[id];
+      if (!need) return;
+      const list = need.mats.map(([it, n]) => `${n} ${ITEMS[it].name} (have ${haveCount(this, it)})`).join(', ');
+      const can = need.mats.every(([it, n]) => haveCount(this, it) >= n) && this.gold >= need.gold;
+      sfx.blip();
+      this.openOverlay(new Dialog([
+        `HANDCAR STOP: ${name.toUpperCase()}. The spur rails are buckled and the platform boards have rotted through.`,
+        `To repair it: ${list}, and ${need.gold}g for parts. (Materials in your Storage Crate count.)`,
+      ], can ? [
+        { label: 'Repair it', fn: () => {
+          for (const [it, n] of need.mats) { const fromBag = Math.min(n, this.inv.count(it)); if (fromBag) this.inv.remove(it, fromBag); if (n - fromBag) this.storage.remove(it, n - fromBag); }
+          this.gold -= need.gold;
+          this.progress.flags.add(stopFlag(id));
+          sfx.rockHit(); sfx.fanfare();
+          this.toast(handcarUnlocked(this) ? `${name} stop repaired! Barney can pick you up here now.` : `${name} stop repaired! Now Barney just needs his handcar running.`);
+        } },
+        { label: 'Not now', fn: () => undefined },
+      ] : undefined));
+      return;
+    }
+    if (!handcarUnlocked(this)) {
+      sfx.blip();
+      this.openOverlay(new Dialog([id === 'PINE_HOLLOW_TOWN'
+        ? "Barney's old handcar sits on the station siding under a tarp. He'd need a working telegraph to run the line safely."
+        : 'The stop is ready, but the handcar is still parked at the station in town.',
+        '(Fast travel: finish Barney\'s Telegraph Repair quest, or become friends with him.)']));
+      return;
+    }
+    sfx.open();
+    this.openOverlay(new Dialog([id === 'PINE_HOLLOW_TOWN' ? 'Barney: "Hop on, Ranger! Where to?"' : 'Barney leans on the pump handle. "Figured you\'d turn up here. Where to?"'], [
+      { label: 'Pick a stop', fn: () => this.openOverlay(new WorldMap(this, id)) },
+      { label: 'Not now', fn: () => undefined },
+    ]));
+  }
+
   private placeSnare(tx: number, ty: number): void {
     const m = this.cur;
     if (!m.def.wild) { sfx.error(); this.notice('Set snares out in the wild, or in your cabin yard.'); return; }
@@ -1396,6 +1444,9 @@ export class Game {
       case 'snare':
         this.checkSnare(i, cx, cy);
         return true;
+      case 'handcar':
+        this.useHandcarStop();
+        return true;
       case 'crate':
         if (m.id === 'CABIN_INTERIOR') { sfx.open(); this.openOverlay(new StorageMenu()); return true; }
         sfx.blip();
@@ -1669,6 +1720,7 @@ export class Game {
     const held = this.selected ? ITEMS[this.selected.id]?.tool : undefined;
     if (held === 'rod' && !kind) { const [dx, dy] = DIR_VEC[this.player.dir]; if (waterAt(this.cur, tx, ty) || waterAt(this.cur, tx + dx, ty + dy)) return 'FISH'; }
     if ((held === 'bow' || held === 'rifle') && this.wildlife.inSights(this, this.player.dir, WEAPONS[held].range)) return 'SHOOT';
+    if (kind === 'handcar') return this.stopActive(this.cur.id) ? 'RIDE HANDCAR' : this.stopRepaired(this.cur.id) ? 'HANDCAR' : 'REPAIR STOP';
     if (kind === 'snare') return this.cur.snares.get(this.cur.idx(tx, ty)) ? 'COLLECT' : 'CHECK SNARE';
     if (this.selected?.id === 'static_radio' && this.progress.act === 4 && this.cur.zonesAt(this.player.tx, this.player.ty).includes('crossroads')) return 'TUNE RADIO';
     const npc = this.npcFacing(tx, ty);

@@ -11,6 +11,7 @@ import type { MapDef, MapId, PlotDef } from './mapgen';
 import { P } from '../graphics/palette';
 import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } from './wilds';
 import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
+import { placeStop } from './handcar';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
@@ -275,6 +276,7 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'MUSEUM_INT') m = buildMuseum();
     else if (id === 'MUSEUM_BASEMENT') m = buildBasement();
     else throw new Error(`Region ${id} is not built yet`);
+    placeStop(m);
     cache.set(id, m);
   }
   return m;

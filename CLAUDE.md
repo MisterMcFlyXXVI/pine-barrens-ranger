@@ -182,7 +182,8 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 ### Friendships, Music & Map
 - **Friendships** (`src/data/friends.ts`, `src/engine/friends.ts`): 5 hearts per townsperson; daily chat + one gift a day (loves/likes/dislikes; Agnes loves all specimens); rewards at 2/4 hearts are items or perk flags (`skillet`, `diner_discount`, `gideon_discount`, `agnes_brooch`, `handcar`, `barney_fishing`).
 - **Music** (`src/audio/music.ts`): procedural chiptune loops per region/time/encounter; keep bass above ~98 Hz for phone speakers.
-- **Pocket Map** (`src/ui/worldmap.ts`): REGION minimap + VALLEY overview; handcar fast travel after the Telegraph quest or 2 hearts with Barney.
+- **Pocket Map** (`src/ui/worldmap.ts`): park-brochure REGION map with fog of war + VALLEY overview (info only).
+- **Handcar stops** (`src/data/handcar.ts`): one per outdoor region, auto-placed beside a trail near the entrance; repair each with materials (flag `stop_<MAP_ID>`; Town's station is always open). Fast travel only from a working stop (Barney waits there once service is unlocked by the Telegraph quest or 2 hearts), arriving on the destination platform. No fast travel from anywhere.
 
 ---
 

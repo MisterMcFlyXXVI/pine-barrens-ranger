@@ -66,7 +66,7 @@ export const FRIENDS: Record<FriendId, FriendDef> = {
     likes: ['brook_trout', 'pancakes', 'pepperoni_roll', 'iron_nail', 'smallmouth_bass'],
     dislikes: ['ghost_pepper', 'ghost_chili'],
     rewards: [
-      { hearts: 2, flag: 'handcar', note: 'Handcar fast travel (Pocket Map).', lines: ['Barney: "Got the old C&O handcar greased up. She runs the spur out to every trailhead in the valley."', 'Barney: "Just holler -- er, check your map -- and I\'ll run you out."', '(Fast travel unlocked on the Pocket Map\'s VALLEY tab.)'] },
+      { hearts: 2, flag: 'handcar', note: 'Handcar service at repaired stops.', lines: ['Barney: "Got the old C&O handcar greased up. There\'s a little stop on the spur in every part of the valley."', 'Barney: "Most of \'em are falling apart. Patch one up and I\'ll be waiting there whenever you come through."', '(Handcar service started: repair a region\'s stop, then ride from stop to stop.)'] },
       { hearts: 4, flag: 'barney_fishing', note: 'Fish bite twice as fast.', lines: ['Barney: "Secret to catfish? Patience and a little cornmeal. Trout? Shade. Stand where your shadow won\'t touch the water."', '(Fish now bite about twice as fast.)'] },
       { hearts: 5, note: 'Best friends.', lines: ['Barney blows the station whistle once, just for you. Buster howls along.'] },
     ],
