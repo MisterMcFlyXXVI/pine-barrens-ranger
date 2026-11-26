@@ -410,8 +410,12 @@ export class Encounter implements Overlay {
     const before = stars({ ...e, ...this.mergedObs(e) });
     this.say(firstLog ? `${d.name} LOGGED in the Cryptid-Dex!` : `${d.name} entry updated.`);
     if (firstVariant) this.say(`${this.setup.variant === 'albino' ? 'Albino' : 'Static-Charged'} Rare Variant logged!`);
+    // Specimens are rare: if the bag is full, it goes home to the cabin Storage Crate instead.
     const left = g.inv.add(d.drop.id, 1);
-    this.say(left ? `Your bag is full... the ${d.drop.name} was lost.` : `Received specimen: ${d.drop.name}!`);
+    const crated = left > 0 && g.storage.add(d.drop.id, 1) === 0;
+    this.say(!left ? `Received specimen: ${d.drop.name}!`
+      : crated ? `Your bag is full, so the ${d.drop.name} goes home to your Storage Crate.`
+      : `Your bag AND storage crate are full... the ${d.drop.name} was lost.`);
     if (firstLog) this.say('A Museum Specimen is now available for the Historical Society.');
     const after = stars({ ...e, ...this.mergedObs(e), logged: true });
     if (after === 3 && before < 3) this.say('3-STAR MASTERY: Gold Photo + Specimen!');

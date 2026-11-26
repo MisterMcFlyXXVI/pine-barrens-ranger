@@ -24,6 +24,7 @@ import { touchOn } from '../util';
 import { accountEmail } from '../engine/account';
 import { drawClipped, More, tapMore } from './readMore';
 import { listStatus } from '../engine/materials';
+import { UPGRADES } from '../data/economy';
 
 function anyConfirm(game: Game): boolean {
   return game.input.pressed('a') || game.input.taps.length > 0;
@@ -199,7 +200,9 @@ export class BagMenu implements Overlay {
   draw(game: Game, g: CanvasRenderingContext2D): void {
     const L = this.layout(game);
     panel(g, L.x, L.y, L.w, L.h);
-    drawText(g, 'FIELD PACK', L.x + 5, L.y + 5, P.LANTERN);
+    const used = game.inv.slots.filter((x) => x).length;
+    const packName = UPGRADES.pack[game.progress.tools.pack]?.name ?? 'Bag';
+    drawText(g, `${packName.toUpperCase()} ${used}/${game.inv.slots.length}`, L.x + 5, L.y + 5, used >= game.inv.slots.length ? P.AMBER : P.LANTERN);
     drawTextRight(g, `${game.gold}G`, L.x + L.w - 5, L.y + 5, P.AMBER);
     L.slots.forEach((r, i) => {
       drawItemSlot(game, g, r, i, i === this.cursor, i < HOTBAR_SIZE ? String(i + 1) : undefined);

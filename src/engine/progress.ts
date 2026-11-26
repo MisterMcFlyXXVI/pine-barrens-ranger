@@ -43,7 +43,7 @@ export class Progress {
   donated = new Set<string>();
   claimed = new Set<number>();
   blueprints = new Set<string>();
-  tools: Record<ToolLine, number> = { machete: 0, waders: 0, lantern: 0, camera: 0, pack: 0 };
+  tools: Record<ToolLine, number> = { machete: 0, waders: 0, lantern: 0, camera: 0, pack: 0, pockets: 0 };
   buffs = { stealth: 0, calm: 0, haul: 0 };
   boardDay = 0;
   /** "MAP:tileIndex" -> displayed specimen item id (cabin pedestals). */

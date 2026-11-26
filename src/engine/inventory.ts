@@ -6,7 +6,8 @@ export interface Stack {
 }
 
 export const HOTBAR_SIZE = 9;
-export const BAG_SIZE = 27;
+/** Starting bag (Canvas Satchel): the hotbar plus one row. Grows with Outfitter bags & pockets. */
+export const BAG_SIZE = 18;
 
 export class Inventory {
   slots: Array<Stack | null> = Array.from({ length: BAG_SIZE }, () => null);

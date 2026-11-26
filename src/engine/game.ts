@@ -167,6 +167,7 @@ export class Game {
     this.wispNight = 0;
     this.lunarNight = 0;
     this.progress = new Progress();
+    this.progress.flags.add('carry2');
     this.talks.clear();
     this.summoned.clear();
     this.rollDayWeather();
@@ -174,6 +175,9 @@ export class Game {
       this.gold = 50000;
       for (const it of Object.values(ITEMS)) if (it.kind === 'gear') this.inv.add(it.id, 1);
       this.progress.tools.waders = 1;
+      this.progress.tools.pack = UPGRADES.pack.length - 1;
+      this.inv.resize(this.bagCapacity());
+      for (const it of Object.values(ITEMS)) if (it.kind === 'gear' && !this.inv.count(it.id)) this.inv.add(it.id, 1);
     }
     // Start on the cabin porch (Act I), after the Firewatch-style intro.
     this.enterMap('CABIN_YARD', 29, 19, 'down');
@@ -194,7 +198,7 @@ export class Game {
     this.clock.day = d.day;
     this.clock.minutes = d.minutes;
     this.inv = new Inventory();
-    this.inv.resize(Math.min(45, d.inv.length));
+    this.inv.resize(Math.min(54, d.inv.length));
     d.inv.forEach((s, i) => { if (i < this.inv.slots.length && s && ITEMS[s.id]) this.inv.slots[i] = { id: s.id, n: s.n }; });
     this.storage = Game.newStorage();
     (d.storage ?? []).forEach((s, i) => { if (i < this.storage.slots.length && s && ITEMS[s.id]) this.storage.slots[i] = { id: s.id, n: s.n }; });
@@ -227,7 +231,12 @@ export class Game {
     this.lunarNight = d.lunarNight ?? 0;
     this.progress = Progress.load(d.progress);
     if (this.inv.count('bog_waders') > 0 && this.progress.tools.waders === 0) this.progress.tools.waders = 1;
-    this.inv.resize(27 + 9 * this.progress.tools.pack);
+    // Saves from before carrying capacity: the old 27/36/45 packs map onto the new tiers, so nobody loses slots.
+    if (!this.progress.flags.has('carry2')) {
+      this.progress.tools.pack = Math.min(UPGRADES.pack.length - 1, this.progress.tools.pack + 1);
+      this.progress.flags.add('carry2');
+    }
+    this.inv.resize(this.bagCapacity());
     this.summoned.clear();
     this.rollDayWeather();
     const map = BUILT_MAPS.has(d.map) ? d.map : BED_SPAWN.map;
@@ -397,6 +406,12 @@ export class Game {
     this.toast('Blueprint learned! Craft it at your Porch Workbench.');
   }
 
+  /** Carrying capacity: bag tier + pocket tier (Outfitter upgrades). */
+  bagCapacity(): number {
+    const t = this.progress.tools;
+    return (UPGRADES.pack[t.pack]?.slots ?? 18) + (UPGRADES.pockets[t.pockets]?.slots ?? 0);
+  }
+
   upgradeTool(line: ToolLine): void {
     const lv = this.progress.tools[line];
     const next = UPGRADES[line][lv + 1];
@@ -408,7 +423,7 @@ export class Game {
     for (const [id, n] of next.mats) this.inv.remove(id, n);
     this.progress.tools[line] = lv + 1;
     if (line === 'waders' && lv + 1 === 1 && this.inv.count('bog_waders') === 0) this.inv.add('bog_waders', 1);
-    if (line === 'pack') this.inv.resize(27 + 9 * this.progress.tools.pack);
+    if (line === 'pack' || line === 'pockets') { this.inv.resize(this.bagCapacity()); this.toast(`Your bag now holds ${this.bagCapacity()} slots.`); }
     sfx.rockHit(); sfx.fanfare();
     this.toast(`Upgraded to ${next.name}!`);
   }
@@ -1016,7 +1031,7 @@ export class Game {
     const left = this.inv.add(id, n);
     const icon = ICON[id];
     if (icon) this.particles.pop(cx, cy, icon);
-    if (left > 0) this.toast(`Bag full! ${left} ${ITEMS[id].name} lost.`);
+    if (left > 0) this.toast(`Bag full! ${left} ${ITEMS[id].name} left behind.`);
   }
 
   private refill(cx: number, cy: number): void {
@@ -1154,6 +1169,7 @@ export class Game {
     switch (kind) {
       case 'forage': {
         const id = m.forage.get(i)!;
+        if (!this.inv.canFit(id)) { this.notice('Your bag is full. Store things in the cabin crate, or get a bigger bag at the Outfitter.'); sfx.error(); return true; }
         m.forage.delete(i);
         this.stats.foraged++;
         sfx.harvest();
@@ -1256,6 +1272,7 @@ export class Game {
         sfx.shake();
         this.particles.leaves(cx, cy - 10);
         if (m.shaken.has(ai)) { this.notice('No more ripe apples on this tree today.'); return true; }
+        if (!this.inv.canFit('wild_apple')) { this.notice('Your bag is full. Store things in the cabin crate, or get a bigger bag at the Outfitter.'); sfx.error(); return true; }
         m.shaken.add(ai);
         this.give('wild_apple', 1 + (Math.random() < 0.4 ? 1 : 0), cx, cy - 4);
         this.toast('A Golden Delicious drops!');
@@ -1265,9 +1282,10 @@ export class Game {
         sfx.blip();
         const day = this.clock.day;
         const lucky = (i * 31 + day * 17) % 5 === 0;
+        const pick = ['wild_honeycomb', 'foraged_egg', 'charred_wood', 'scrap_copper'][(i + day) % 4];
+        if (lucky && !m.shaken.has(i) && !this.inv.canFit(pick)) { this.notice('Your bag is full. Store things in the cabin crate, or get a bigger bag at the Outfitter.'); sfx.error(); return true; }
         if (lucky && !m.shaken.has(i)) {
           m.shaken.add(i);
-          const pick = ['wild_honeycomb', 'foraged_egg', 'charred_wood', 'scrap_copper'][(i + day) % 4];
           this.give(pick, 1, cx, cy);
           this.toast(`Something was tucked inside: ${ITEMS[pick].name}!`);
         } else this.openOverlay(new Dialog(['You peer into the hollow log. Musty darkness... and a few long, coarse hairs.']));
@@ -1414,6 +1432,7 @@ export class Game {
     const o = m.objects[i];
     const id = Object.keys(MOUNT_OBJECT).find((k) => MOUNT_OBJECT[k] === o);
     if (!id) return;
+    if (!this.inv.canFit(id)) { this.notice('Your bag is full. Store things in the cabin crate, or get a bigger bag at the Outfitter.'); sfx.error(); return; }
     m.removeObject(i);
     const x = i % m.w, y = Math.floor(i / m.w);
     this.give(id, 1, x * 16 + 8, y * 16 + 8);

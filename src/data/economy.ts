@@ -60,13 +60,15 @@ export const MERCHANT_GOODS: Readonly<Record<'ezri' | 'pike', ReadonlyArray<{ id
   pike: [{ id: 'scrap_copper', cost: 55 }, { id: 'crushed_quartz', cost: 70 }, { id: 'battery_pack', cost: 190 }],
 };
 
-export type ToolLine = 'machete' | 'waders' | 'lantern' | 'camera' | 'pack';
+export type ToolLine = 'machete' | 'waders' | 'lantern' | 'camera' | 'pack' | 'pockets';
 
 export interface UpgradeTier {
   name: string;
   cost: number;
   mats: Array<[string, number]>;
   desc: string;
+  /** Bag slots this tier gives (pack and pockets lines; they add together). */
+  slots?: number;
 }
 
 /** Index 0 = starting level; buying moves to the next tier. */
@@ -91,14 +93,22 @@ export const UPGRADES: Readonly<Record<ToolLine, UpgradeTier[]>> = {
     { name: 'Field Camera', cost: 900, mats: [['crushed_quartz', 2]], desc: 'Gold photos at 65% Trust.' },
     { name: 'Telephoto Camera', cost: 2000, mats: [['silver_silk', 1], ['crushed_quartz', 2]], desc: 'Gold at 55%; flash Startle halved.' },
   ],
+  // Carrying capacity = bag slots + pocket slots. Keep spares in the cabin Storage Crate.
   pack: [
-    { name: 'Field Pack', cost: 0, mats: [], desc: '27 slots.' },
-    { name: 'Ranger Pack', cost: 1000, mats: [['plant_fiber', 5]], desc: '36 slots.' },
-    { name: 'Expedition Pack', cost: 2500, mats: [['plant_fiber', 10], ['silver_silk', 2]], desc: '45 slots.' },
+    { name: 'Canvas Satchel', cost: 0, mats: [], slots: 18, desc: '18 slots: your hotbar plus one row.' },
+    { name: 'Ranger Pack', cost: 800, mats: [['plant_fiber', 5]], slots: 27, desc: 'Bag holds 27 slots.' },
+    { name: 'Expedition Pack', cost: 2000, mats: [['plant_fiber', 10], ['silver_silk', 2]], slots: 36, desc: 'Bag holds 36 slots.' },
+    { name: "Coal Miner's Frame Pack", cost: 4500, mats: [['iron_nail', 6], ['scrap_copper', 4], ['plant_fiber', 10]], slots: 45, desc: 'Steel frame, canvas sack. Bag holds 45 slots.' },
+  ],
+  pockets: [
+    { name: 'Work Jeans', cost: 0, mats: [], slots: 0, desc: 'No room to spare.' },
+    { name: 'Cargo Pants', cost: 450, mats: [['plant_fiber', 4]], slots: 3, desc: '+3 slots. Pockets on the pockets.' },
+    { name: 'Hunting Vest', cost: 1200, mats: [['plant_fiber', 6], ['silver_silk', 1]], slots: 6, desc: '+6 slots. Blaze orange, loops for everything.' },
+    { name: "Miner's Bib Overalls", cost: 3000, mats: [['plant_fiber', 8], ['iron_nail', 4]], slots: 9, desc: '+9 slots. Every pocket a miner ever needed.' },
   ],
 };
 
-export const TOOL_LINES: readonly ToolLine[] = ['machete', 'waders', 'lantern', 'camera', 'pack'];
+export const TOOL_LINES: readonly ToolLine[] = ['machete', 'waders', 'lantern', 'camera', 'pack', 'pockets'];
 
 export interface ShopEntry {
   id: string;

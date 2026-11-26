@@ -18,6 +18,9 @@ npm run build    # type-checks (strict) and outputs to dist/
 No environment variables or API keys are needed.
 
 ## Storage & materials list
+- **Carrying capacity**: new games start with an 18-slot Canvas Satchel. The Outfitter sells bigger bags (27/36/45)
+  and pocket upgrades (Cargo Pants +3, Hunting Vest +6, Miner's Bib Overalls +9) that add together. Older saves keep
+  their slots. With a full bag, forage stays where it is; encounter specimens go to the Storage Crate.
 - **Storage Crate** in the cabin (by the stove): 36 slots; tap an item to move its stack between crate and bag.
   The Porch Workbench crafts from your bag first, then the crate.
 - **Materials list**: at the Workbench, select a recipe and tap **+LIST** (or press DEX/Tab). The **LIST** tab shows
