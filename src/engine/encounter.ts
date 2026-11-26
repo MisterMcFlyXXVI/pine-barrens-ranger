@@ -98,6 +98,8 @@ export class Encounter implements Overlay {
   private incenseTurns = 0;
   private gainThisTurn = 0;
   private obs = { sketch: false, cast: false, behavior: false, photo: false };
+  /** Snarly Yow Shadow Cloak worn at night: initial Startle halved, early turns calmer. */
+  private nightCloak = false;
   private readonly def: CryptidDef;
   private readonly name: string;
 
@@ -106,6 +108,9 @@ export class Encounter implements Overlay {
     const prefix = setup.variant === 'albino' ? 'Albino ' : setup.variant === 'static' ? 'Static ' : '';
     this.name = prefix + this.def.name;
     this.startle = this.def.startStartle ?? 0;
+    const ph = game.clock.phase();
+    this.nightCloak = game.look.outfit === 'yow_cloak' && (ph === 'night' || ph === 'witching');
+    if (this.nightCloak) this.startle = Math.round(this.startle * 0.5);
     this.shownStartle = this.startle;
     this.stance = this.def.stances[Math.floor(this.rnd() * this.def.stances.length)];
     sfx.alert();
@@ -133,6 +138,7 @@ export class Encounter implements Overlay {
 
   private addTrust(n: number): void {
     if (n > 0) {
+      if (this.game.progress.buffs.calm === this.game.clock.day) n = Math.round(n * 1.2);
       if (this.has('mistShield') && !this.gear('thermal_lens') && this.game.look.hat !== 'mothman_goggles') n = Math.round(n / 2);
       this.gainThisTurn += n;
       if (this.has('crouch3') && this.crouchCount < 3) { this.trust = Math.min(this.trust + n, Math.max(this.trust, 60)); return; }
@@ -145,6 +151,7 @@ export class Encounter implements Overlay {
       if (this.has('fastStartle')) n *= 1.5;
       if (this.has('slowStartle')) n *= 0.5;
       if (this.incenseTurns > 0 && (this.def.temperament === 'predator' || this.def.temperament === 'territorial')) n *= 0.5;
+      if (this.game.progress.buffs.stealth === this.game.clock.day) n *= 0.75;
       n = Math.round(n);
     }
     this.startle = clamp(this.startle + n, 0, 100);
@@ -239,6 +246,7 @@ export class Encounter implements Overlay {
       this.addTrust(trust); if (calm) this.addStartle(-calm);
       this.obs.behavior = true; sfx.trustChime(); this.say(msg);
     };
+    if (this.def.id === 'mothman' && id === 'dim_lantern' && this.game.progress.tools.lantern >= 2) return win(30, 'The High-Beam Lantern blazes -- the Mothman glides toward the light, transfixed!');
     if (this.has('loudSpook') && LOUD.has(id)) { this.addStartle(30); this.say(`The noise shrieks through the rafters! The ${n} recoils.`); return; }
     if (this.has('lanternMesmer') && id === 'dim_lantern') return win(35, `Mesmerized, the ${n} sways toward the lantern light.`);
     if (this.has('radioCalm') && id === 'static_radio') return win(30, `Static hums... the ${n} visibly relaxes.`, 15);
@@ -284,11 +292,13 @@ export class Encounter implements Overlay {
     if (this.has('flashImmune')) { this.say('The flash passes right through it. Nothing on the film.'); return; }
     if (this.has('feedFirst') && !this.fedBait) { this.addStartle(40); this.say('The flash panics it! You should have offered food first.'); return; }
     if (this.has('flashLove')) { this.addTrust(25); this.obs.photo = true; this.say(`The ${n} basks in the flash! GOLD PHOTO captured!`); return; }
-    if (chronos || this.trust >= 75) {
+    const camLv = this.game.progress.tools.camera;
+    const need = [75, 65, 55][camLv] ?? 75;
+    if (chronos || this.trust >= need) {
       this.obs.photo = true; this.addStartle(chronos ? 0 : 5);
       this.say('Click! A crisp, perfectly lit GOLD PHOTO!');
     } else {
-      this.addStartle(this.has('flashSpook') ? 60 : 35);
+      this.addStartle(Math.round((this.has('flashSpook') ? 60 : 35) * (camLv >= 2 ? 0.5 : 1)));
       this.say(this.has('flashSpook') ? `The flash terrifies the ${n}!` : 'Too early -- the flash startles it. Blurry shot.');
     }
   }
@@ -331,7 +341,11 @@ export class Encounter implements Overlay {
       const bait = this.game.kit.bait;
       if (inv.count(bait) > 0) { inv.remove(bait, 1); this.say(`The ${n} snatches a ${ITEMS[bait].name} and scampers back!`); }
     }
-    this.addStartle(this.has('squonk') ? 4 : PASSIVE[d.temperament] ?? 3);
+    let passive = this.has('squonk') ? 4 : PASSIVE[d.temperament] ?? 3;
+    const meadow = ['PINE_TRAIL_AND_ORCHARD', 'RADIO_RIDGE_AND_CROSSROADS', 'CABIN_YARD'].includes(this.game.cur.id);
+    if (this.game.look.hat === 'jackalope_cap' && d.temperament === 'skittish' && meadow) passive = Math.max(0, passive - 2);
+    if (this.nightCloak && this.turn <= 2) passive = 0;
+    this.addStartle(passive);
     if (this.has('squonk')) this.say('The Squonk weeps louder.');
     if (this.has('aggressive') && !this.breathLast) { this.addStartle(8); this.say(`The ${n} hisses and rolls closer! (Hold Breath to calm it.)`); }
     if (this.has('odor') && !this.gear('scent_mask')) { this.addStartle(12); this.say('The stench is overwhelming! (A Scent Mask would help.)'); }
@@ -373,7 +387,8 @@ export class Encounter implements Overlay {
       return true;
     }
     if (this.startle >= 100) {
-      if (this.def.temperament === 'predator' && this.game.look.outfit !== 'wendigo_mantle') {
+      const apex = this.game.look.outfit === 'wendigo_mantle' || this.game.look.hat === 'antler_crown';
+      if (this.def.temperament === 'predator' && !apex) {
         this.outcome = 'forced';
         this.say(`The ${n} lunges! You scramble back to the trail. (-15 energy)`, () => { this.shake = 1; });
       } else {

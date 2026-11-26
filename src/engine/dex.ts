@@ -15,6 +15,8 @@ export interface DexEntry {
   albino: boolean;
   static: boolean;
   encounters: number;
+  /** Heard a townsperson's rumor about it (reveals habitat hints). */
+  rumor?: boolean;
 }
 
 export type Dex = Record<string, DexEntry>;
@@ -87,7 +89,7 @@ export const MOVE_DESC: Readonly<Record<string, string>> = {
   static_radio: 'Crackling bands. Counters AGITATED and SPECTRAL.',
   parabolic_dish: 'Reveals stance; big Trust on vocal cryptids.',
   quick_sketch: 'Safe field sketch. Needs a little Trust.',
-  flash_photo: 'Gold photo at 75% Trust. Risky before that!',
+  flash_photo: 'Gold photo at 75% Trust (less with camera upgrades). Risky before that!',
   plaster_cast: 'Cast a track for evidence (2-Star). Needs 40%.',
   hold_breath: 'Freeze. -25% Startle.',
   crouch_step: 'Creep closer. +Trust; needed for stealth cryptids.',

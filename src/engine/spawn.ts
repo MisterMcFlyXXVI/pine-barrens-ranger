@@ -14,6 +14,10 @@ export interface SpawnCtx {
   dex: Dex;
   has: (item: string) => boolean;
   pylonHere: boolean;
+  /** Telegraph sighting-report cryptid (3x weight today). */
+  boost?: string;
+  /** Loveland Frog Slicker worn: +20% water cryptids. */
+  waterBonus?: boolean;
 }
 
 export function eligible(c: CryptidDef, ctx: SpawnCtx, ignoreSummon = false): boolean {
@@ -40,6 +44,8 @@ export function spawnWeight(c: CryptidDef, ctx: SpawnCtx): number {
   if (c.traits.includes('scentDraw') && (ctx.has('moth_scale') || ctx.has('snally_beak'))) w *= 4;
   if (ctx.pylonHere && ['thunderbird', 'mothman', 'hopkinsville_goblin'].includes(c.id)) w *= 4;
   if (c.zones) w *= 1.8; // zone specialists dominate their haunts
+  if (ctx.boost === c.id) w *= 3;
+  if (ctx.waterBonus && c.maps.includes('CRANBERRY_BOG_AND_SPRINGS')) w *= 1.2;
   return w;
 }
 
@@ -52,10 +58,9 @@ export function pickCryptid(ctx: SpawnCtx, rnd: () => number): CryptidDef | null
   return pool[pool.length - 1].c;
 }
 
-/** 1-in-32 base; Lunar Dew triples it; a Tesla Pylon forces Static-Charged variants. */
-export function rollVariant(rnd: () => number, lunar: boolean, pylon: boolean): Variant {
-  let odds = 1 / 32;
-  if (lunar) odds *= 3;
+/** 1-in-32 base x multiplier (Lunar Dew, festival, Shimmer Suit); a Tesla Pylon forces Static-Charged variants. */
+export function rollVariant(rnd: () => number, mult: number, pylon: boolean): Variant {
+  let odds = Math.min(0.5, (1 / 32) * mult);
   if (pylon) odds = Math.max(odds, 0.25);
   if (rnd() >= odds) return 'normal';
   if (pylon) return 'static';

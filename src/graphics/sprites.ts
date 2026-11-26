@@ -8,6 +8,7 @@ import { mulberry32 } from '../util';
 import { CROPS } from '../data/items';
 import { bakeWild } from './wildSprites';
 import { bakeCryptids } from './cryptidSprites';
+import { bakeTown } from './townSprites';
 
 export const TILE = 16;
 
@@ -1290,5 +1291,6 @@ export function bakeAll(): void {
   bakeIcons();
   bakeCrops();
   bakeWild();
+  bakeTown();
   bakeCryptids();
 }

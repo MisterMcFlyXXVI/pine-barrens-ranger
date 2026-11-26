@@ -10,12 +10,14 @@ import { Builder } from './mapgen';
 import type { MapDef, MapId, PlotDef } from './mapgen';
 import { P } from '../graphics/palette';
 import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } from './wilds';
+import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
 /** Regions that are fully built in this version. Others are portal stubs. */
 export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>([
   'CABIN_YARD', 'CABIN_INTERIOR', 'PINE_TRAIL_AND_ORCHARD', 'CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL', 'RADIO_RIDGE_AND_CROSSROADS',
+  'PINE_HOLLOW_TOWN', 'DINER_INT', 'STORE_INT', 'MUSEUM_INT', 'MUSEUM_BASEMENT',
 ]);
 
 export const MAP_NAMES: Record<MapId, string> = {
@@ -27,6 +29,11 @@ export const MAP_NAMES: Record<MapId, string> = {
   OLD_GROWTH_AND_SAWMILL: 'Old Growth & Sawmill',
   RADIO_RIDGE_AND_CROSSROADS: 'Radio Ridge & Crossroads',
   COAL_MINE: 'Abandoned Coal Mine',
+  DINER_INT: 'Whistle-Stop Diner',
+  STORE_INT: 'General Store & Outfitter',
+  MUSEUM_INT: 'Pine Hollow Historical Society',
+  MUSEUM_BASEMENT: 'Archive Basement',
+  EXPANSION_RAIL: 'Rail Line',
 };
 
 /* ------------------------------------------------------------------ */
@@ -195,7 +202,7 @@ function buildCabinYard(): MapDef {
     portals: [
       { x: 28, y: 18, w: 1, h: 1, to: 'CABIN_INTERIOR', tx: 10, ty: 14, dir: 'up', closedMsg: '' },
       { x: 28, y: 0, w: 7, h: 1, to: 'PINE_TRAIL_AND_ORCHARD', tx: 39, ty: 78, dir: 'up', closedMsg: '' },
-      { x: 63, y: 31, w: 1, h: 7, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 36, dir: 'right', closedMsg: 'The road to Pine Hollow Town is washed out past the bridge. (Town opens in a future update!)' },
+      { x: 63, y: 31, w: 1, h: 7, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 36, dir: 'right', closedMsg: '' },
     ],
     plots, signs: b.signs, zones: [], battleColors: [P.FOG, P.MOSS],
     forage: [
@@ -262,6 +269,11 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'CRANBERRY_BOG_AND_SPRINGS') m = buildCranberryBog();
     else if (id === 'OLD_GROWTH_AND_SAWMILL') m = buildOldGrowth();
     else if (id === 'RADIO_RIDGE_AND_CROSSROADS') m = buildRadioRidge();
+    else if (id === 'PINE_HOLLOW_TOWN') m = buildTown();
+    else if (id === 'DINER_INT') m = buildDiner();
+    else if (id === 'STORE_INT') m = buildStore();
+    else if (id === 'MUSEUM_INT') m = buildMuseum();
+    else if (id === 'MUSEUM_BASEMENT') m = buildBasement();
     else throw new Error(`Region ${id} is not built yet`);
     cache.set(id, m);
   }

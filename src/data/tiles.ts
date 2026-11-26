@@ -30,6 +30,13 @@ export const T = {
   CLIFF: 24,
   RUIN_FLOOR: 25,
   CLOVER: 26,
+  // ---- Phase 3 town ----
+  PLAZA: 27,
+  PLATFORM: 28,
+  RAIL: 29,
+  CHECKER: 30,
+  MARBLE: 31,
+  STAIRS: 32,
 } as const;
 
 /** Wadeable water: blocked unless the player owns Bog Waders. */
@@ -107,6 +114,28 @@ export const O = {
   CHIME: 49,
   PYLON: 50,
   ROD_BASE: 51,
+  // ---- Phase 3 town & interiors ----
+  FOUNTAIN: 52,
+  BOARD: 53,
+  BENCH: 54,
+  FLOWERBED: 55,
+  COUNTER: 56,
+  STOOL: 57,
+  GRILL: 58,
+  JUKEBOX: 59,
+  SHELF: 60,
+  ANVIL: 61,
+  FORGE: 62,
+  CASE: 63,
+  KIOSK: 64,
+  MAP_TABLE: 65,
+  RAILCAR: 66,
+  TICKET_BOOTH: 67,
+  SIGNAL_LANTERN: 68,
+  REGISTER: 69,
+  POSTER: 70,
+  HEDGE: 71,
+  BOOTH_SEAT: 72,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -123,7 +152,9 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
   | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
-  | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase';
+  | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
+  | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
 
 export interface Drop {
   item: string;
@@ -199,6 +230,27 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.CHIME]: { name: 'Bone & Antler Chime', solid: true, interact: 'mount' },
   [O.PYLON]: { name: 'Tesla Coil Pylon', solid: true, interact: 'mount' },
   [O.ROD_BASE]: { name: 'Lightning-Rod Mount', solid: true, interact: 'rodbase' },
+  [O.FOUNTAIN]: { name: 'Founders Fountain', solid: true, interact: 'fountain', fw: 2, fh: 2 },
+  [O.BOARD]: { name: 'Bulletin Board', solid: true, interact: 'board' },
+  [O.BENCH]: { name: 'Bench', solid: true },
+  [O.FLOWERBED]: { name: 'Flowerbed', solid: true },
+  [O.COUNTER]: { name: 'Counter', solid: true, interact: 'counter' },
+  [O.STOOL]: { name: 'Stool', solid: true },
+  [O.GRILL]: { name: 'Griddle', solid: true, interact: 'grill' },
+  [O.JUKEBOX]: { name: 'Jukebox', solid: true, interact: 'jukebox' },
+  [O.SHELF]: { name: 'Shelf', solid: true, interact: 'shelf' },
+  [O.ANVIL]: { name: 'Anvil', solid: true, interact: 'anvil' },
+  [O.FORGE]: { name: 'Forge', solid: true, interact: 'anvil' },
+  [O.CASE]: { name: 'Display Case', solid: true, interact: 'case' },
+  [O.KIOSK]: { name: 'Gift Shop Kiosk', solid: true, interact: 'kiosk' },
+  [O.MAP_TABLE]: { name: 'Survey Map Table', solid: true, interact: 'maptable' },
+  [O.RAILCAR]: { name: 'Rusted Rail Car', solid: true, interact: 'railcar', fw: 2, fh: 3 },
+  [O.TICKET_BOOTH]: { name: 'Ticket Booth', solid: true, interact: 'booth' },
+  [O.SIGNAL_LANTERN]: { name: 'Signal Lantern', solid: true, interact: 'signal' },
+  [O.REGISTER]: { name: 'Register', solid: true, interact: 'counter' },
+  [O.POSTER]: { name: 'Poster', solid: true, interact: 'poster' },
+  [O.HEDGE]: { name: 'Hedge', solid: true },
+  [O.BOOTH_SEAT]: { name: 'Booth Seat', solid: true },
 };
 
 export function objProps(o: number): ObjProps {

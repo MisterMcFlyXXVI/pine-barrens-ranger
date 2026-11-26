@@ -94,6 +94,11 @@ export function drawHud(game: Game, g: CanvasRenderingContext2D): void {
   const moon = moonPhase(c.day);
   const tag = c.phaseLabel() + (night && moon.full ? ' FULL MOON' : '');
   drawText(g, tag, px, ey + 13, phase === 'witching' ? P.RED : moon.full && night ? P.MOON : P.MIST, P.VOID);
+  const extras: Array<[string, number]> = [];
+  if (game.isFestival()) extras.push(['FESTIVAL!', P.AMBER]);
+  if (game.progress.buffs.stealth === c.day) extras.push(['STEALTH', P.FERN]);
+  if (game.progress.buffs.calm === c.day) extras.push(['NERVES', P.LANTERN]);
+  extras.forEach(([t, col], k) => drawText(g, t, px, ey + 21 + k * 7, col, P.VOID));
 
   // ---- Location banner ----
   if (game.banner.t > 0) {

@@ -51,7 +51,8 @@ export function buildPineTrail(): MapDef {
   const b = new Builder(W, H, T.GRASS);
   const r = mulberry32(2001);
   const exit = (x: number, y: number) =>
-    (y > 71 && x >= 36 && x <= 44) || (y < 8 && x >= 36 && x <= 44) || (x > 71 && y >= 36 && y <= 45) || (x < 8 && y >= 36 && y <= 45);
+    (y > 71 && x >= 36 && x <= 44) || (y < 8 && x >= 36 && x <= 44) || (x > 71 && y >= 36 && y <= 45) || (x < 8 && y >= 36 && y <= 45)
+    || (x > 71 && y >= 60 && y <= 69);
   b.border(0, 3, T.FOREST, (x, y) => (hash2(x, y, 5) < 0.8 ? O.PINE : O.OAK), exit, (x, y) => valueNoise(x, y, 31));
 
   // Clover meadows
@@ -84,6 +85,8 @@ export function buildPineTrail(): MapDef {
   b.trail([[40, 40], [50, 43], [58, 38], [66, 41], [74, 40], [80, 40]]);
   b.trail([[40, 40], [30, 43], [20, 38], [10, 42], [-1, 41]]);
   b.trail([[43, 31], [48, 26], [52, 22], [58, 20], [66, 19], [71, 19]]);
+  // South-east road to Pine Hollow Town
+  b.trail([[40, 68], [50, 67], [60, 64], [70, 64], [80, 64]]);
   b.trail([[66, 19], [64, 12]], 1);
   // Shortcut from the west trail toward the north trail, gated by briars
   b.trail([[15, 40], [16, 31], [24, 23], [33, 18], [39, 15]], 1);
@@ -116,6 +119,7 @@ export function buildPineTrail(): MapDef {
 
   b.sign(42, 37, 'CROSSROADS. N: Old Growth & Sawmill   E: Cranberry Bog   W: Radio Ridge   S: Your cabin.');
   b.sign(37, 74, 'PINE TRAIL. Rustling clover hides Jackalopes by day. Keep Wild Clover handy.');
+  b.sign(72, 62, 'EAST: Pine Hollow Town. Diner, Outfitter & the Historical Society.');
   b.sign(46, 31, "APPLE GROVE. Shake a tree for heirloom apples. Something small steals them at dusk...");
   b.sign(14, 39, 'SHORTCUT (OVERGROWN). Clear the briars with a Machete.');
 
@@ -128,6 +132,7 @@ export function buildPineTrail(): MapDef {
       { x: 36, y: 0, w: 9, h: 1, to: 'OLD_GROWTH_AND_SAWMILL', tx: 45, ty: 83, dir: 'up', closedMsg: '' },
       { x: 79, y: 36, w: 1, h: 10, to: 'CRANBERRY_BOG_AND_SPRINGS', tx: 1, ty: 40, dir: 'right', closedMsg: '' },
       { x: 0, y: 36, w: 1, h: 10, to: 'RADIO_RIDGE_AND_CROSSROADS', tx: 78, ty: 42, dir: 'left', closedMsg: '' },
+      { x: 79, y: 60, w: 1, h: 10, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 16, dir: 'right', closedMsg: '' },
     ],
     forage: [
       { spots: forage, count: 8, table: ['wild_acorn', 'wild_onion', 'pine_resin', 'sweet_sap', 'sweet_sap', 'foraged_egg', 'wild_honeycomb'] },
@@ -310,10 +315,10 @@ export function buildOldGrowth(): MapDef {
       { x: 0, y: 18, w: 1, h: 10, to: 'RADIO_RIDGE_AND_CROSSROADS', tx: 62, ty: 1, dir: 'down', closedMsg: '' },
       { x: 89, y: 66, w: 1, h: 10, to: 'CRANBERRY_BOG_AND_SPRINGS', tx: 62, ty: 1, dir: 'down', closedMsg: '' },
       // MINE_ENTRANCE_PORTAL — stub for the future underground dungeon expansion.
-      { x: 77, y: 8, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up', closedMsg: 'The rusted iron gate is chained shut. A Town Restoration Grant would unseal it someday.' },
+      { x: 77, y: 8, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up', closedMsg: 'The rusted iron gate is chained shut. A Town Restoration Grant would unseal it someday.', grantMsg: 'The chains are off, but the tunnels beyond are still being shored up. (The underground expansion opens in a future update!)' },
     ],
     forage: [
-      { spots: general, count: 8, table: ['pine_resin', 'charred_wood', 'foraged_meat', 'foraged_meat', 'wild_honeycomb', 'wild_acorn', 'foraged_egg'] },
+      { spots: general, count: 8, table: ['pine_resin', 'charred_wood', 'foraged_meat', 'foraged_meat', 'wild_honeycomb', 'wild_acorn', 'foraged_egg', 'frost_rim_antler'] },
       { spots: mill, count: 4, table: ['scrap_copper', 'iron_nail', 'iron_nail', 'charred_wood'] },
       { spots: mine, count: 3, table: ['scrap_copper', 'crushed_quartz', 'mineral_salt'] },
     ],

@@ -5,6 +5,7 @@ import type { MapId } from '../data/maps';
 import type { Dir } from '../util';
 import type { Look } from '../graphics/playerSprite';
 import type { Dex, Kit } from './dex';
+import type { ProgressSave } from './progress';
 
 export const SAVE_KEY = 'pbr_save_v1';
 export const SAVE_VERSION = 1;
@@ -51,6 +52,8 @@ export interface SaveData {
   kit?: Partial<Kit>;
   wispNight?: number;
   lunarNight?: number;
+  // Phase 3
+  progress?: Partial<ProgressSave>;
 }
 
 export function hasSave(): boolean {

@@ -10,8 +10,10 @@ import { ITEMS, CATALOG, CROP_BY_ID } from '../data/items';
 import { moonPhase, WEATHER_LABEL } from '../data/weather';
 import { dexTotals } from '../engine/dex';
 import { moveName } from '../engine/encounter';
+import { QUESTS } from '../data/quests';
+import { OUTFIT_PERKS } from '../data/outfits';
 import { OUTFITS, HATS, outfitById, hatById } from '../data/outfits';
-import { BAG_SIZE, HOTBAR_SIZE } from '../engine/inventory';
+import { HOTBAR_SIZE } from '../engine/inventory';
 import { panel, slotBox, inRect, Rect } from './panel';
 import { drawItemSlot } from './hud';
 import type { Dir } from '../util';
@@ -133,11 +135,12 @@ export class BagMenu implements Overlay {
     const S = 18, gap = 1, cols = 9;
     const gridW = cols * (S + gap) - gap;
     const w = gridW + 10;
-    const h = 14 + 3 * (S + gap) + 4 + 34;
+    const rows = Math.ceil(game.inv.slots.length / cols);
+    const h = 14 + rows * (S + gap) + 4 + 34;
     const x = Math.floor((game.w - w) / 2);
     const y = Math.max(2, Math.floor((game.h - h) / 2) - 8);
     const slots: Rect[] = [];
-    for (let i = 0; i < BAG_SIZE; i++) {
+    for (let i = 0; i < game.inv.slots.length; i++) {
       const cx = i % cols, cy = Math.floor(i / cols);
       slots.push({ x: x + 5 + cx * (S + gap), y: y + 13 + cy * (S + gap) + (cy > 0 ? 2 : 0), w: S, h: S });
     }
@@ -148,10 +151,11 @@ export class BagMenu implements Overlay {
     const inp = game.input;
     const cols = 9;
     let moved = false;
-    if (inp.repeat('left')) { this.cursor = (this.cursor + BAG_SIZE - 1) % BAG_SIZE; moved = true; }
-    if (inp.repeat('right')) { this.cursor = (this.cursor + 1) % BAG_SIZE; moved = true; }
-    if (inp.repeat('up')) { this.cursor = (this.cursor + BAG_SIZE - cols) % BAG_SIZE; moved = true; }
-    if (inp.repeat('down')) { this.cursor = (this.cursor + cols) % BAG_SIZE; moved = true; }
+    const N = game.inv.slots.length;
+    if (inp.repeat('left')) { this.cursor = (this.cursor + N - 1) % N; moved = true; }
+    if (inp.repeat('right')) { this.cursor = (this.cursor + 1) % N; moved = true; }
+    if (inp.repeat('up')) { this.cursor = (this.cursor + N - cols) % N; moved = true; }
+    if (inp.repeat('down')) { this.cursor = (this.cursor + cols) % N; moved = true; }
     if (moved) sfx.blip();
     let act = inp.pressed('a');
     const L = this.layout(game);
@@ -198,7 +202,7 @@ export class BagMenu implements Overlay {
         g.globalAlpha = 1;
       }
     });
-    const iy = L.slots[BAG_SIZE - 1].y + 22;
+    const iy = L.slots[L.slots.length - 1].y + 22;
     const st = game.inv.slots[this.cursor];
     if (st) {
       const def = ITEMS[st.id];
@@ -356,6 +360,8 @@ export class DresserMenu implements Overlay {
       const lines = wrapText(name, w - 80);
       drawText(g, (sel ? '< ' : '  ') + lines[0] + (sel ? ' >' : ''), x + 64, ry + 8, sel ? P.LANTERN : P.FOG);
     });
+    const perk = OUTFIT_PERKS[o.id] ?? OUTFIT_PERKS[hh.id];
+    if (perk) wrapText(`PERK: ${perk}`, w - 70).slice(0, 2).forEach((l, k) => drawText(g, l, x + 64, y + 56 + k * 7, P.FERN));
     const lockedO = OUTFITS.length - this.outfits.length, lockedH = HATS.length - this.hats.length;
     const lockNote = lockedO + lockedH > 0 ? `${lockedO + lockedH} LOOKS LOCKED: HISTORICAL SOCIETY REWARDS` : 'ALL LOOKS UNLOCKED!';
     wrapText(lockNote, w - 10).forEach((l, k) => drawText(g, l, x + 5, y + 70 + k * 7, P.VIOLET));
@@ -370,7 +376,7 @@ export class DresserMenu implements Overlay {
 export class JournalMenu implements Overlay {
   closed = false;
   private page = 0;
-  private static readonly PAGES = 3;
+  private static readonly PAGES = 4;
 
   update(game: Game): void {
     const inp = game.input;
@@ -384,7 +390,7 @@ export class JournalMenu implements Overlay {
     const w = Math.min(game.w - 8, 230), h = Math.min(game.h - 30, 132);
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
-    const titles = ['FIELD JOURNAL', 'ALMANAC & KIT', 'CONTROLS'];
+    const titles = ['FIELD JOURNAL', 'QUEST LOG', 'ALMANAC & KIT', 'CONTROLS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
@@ -404,6 +410,17 @@ export class JournalMenu implements Overlay {
       ly += 2;
       wrapText('Lure crops draw specific cryptids. Keep a stock of each before venturing past the trails.', w - 12).forEach((l) => line(l, P.CRAN));
     } else if (this.page === 1) {
+      const pr = game.progress;
+      const active = QUESTS.filter((q) => pr.active(q.id));
+      const done = QUESTS.filter((q) => pr.done(q.id));
+      if (!active.length) line('No active quests. Talk to the townsfolk!', P.CRAN);
+      for (const q of active) {
+        line(q.title.toUpperCase(), P.CRAN);
+        wrapText(`- ${q.steps[Math.max(0, pr.stage(q.id) - 1)]}`, w - 12).slice(0, 2).forEach((l) => line(l));
+      }
+      ly += 2;
+      line(`COMPLETED: ${done.length}/${QUESTS.length}   DONATIONS: ${pr.donations}/36`, P.FOREST);
+    } else if (this.page === 2) {
       const c = game.clock;
       const moon = moonPhase(c.day);
       const tot = dexTotals(game.dex);

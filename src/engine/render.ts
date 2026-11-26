@@ -4,7 +4,10 @@ import type { MapRuntime } from './world';
 import { GROUND, OVER, OBJ, STRUCT, CROP, ICON, MISC } from '../graphics/sprites';
 import type { Canv } from '../graphics/canvas';
 import { Pen } from '../graphics/canvas';
-import { playerFrame, handPivot } from '../graphics/playerSprite';
+import { playerFrame, handPivot, personFrame } from '../graphics/playerSprite';
+import { cryptidFrame } from '../graphics/cryptidSprites';
+import { CRYPTIDS } from '../data/cryptids';
+import { TOWN_SQUARE, FESTIVAL_SPOTS } from '../data/town';
 import type { Light } from '../graphics/lighting';
 import { hex, P } from '../graphics/palette';
 import { O, T, objProps } from '../data/tiles';
@@ -85,6 +88,12 @@ function drawGround(g: CanvasRenderingContext2D, m: MapRuntime, x: number, y: nu
       return;
     case T.RUIN_FLOOR: g.drawImage(pick(GROUND.ruin, h), sx, sy); return;
     case T.CLOVER: g.drawImage(pick(GROUND.clover, h), sx, sy); return;
+    case T.PLAZA: g.drawImage(pick(GROUND.plaza, h), sx, sy); return;
+    case T.PLATFORM: g.drawImage(GROUND.platform[0], sx, sy); return;
+    case T.RAIL: g.drawImage(GROUND.rail[0], sx, sy); return;
+    case T.CHECKER: g.drawImage(GROUND.checker[0], sx, sy); return;
+    case T.MARBLE: g.drawImage(pick(GROUND.marble, h), sx, sy); return;
+    case T.STAIRS: g.drawImage(GROUND.stairs[0], sx, sy); return;
     case T.BRIDGE:
       g.drawImage(GROUND.water[0], sx, sy);
       g.drawImage(GROUND.bridge[0], sx, sy);
@@ -114,9 +123,33 @@ function fenceMask(m: MapRuntime, x: number, y: number): number {
 }
 
 /** Pick the sprite for an object tile, honouring variants & animation frames. */
+/** Progress-dependent visuals, set once per frame by renderWorld. */
+const flags = { grant: false, gift: false };
+
 function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number, night: boolean, rustling: boolean): Canv | null {
   const h = hash2(x, y, 3);
   switch (o) {
+    case O.FOUNTAIN: return OBJ.fountain[Math.floor(time * 3) % 2];
+    case O.BOARD: return OBJ.board[0];
+    case O.BENCH: return OBJ.bench[0];
+    case O.FLOWERBED: return OBJ.flowerbed[0];
+    case O.COUNTER: return OBJ.counter[0];
+    case O.STOOL: return OBJ.stool[0];
+    case O.GRILL: return OBJ.grill[0];
+    case O.JUKEBOX: return OBJ.jukebox[Math.floor(time * 2) % 2];
+    case O.SHELF: return pick(OBJ.shelf, h);
+    case O.ANVIL: return OBJ.anvil[0];
+    case O.FORGE: return OBJ.forge[Math.floor(time * 5) % 2];
+    case O.CASE: return OBJ.case[0];
+    case O.KIOSK: return OBJ.kiosk[flags.gift ? 1 : 0];
+    case O.MAP_TABLE: return OBJ.maptable[0];
+    case O.RAILCAR: return OBJ.railcar[flags.grant ? 1 : 0];
+    case O.TICKET_BOOTH: return OBJ.booth[0];
+    case O.SIGNAL_LANTERN: return OBJ.signal[flags.grant ? 1 : Math.floor(time * 7 + h * 5) % 5 === 0 ? 1 : 0];
+    case O.REGISTER: return OBJ.register[0];
+    case O.POSTER: return OBJ.poster[0];
+    case O.HEDGE: return OBJ.hedge[0];
+    case O.BOOTH_SEAT: return OBJ.boothseat[0];
     case O.PINE: return pick(OBJ.pine, h);
     case O.OAK: return pick(OBJ.oak, h);
     case O.BRUSH: return pick(OBJ.brush, h);
@@ -172,7 +205,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
 }
 
 /** Flat decals drawn with the ground layer (never occlude actors). */
-const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD]);
+const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER]);
 
 const SWING: Record<Dir, Array<[number, number]>> = {
   right: [[-120, 1], [-55, 1], [25, 1]],
@@ -270,8 +303,24 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     }
   }
 
+  flags.grant = game.progress.has('grant');
+  flags.gift = game.progress.has('giftshop');
+
+  // ---- Quest tracks / pages (flat decals) ----
+  for (const { spec, tracks } of game.progress.tracksOn(m.id)) {
+    const found = game.progress.quests[spec.quest].found;
+    tracks.forEach((t, k) => {
+      if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) return;
+      if ((t.kind === 'page' || t.kind === 'book') && found.includes(k)) return;
+      const img = t.kind === 'paw' ? MISC.paw : t.kind === 'boot' ? MISC.boot : t.kind === 'page' ? MISC.page : MISC.sketchbook;
+      const bob = t.kind === 'page' || t.kind === 'book' ? Math.round(Math.sin(time * 3 + k)) : 0;
+      g.drawImage(img, t.x * 16 - cx, t.y * 16 - cy + bob);
+    });
+  }
+
   // ---- Y-sorted world ----
   const list: Drawable[] = [];
+  const festival = m.id === 'PINE_HOLLOW_TOWN' && game.isFestival();
   for (let y = y0; y <= Math.min(m.h - 1, y1 + 2); y++) {
     for (let x = x0; x <= x1; x++) {
       const i = m.idx(x, y);
@@ -285,7 +334,21 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           let dx = x * 16 + Math.floor((fw * 16 - img.width) / 2) - cx;
           const dy = (y + 1) * 16 - img.height - cy;
           if (shaking && o !== O.TALLGRASS) dx += Math.round(Math.sin(time * 70));
-          list.push({ y: (y + 1) * 16, fn: () => g.drawImage(img, dx, dy) });
+          let extra: Canv | null = null;
+          let ex = 0, ey = 0, es = 16;
+          if (o === O.CASE) {
+            const cid = m.def.meta?.get(i);
+            if (cid && game.progress.donated.has(cid)) { extra = cryptidFrame(cid, 'normal', Math.floor(time * 2 + x) % 2); ex = dx + 2; ey = dy + 4; es = 12; }
+          } else if (o === O.PEDESTAL) {
+            const item = game.progress.displays[`${m.id}:${i}`];
+            if (item) {
+              const c = CRYPTIDS.find((cc) => cc.drop.id === item);
+              extra = c ? cryptidFrame(c.id, 'normal', Math.floor(time * 2) % 2) : ICON[item] ?? null;
+              ex = dx + 2; ey = dy + 1; es = 12;
+            }
+          }
+          const ext = extra;
+          list.push({ y: (y + 1) * 16, fn: () => { g.drawImage(img, dx, dy); if (ext) g.drawImage(ext, ex, ey, es, es); } });
         }
         if (o === O.LAMP && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 10 - cy, r: 46, flicker: true });
         if (o === O.PYLON && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 12 - cy, r: 30, flicker: true });
@@ -330,12 +393,53 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   });
   // Structures
   for (const s of m.def.structures) {
-    const frames = STRUCT[s.kind];
-    const img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2] : frames[night && frames.length > 1 ? 1 : 0];
+    const frames = s.kind === 'mine' && m.id === 'PINE_HOLLOW_TOWN' && !flags.grant ? STRUCT.mineBoarded : STRUCT[s.kind];
+    const n = night ? 1 : 0;
+    const img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2]
+      : s.kind === 'house' ? frames[((s.x + s.y) % 3) * 2 + n]
+        : s.kind === 'station' ? frames[(flags.grant ? 2 : 0) + n]
+          : frames[night && frames.length > 1 ? 1 : 0];
     const dx = s.x * 16 - cx, dy = (s.y + s.h) * 16 - img.height - cy;
     if (dx > game.w || dy > game.h || dx + img.width < 0 || dy + img.height < 0) continue;
     list.push({ y: (s.y + s.h) * 16, fn: () => g.drawImage(img, dx, dy) });
     if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
+  }
+  // Townsfolk
+  for (const npc of game.townsfolk.on(m.id)) {
+    const nx = Math.round(npc.x) - 4 - cx, ny = Math.round(npc.y) - 7 - cy;
+    if (nx < -30 || ny < -30 || nx > game.w + 30 || ny > game.h + 30) continue;
+    if (npc.def.kind === 'dog') {
+      const left = npc.dir === 'left';
+      const f = (npc.moving ? Math.floor(time * 8) : Math.floor(time * 2)) % 2;
+      const img = left ? (f ? MISC.busterL1 : MISC.busterL) : f ? MISC.busterR1 : MISC.busterR;
+      list.push({ y: npc.y + 16.4, fn: () => g.drawImage(img, Math.round(npc.x) - 2 - cx, Math.round(npc.y) + 2 - cy) });
+      continue;
+    }
+    const img = personFrame(npc.def.body, npc.def.look, npc.dir, npc.frame, 'walk');
+    list.push({
+      y: npc.y + 16.4,
+      fn: () => {
+        g.globalAlpha = 0.35; g.fillStyle = hex(P.VOID); g.fillRect(nx + 7, ny + 21, 10, 2); g.globalAlpha = 1;
+        g.drawImage(img, nx, ny);
+        if (npc.talkT > 0) { g.fillStyle = hex(P.LANTERN); g.fillRect(nx + 11, ny - 3, 2, 2); }
+      },
+    });
+  }
+  if (festival) {
+    const [bx, by] = FESTIVAL_SPOTS.bonfire;
+    const fire = Math.floor(time * 6) % 2 ? MISC.bonfire1 : MISC.bonfire0;
+    list.push({ y: (by + 1) * 16, fn: () => g.drawImage(fire, bx * 16 - 2 - cx, (by + 1) * 16 - 24 - cy) });
+    lights.push({ x: bx * 16 + 8 - cx, y: by * 16 - cy, r: 80, flicker: true });
+    if (Math.random() < 0.3) game.particles.sparkle(bx * 16 + 8, by * 16 - 4, Math.random() < 0.5 ? P.AMBER : P.LANTERN);
+  }
+  if (m.id === 'PINE_HOLLOW_TOWN') {
+    for (const [who, wagon] of [['ezri', MISC.wagonEzri], ['pike', MISC.wagonPike]] as const) {
+      const npc = game.townsfolk.npcs.find((n) => n.def.id === who && n.map === m.id);
+      if (!npc) continue;
+      const [wx, wy] = FESTIVAL_SPOTS[who];
+      list.push({ y: (wy - 1) * 16, fn: () => g.drawImage(wagon, wx * 16 - 12 - cx, (wy - 1) * 16 - 36 + 8 - cy) });
+      lights.push({ x: wx * 16 + 8 - cx, y: (wy - 1) * 16 - cy, r: 30, flicker: true });
+    }
   }
   // Player
   const px = Math.round(p.x) - 4 - cx, py = Math.round(p.y) - 7 - cy;
@@ -369,6 +473,10 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   for (const d of list) d.fn();
 
   game.particles.draw(g, cx, cy);
+  if (festival) {
+    const S = TOWN_SQUARE;
+    for (const yy of [S.y, S.y + S.h - 1]) for (let xx = S.x; xx < S.x + S.w; xx++) g.drawImage(MISC.bunting, xx * 16 - cx, yy * 16 - 14 - cy);
+  }
 
   // ---- Weather tint (outdoors) ----
   const wthr = game.weatherNow();
@@ -378,7 +486,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   // ---- Lighting ----
   const ph = game.clock.phase();
   if (ph !== 'day') {
-    const lr = m.def.indoor ? 30 : ph === 'dusk' ? 34 : ph === 'witching' ? 40 : 50;
+    const lr = (m.def.indoor ? 30 : ph === 'dusk' ? 34 : ph === 'witching' ? 40 : 50) + (m.def.indoor ? 0 : game.lanternBonus());
     lights.push({ x: px + 12, y: py + 12, r: lr, flicker: true });
   }
   game.lighting.render(g, game.w, game.h, game.clock.minutes, m.def.indoor, lights, time);

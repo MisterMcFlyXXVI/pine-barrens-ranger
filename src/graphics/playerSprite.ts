@@ -15,18 +15,45 @@ export interface Look {
 /** 'walk' = idle/walk cycle, 'act' = arms forward for tool use. */
 export type Pose = 'walk' | 'act';
 
-const SKIN = P.LANTERN, SKIN_SH = P.AMBER;
-const HAIR = P.RUST, HAIR_SH = P.CRAN;
-const PANTS = P.TWILIGHT, PANTS_SH = P.SHADOW;
-const BOOT = P.CRAN, SOLE = P.SHADOW;
+export type HairStyle = 'short' | 'long' | 'bun' | 'pigtails' | 'bald' | 'beard';
+
+/** Skin / hair / trouser palette — lets townsfolk reuse the player renderer. */
+export interface Body {
+  id: string;
+  skin: number;
+  skinSh: number;
+  hair: number;
+  hairSh: number;
+  pants: number;
+  pantsSh: number;
+  boot: number;
+  hairStyle: HairStyle;
+}
+
+export const PLAYER_BODY: Body = {
+  id: 'player', skin: P.LANTERN, skinSh: P.AMBER, hair: P.RUST, hairSh: P.CRAN,
+  pants: P.TWILIGHT, pantsSh: P.SHADOW, boot: P.CRAN, hairStyle: 'short',
+};
+
+// Active palette for the bake in progress (set by bake()).
+let SKIN: number = P.LANTERN, SKIN_SH: number = P.AMBER;
+let HAIR: number = P.RUST, HAIR_SH: number = P.CRAN;
+let PANTS: number = P.TWILIGHT, PANTS_SH: number = P.SHADOW;
+let BOOT: number = P.CRAN;
+let STYLE: HairStyle = 'short';
+const SOLE = P.SHADOW;
 
 const cache = new Map<string, Canv>();
 
 export function playerFrame(look: Look, dir: Dir, frame: number, pose: Pose): Canv {
-  const key = `${look.outfit}|${look.hat}|${dir}|${frame}|${pose}`;
+  return personFrame(PLAYER_BODY, look, dir, frame, pose);
+}
+
+export function personFrame(body: Body, look: Look, dir: Dir, frame: number, pose: Pose): Canv {
+  const key = `${body.id}|${look.outfit}|${look.hat}|${dir}|${frame}|${pose}`;
   let c = cache.get(key);
   if (!c) {
-    c = dir === 'right' ? flipH(playerFrame(look, 'left', frame, pose)) : bake(look, dir, frame, pose);
+    c = dir === 'right' ? flipH(personFrame(body, look, 'left', frame, pose)) : bake(body, look, dir, frame, pose);
     cache.set(key, c);
   }
   return c;
@@ -42,7 +69,9 @@ export function handPivot(dir: Dir): [number, number] {
   }
 }
 
-function bake(look: Look, dir: Dir, frame: number, pose: Pose): Canv {
+function bake(body: Body, look: Look, dir: Dir, frame: number, pose: Pose): Canv {
+  SKIN = body.skin; SKIN_SH = body.skinSh; HAIR = body.hair; HAIR_SH = body.hairSh;
+  PANTS = body.pants; PANTS_SH = body.pantsSh; BOOT = body.boot; STYLE = body.hairStyle;
   const { c, g } = makeCanvas(24, 24);
   const p = new Pen(g);
   const o = outfitById(look.outfit);
@@ -83,6 +112,10 @@ function outfitColor(o: OutfitDef, x: number, y: number, back: boolean, part: Pa
       if (y <= 12) return (x + y) % 2 ? o.trim : o.shade;
       if (part === 'body' && (y === 13 || y === 15) && !center) return o.trim;
       return o.main;
+    case 'apron':
+      if (part === 'sleeve') return o.main;
+      if (Math.abs(x + 0.5 - cx) < 3 && y >= 12) return y === 12 ? o.trim : o.accent;
+      return y >= 16 ? o.shade : o.main;
     case 'suit':
       if (part === 'body' && ((x * 7 + y * 3) % 5 === 0)) return o.accent;
       if (!back && center && y <= 13) return P.VOID;
@@ -146,6 +179,7 @@ function drawFrontBack(p: Pen, o: OutfitDef, h: HatDef, back: boolean, frame: nu
     p.hline(9, 14, hy + 7, HAIR_SH); p.vline(15, hy + 1, hy + 7, HAIR_SH);
     p.px(9, hy + 1, P.AMBER); p.px(10, hy + 1, P.AMBER);
   }
+  hairExtras(p, back ? 'up' : 'down', hy);
   drawHat(p, h, back ? 'up' : 'down', hy);
 }
 
@@ -194,7 +228,36 @@ function drawSide(p: Pen, o: OutfitDef, h: HatDef, frame: number, pose: Pose): v
   p.px(9, hy + 4, P.VOID);
   p.px(7, hy + 5, SKIN);
   p.hline(8, 11, hy + 7, SKIN_SH);
+  hairExtras(p, 'left', hy);
   drawHat(p, h, 'left', hy);
+}
+
+/** Hair-style details layered over the base head. */
+function hairExtras(p: Pen, view: 'down' | 'up' | 'left', hy: number): void {
+  const side = view === 'left';
+  switch (STYLE) {
+    case 'short': return;
+    case 'bald':
+      if (view === 'down') { p.hline(9, 14, hy, SKIN); p.hline(9, 14, hy + 1, SKIN); p.px(8, hy + 2, HAIR); p.px(15, hy + 2, HAIR); }
+      else if (view === 'up') { p.rect(9, hy, 6, 3, SKIN); p.px(10, hy, SKIN_SH); }
+      else { p.rect(8, hy, 5, 2, SKIN); }
+      return;
+    case 'long':
+      if (side) { p.rect(12, hy + 2, 3, 8, HAIR); p.vline(14, hy + 4, hy + 9, HAIR_SH); }
+      else { p.rect(7, hy + 1, 1, 8, HAIR); p.rect(16, hy + 1, 1, 8, HAIR); if (view === 'up') p.rect(8, hy + 7, 8, 3, HAIR); }
+      return;
+    case 'bun':
+      p.rect(10, hy - 3, 4, 3, HAIR); p.hline(11, 12, hy - 3, HAIR_SH);
+      return;
+    case 'pigtails':
+      if (side) { p.rect(13, hy + 4, 2, 4, HAIR); }
+      else { p.rect(6, hy + 4, 2, 4, HAIR); p.rect(16, hy + 4, 2, 4, HAIR); p.px(6, hy + 7, HAIR_SH); p.px(17, hy + 7, HAIR_SH); }
+      return;
+    case 'beard':
+      if (view === 'down') { p.rect(9, hy + 5, 6, 3, HAIR); p.px(11, hy + 6, SKIN_SH); p.px(12, hy + 6, SKIN_SH); }
+      else if (side) { p.rect(8, hy + 5, 4, 3, HAIR); }
+      return;
+  }
 }
 
 function drawHat(p: Pen, h: HatDef, view: 'down' | 'up' | 'left', hy: number): void {
@@ -229,6 +292,11 @@ function drawHat(p: Pen, h: HatDef, view: 'down' | 'up' | 'left', hy: number): v
       if (view === 'down') p.hline(x0 - 1, x1 + 1, hy + 2, h.shade);
       return;
     }
+    case 'headphones':
+      p.hline(x0, x1, hy - 1, P.SHADOW);
+      if (view === 'down' || view === 'up') { p.rect(x0 - 1, hy + 3, 2, 3, P.RED); p.rect(x1, hy + 3, 2, 3, P.RED); }
+      else p.rect(11, hy + 3, 2, 3, P.RED);
+      return;
     case 'goggles':
       p.hline(x0, x1, hy + 3, P.VOID);
       if (view === 'down') {

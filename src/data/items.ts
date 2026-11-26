@@ -1,7 +1,8 @@
 /** Items, lure crops and economy data. */
 import { CRYPTIDS } from './cryptids';
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen';
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen' | 'food';
+export type Buff = 'stealth' | 'calm';
 export type ToolKind = 'hoe' | 'can' | 'machete';
 
 export interface ItemDef {
@@ -17,6 +18,8 @@ export interface ItemDef {
   crop?: string;
   /** Stamina restored when eaten. */
   edible?: number;
+  /** Day-long buff granted when eaten. */
+  buff?: Buff;
 }
 
 export interface CropDef {
@@ -105,6 +108,13 @@ const base: ItemDef[] = [
   { id: 'lightning_rod', name: 'Copper Lightning Rod', kind: 'placeable', price: 0, stack: 9, desc: 'Place on Radio Ridge. Calls down storms\' guardian.' },
   { id: 'antler_chime', name: 'Bone & Antler Chime', kind: 'placeable', price: 0, stack: 9, desc: 'Place in the Old Growth. Rings in the witching fog.' },
   { id: 'tesla_pylon', name: 'Tesla Coil Pylon', kind: 'placeable', price: 0, stack: 9, desc: 'Forces Static-Charged variants and draws electric cryptids nearby.' },
+  { id: 'display_pedestal', name: 'Cabin Display Pedestal', kind: 'placeable', price: 0, stack: 9, desc: 'Place inside your cabin to show off a specimen.' },
+
+  // ---- Whistle-Stop Diner food buffs ----
+  { id: 'black_coffee', name: 'Black Coffee', kind: 'food', price: 10, stack: 20, edible: 30, desc: '+30 energy. Mabel brews it strong.' },
+  { id: 'pancakes', name: 'Pine Barrens Pancakes', kind: 'food', price: 25, stack: 20, edible: 60, desc: '+60 energy. Blueberry & sap syrup.' },
+  { id: 'cranberry_pie', name: 'Cranberry Pie', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today.' },
+  { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },
 ];
 
 for (const c of CRYPTIDS) {
@@ -142,22 +152,9 @@ export interface CatalogTab {
   entries: ReadonlyArray<{ id: string; cost: number }>;
 }
 
-/** Ranger Supply mail-order catalog (Porch Workbench). Crafting replaces much of this in Phase 3. */
+/** Mail-order seed catalog (Porch Workbench). Gear, bait & mounts are crafted or bought in town from Phase 3. */
 export const CATALOG: readonly CatalogTab[] = [
   { name: 'SEEDS', entries: CATALOG_SEEDS.map((id) => ({ id, cost: CROPS.find((c) => c.seed === id)?.seedPrice ?? 0 })) },
-  { name: 'BAIT', entries: [
-    { id: 'smoked_venison', cost: 120 }, { id: 'fermented_mash', cost: 90 }, { id: 'sulfur_egg', cost: 80 },
-    { id: 'battery_pack', cost: 160 }, { id: 'smoked_fish', cost: 70 }, { id: 'apple_cider', cost: 60 },
-    { id: 'wisp_oil', cost: 350 }, { id: 'brimstone_incense', cost: 300 }, { id: 'lunar_dew', cost: 450 },
-  ] },
-  { name: 'GEAR', entries: [
-    { id: 'bog_waders', cost: 800 }, { id: 'scent_mask', cost: 250 }, { id: 'brass_bell', cost: 300 },
-    { id: 'silver_bell', cost: 450 }, { id: 'static_radio', cost: 500 }, { id: 'thermal_lens', cost: 600 },
-    { id: 'parabolic_dish', cost: 750 }, { id: 'chronos_shutter', cost: 900 },
-  ] },
-  { name: 'MOUNTS', entries: [
-    { id: 'lure_totem', cost: 220 }, { id: 'lightning_rod', cost: 400 }, { id: 'antler_chime', cost: 650 }, { id: 'tesla_pylon', cost: 1200 },
-  ] },
 ];
 
 /** Inventory kinds that can be thrown as bait in an encounter. */

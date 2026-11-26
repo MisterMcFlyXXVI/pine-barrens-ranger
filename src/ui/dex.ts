@@ -105,7 +105,7 @@ export class DexMenu implements Overlay {
       if (spr) g.drawImage(spr, B.x + 5, y - 1, 12, 12);
       else { g.fillStyle = hex(P.RUST); g.fillRect(B.x + 7, y + 1, 8, 8); drawText(g, '?', B.x + 10, y + 2, P.LANTERN); }
       drawText(g, `${String(c.num).padStart(2, '0')}`, B.x + 20, y + 3, sel ? P.VOID : P.RUST);
-      drawText(g, e.seen ? c.name : '?????', B.x + 32, y + 3, sel ? P.VOID : e.logged ? P.CRAN : P.RUST);
+      drawText(g, e.seen ? c.name : e.rumor ? '(RUMORED)' : '?????', B.x + 32, y + 3, sel ? P.VOID : e.logged ? P.CRAN : P.RUST);
       const st = stars(e);
       for (let k = 0; k < 3; k++) drawStar(g, B.x + B.w - 46 + k * 7, y + 3, k < st, P.RED, sel ? P.LANTERN : P.AMBER);
       if (e.albino) { g.fillStyle = hex(P.FOG); g.fillRect(B.x + B.w - 22, y + 3, 4, 5); }
@@ -153,12 +153,17 @@ export class DexMenu implements Overlay {
       for (const l of lines) { if (ny > B.y + B.h - 18) return; drawText(g, l, nx, ny, color); ny += 7; }
       ny += 2;
     };
+    const archived = game.progress.archiveRead && c.tier === 4;
     if (!e.seen) {
-      para('', 'No sighting yet. Explore tall grass, bog reeds, ferns, shallow water and fog at different times and weather.');
+      if (e.rumor || archived) {
+        para('RUMOR: ', `Townsfolk speak of something ${habitat(c).toLowerCase()} way.`, P.CRAN);
+        para('ACTIVE: ', when(c));
+        if (archived) para('ARCHIVE: ', c.summon ? `Summoned via ${c.summon === 'totems' ? '3 Lure Totems at dusk' : c.summon === 'chime' ? 'a Bone & Antler Chime' : 'a Copper Lightning Rod in storms'}.` : c.notes);
+      } else para('', 'No sighting yet. Explore tall grass, bog reeds, ferns, shallow water and fog at different times and weather. Townsfolk rumors help.');
     } else {
       para('', c.look, P.CRAN);
       para('HABITAT: ', habitat(c));
-      para('ACTIVE: ', c.summon && st < 2 ? '??? (a summoning ritual)' : when(c));
+      para('ACTIVE: ', c.summon && st < 2 && !archived ? '??? (a summoning ritual -- see the Archive)' : when(c));
       para('LURE: ', st >= 2 ? c.lures.map((l) => ITEMS[l]?.name ?? l).join(', ') : '??? (observe its behavior)');
       para('STANCES: ', st >= 2 ? c.stances.join(', ') : '???');
       para('NOTES: ', st >= 2 ? c.notes : 'Earn a 2-Star entry (favorite bait, a stance counter, or a Plaster Cast) to learn more.');

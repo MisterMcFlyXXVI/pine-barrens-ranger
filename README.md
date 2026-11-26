@@ -31,7 +31,7 @@ Touch controls appear automatically on touch screens; the **PAD** button toggles
 
 Handy URL flags for trying things out:
 - `?wardrobe=all` unlocks every Historical Society outfit in the cabin wardrobe.
-- `?dev=1` starts a **new game** with 50,000 gold and every piece of Field Kit gear (handy for testing encounters).
+- `?dev=1` starts a **new game** with 50,000 gold, Bog Waders and every piece of Field Kit gear (handy for testing).
 
 ## Phase 1 contents
 - 16-color palette, procedural sprite baker, modular player outfits and hats, particles, lighting, Web Audio SFX
@@ -50,4 +50,21 @@ Handy URL flags for trying things out:
 - **All 36 cryptids**, each with its own sprite, 2-frame idle animation and spawn rules, plus Albino and Static-Charged rare variants (1 in 32)
 - **Turn-based encounters**: tall grass, reeds, ferns, shallow water and fog trigger a split-screen battle with Trust and Startle meters and a 4-slot Field Kit (Bait / Signal / Document / Stealth)
 - **Cryptid-Dex** (Tab): silhouettes, 3-star mastery, behavior notes, rare-variant toggles, 72 entries in all
-- Kit gear, crafted baits and mounts are sold in the Porch Workbench catalog for now; Phase 3 moves them to workbench crafting
+
+## Phase 3 contents
+- **Pine Hollow Town** (84x72): reach it by the east road from the Cabin Yard or the south-east road from Pine Trail. It has:
+  - the Town Square, with a fountain and the Bulletin Board
+  - the Whistle-Stop Diner (`DINER_INT`), the General Store & Outfitter (`STORE_INT`) and the Historical Society (`MUSEUM_INT`) with its Archive Basement
+  - the Broken-Down Train Station, whose rusted rail car is the `EXPANSION_RAIL_PORTAL` stub
+  - a boarded-up Coal Mine adit in the north-east foothills (the `MINE_ENTRANCE_PORTAL` stub)
+- **Historical Society**: donate specimens to Agnes Vance. Each donation fills one of the 36 museum display cases.
+  - The 10 donation milestones unlock the 6 wearable reward outfits (each with a gameplay perk), the Archive Basement, the Gift Shop, the Folklore Festival (Sunday nights) and the Town Restoration Grant.
+- **Townsfolk**: Agnes, Barnaby, Mabel, Gideon, Dr. Clara Okafor, and Pippa & Sam each follow a daily schedule and share a different cryptid rumor each day.
+  - Toby and Buster join the town once you rescue them.
+  - Old Ezri and Professor Pike, the Traveling Merchants, visit the Square on foggy nights and festival nights.
+- **10 side quests**, including following pawprints to find Buster, boot tracks to rescue Toby, and Pippa's scattered sketch pages, all tracked in the Journal's Quest Log.
+- **Economy**:
+  - Porch Workbench crafting: 13 recipes, plus 6 merchant blueprints.
+  - Outfitter upgrades for the Machete, Bog Waders, Lantern, Camera and Field Pack.
+  - Diner food that gives a buff for the rest of the day.
+  - A daily Bulletin Board request, and telegraph sighting reports once you fix Barnaby's telegraph.

@@ -11,7 +11,12 @@ export type MapId =
   | 'CRANBERRY_BOG_AND_SPRINGS'
   | 'OLD_GROWTH_AND_SAWMILL'
   | 'RADIO_RIDGE_AND_CROSSROADS'
-  | 'COAL_MINE';
+  | 'COAL_MINE'
+  | 'DINER_INT'
+  | 'STORE_INT'
+  | 'MUSEUM_INT'
+  | 'MUSEUM_BASEMENT'
+  | 'EXPANSION_RAIL';
 
 export interface Portal {
   x: number; y: number; w: number; h: number;
@@ -20,10 +25,14 @@ export interface Portal {
   dir: Dir;
   /** Shown when the destination region isn't open yet. */
   closedMsg: string;
+  /** Shown instead once the Town Restoration Grant is awarded. */
+  grantMsg?: string;
+  /** Progress gate (e.g. the Archive Basement needs 8 donations). */
+  requires?: 'archive';
 }
 
 export interface Structure {
-  kind: 'cabin' | 'shed' | 'mine' | 'tower';
+  kind: 'cabin' | 'shed' | 'mine' | 'tower' | 'diner' | 'store' | 'museum' | 'house' | 'station';
   x: number; y: number; w: number; h: number;
   door: { x: number; y: number };
   /** Door leads somewhere via a portal (else it is locked). */
@@ -76,6 +85,8 @@ export interface MapDef {
   zones: ZoneRect[];
   /** Battle backdrop palette: [sky/day, ground]. */
   battleColors: [number, number];
+  /** Per-tile tags (museum case -> cryptid id, survey table -> ritual...). */
+  meta?: Map<number, string>;
 }
 
 export class Builder {
@@ -86,6 +97,7 @@ export class Builder {
   structures: Structure[] = [];
   signs = new Map<number, string>();
   zones: ZoneRect[] = [];
+  meta = new Map<number, string>();
 
   constructor(readonly w: number, readonly h: number, fill: number) {
     this.ground = new Uint8Array(w * h).fill(fill);

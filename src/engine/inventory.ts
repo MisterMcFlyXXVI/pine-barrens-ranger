@@ -56,6 +56,11 @@ export class Inventory {
     return this.slots.some((s) => !s || (s.id === id && s.n < max));
   }
 
+  /** Grow the bag (Outfitter pack upgrades). Never shrinks below existing items. */
+  resize(n: number): void {
+    while (this.slots.length < n) this.slots.push(null);
+  }
+
   swap(a: number, b: number): void {
     const t = this.slots[a];
     this.slots[a] = this.slots[b];
