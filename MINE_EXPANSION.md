@@ -181,3 +181,65 @@ Dewey is Pippa's great-great-uncle; Silas was Earl Haddix's grandfather (Ruth's 
 - The P4 reopening scene (Walter taking check 312 down) is unchanged. The 1914 board is the older board
   found behind its panel.
 - Above ground nothing new spawns, and no cryptid, encounter or campaign rule changes.
+
+## 12. Second pass: atmosphere, depth and the afterward
+
+**Atmosphere**
+- Sounds are placed: the nearest Coal-Chewer's chewing, the Foreman's dragging tally chain, the drips from the
+  nearest seep, and creaks and far-off picks pan left and right and fade with distance.
+- Your breathing: slow and steady, quick and ragged when he's close, the air is going, or you're in gas.
+- Footsteps by surface (coal crunch, a ring off the rail, a splash near seeps). Running is loud enough for him to hear.
+- Uneasy things, now and then, while the seam is open: a distant whistle that nothing follows, your lamp
+  flickering, fresh chalk tallies on a rib you just passed, a chain somewhere. The lamp also flickers when he's near.
+- The headlamp throws a forward beam with dust motes in it, sputters and hisses below 20% carbide, and its light
+  falls off in soft stepped rings (amber open, phosphor green shut).
+- The mountain answers: drips and creaks thin out as tags come out. The music warms (a slow arpeggio at 6 OUT)
+  and becomes a hymn once the seam is sealed.
+- After your first tag is banked, a lamp is lit on the empty man-trip car at the Level 1 landing. Nobody says who lit it.
+
+**Depth**
+- **Decoys:** work **coal lumps** out of glinting seams in the rib (once a day each). Select a lump and press A to
+  throw it up to 6 tiles: the Foreman goes to look, and so do Chewers within 8 tiles.
+- **Kettle-bottoms** you knock down with the bar sometimes hide coal, carbide or a 1914 brass button.
+- **Second routes:**
+  - **Crawlways:** too low for a lit cap lamp, so shutter it to fit. They're too low for the Foreman, too: an escape route.
+  - **Flooded drifts:** Bog Waders.
+- **The ore car** on Level 1 rides the whole haulage in seconds. Every husk on the level hears it.
+- **The Foreman learns:** hide in the same alcove three times while he's hunting and he chalks it and checks it.
+- **Your canary** has a name (you choose it at the locker) and needs seed once a day (5 in the kit; the Outfitter
+  sells more). Unfed, it sulks and sometimes stays quiet when it shouldn't. After the finale it retires to your
+  cabin window.
+- **Miner's Almanac** (Journal): an entry for each tool, hazard and creature as you meet it.
+
+**Story**
+- Walter is physically in the Lamp House on your first visit, waits there once all twelve are banked ("he won't
+  step past the door"), and stands with Gideon and Elias at the finale. Afterwards he comes down to Level 1 with
+  you, once: his first time underground since 1978.
+- **Memorial Night**, the evening after the sealing (Town Park, or the gazebo; 7-11 PM). Twelve lanterns, each
+  hung by family where there is family, and the hymn. Everyone there likes you more.
+- Gideon **tempers the Sounding Bar** once three tags are out: it hums near hidden kettle-bottoms, and taps carry
+  less far.
+- Clara reads the **names on the porch radio**, a few each night, as you bring them out.
+- Pippa asks to come down the mine. You say no. The next day she gives you the **Deep Seam Club badge**
+  (steadies your breathing a little underground).
+
+**Polish**
+- **Banking ceremony:** each check slides from IN to its OUT peg with a click, the board's halo warms, and then
+  his memory plays.
+- **The Foreman's silhouette** shows faintly at the edge of your sight when he's near but you aren't looking at him.
+- **A gentle first descent:** until your first tag is banked, Level 1 has no haze and its Chewers sleep where
+  they stand (light right in a sleeper's face wakes it).
+- **Difficulty** (Settings: THE MINE):
+  - **Lantern-lit:** carbide lasts twice as long, gas and haze are gentler, the Foreman is slower, and you keep the tags you carry when you pass out.
+  - **Standard:** as designed.
+  - **Night shift:** passing out sends carried tags back to their puzzles.
+- **Mine map** (MAP underground): a surveyor's chart of the level, inked in as you explore, with the lift,
+  alcoves, crawlways, water, gas you've met, torches, puzzles and dropped tags.
+- **Double-tap A** with nothing to use it on sounds the bar (touch-friendly).
+
+**Afterwards**
+- **Barney's mine tours**, Sunday afternoons at the Lamp House once the seam is sealed (with free souvenir coal).
+  Coal sells at the shipping bin.
+- **The Old Works (1888):** the blast shook open an older drift. It's reachable from the lift once the seam is
+  sealed. Expect a cavern, a black lake, glowing cave fungus, and no hunters. Fish it for **Ghost Crayfish** and
+  the rare **Blind Cavefish**.

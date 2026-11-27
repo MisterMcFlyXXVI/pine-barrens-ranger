@@ -28,6 +28,7 @@ export type MapId =
   | 'MINE_L1'
   | 'MINE_L2'
   | 'MINE_L3'
+  | 'MINE_L4'
   | 'EXPANSION_RAIL';
 
 export interface Portal {

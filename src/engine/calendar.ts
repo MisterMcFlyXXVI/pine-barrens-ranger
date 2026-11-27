@@ -1,6 +1,6 @@
 /** Calendar logic: today's gathering, where townsfolk stand for it, the stall, and birthdays. */
 import type { Game } from './game';
-import { EVENTS, BIRTHDAYS, BIRTHDAY_LINES } from '../data/calendar';
+import { EVENTS, BIRTHDAYS, BIRTHDAY_LINES, MEMORIAL } from '../data/calendar';
 import type { TownEvent } from '../data/calendar';
 import type { Stop } from '../data/npcs';
 import { DAYS_PER_SEASON } from './clock';
@@ -22,19 +22,22 @@ export function eventOn(day: number): TownEvent | null {
 
 /** The gathering happening right now (null outside its hours). */
 export function eventNow(game: Game): TownEvent | null {
+  // Memorial Night, the evening after the Deep Seam is sealed.
+  if (game.progress.days.memorial === game.clock.day && game.clock.minutes >= MEMORIAL.start && game.clock.minutes < MEMORIAL.end) return MEMORIAL;
   const e = eventOn(game.clock.day);
   return e && game.clock.minutes >= e.start && game.clock.minutes < e.end ? e : null;
 }
 
 /** An evening gathering today (the Folklore Festival stands down for it). */
 export function eveningEventToday(game: Game): boolean {
+  if (game.progress.days.memorial === game.clock.day) return true;
   const e = eventOn(game.clock.day);
   return !!e && e.end > 18 * 60;
 }
 
 /** Where the stall stands (Old Christmas moves to the gazebo once it's built). */
 export function eventSpot(game: Game, e: TownEvent): [number, number] {
-  if (e.id === 'old_christmas' && game.progress.flags.has('proj_gazebo')) return [27, 31];
+  if ((e.id === 'old_christmas' || e.id === 'memorial') && game.progress.flags.has('proj_gazebo')) return [27, 31];
   return e.spot;
 }
 
@@ -85,6 +88,7 @@ export function eventStallAt(game: Game, x: number, y: number): boolean {
       if (e.effect === 'eggs') { turnInEggs(game); return; }
       game.progress.days[key] = game.clock.day;
       eventEffect(game, e);
+      if (e.effect === 'memorial') { sfx.trustChime(); game.openOverlay(new Dialog([...MEMORIAL_LINES])); return; }
       const [it, n] = e.activity.give;
       const left = game.inv.add(it, n);
       if (left) game.storage.add(it, left);
@@ -104,7 +108,17 @@ function eventEffect(game: Game, e: TownEvent): void {
     for (const [id] of GATHER) if (isFriend(id) && eventStop(game, id)) befriend(game, id, 15);
   }
   if (e.effect === 'burn') game.progress.days.fasnacht_burn = game.clock.day;
+  if (e.effect === 'memorial') for (const [id] of GATHER) if (isFriend(id)) befriend(game, id, 20);
 }
+
+/** Memorial Night's lantern: who hangs which, and the quiet after. */
+const MEMORIAL_LINES: readonly string[] = [
+  'A rope runs across the park between two posts, and on it, one by one, the town hangs twelve paper lanterns. Each has a name on it in Matthias\'s neat carving.',
+  'Pippa hangs Dewey Calloway\'s, very carefully. Ruth and Sam hang Silas Haddix\'s. Agnes and Elias hang Clement Vance\'s together, and Elias has to stop for a second before he lets go.',
+  'Opa Walter hangs Anselm Kessler\'s, for Josef. Then he hangs a thirteenth one with no name on it, and nobody asks.',
+  'They hand you the last lantern: Benjy Lusk, 11, trapper boy. You hang it. Somewhere up the hill, the station bell rings twelve times, slow.',
+  'Nobody says anything for a long while. Then Ruth starts a hymn, and everybody who knows it joins in, and everybody who doesn\'t hums. (Everyone here likes you a little more.)',
+];
 
 /** Old Man Winter burned this winter: the rest of it is mild (spring weather). */
 export function winterBeaten(game: Game): boolean {

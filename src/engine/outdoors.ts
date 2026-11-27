@@ -56,7 +56,7 @@ export const FISH: Record<Water, FishDef[]> = {
 export function waterAt(m: MapRuntime, x: number, y: number): Water | null {
   const g = m.ground(x, y);
   if (g !== T.WATER && g !== T.SHALLOW) return null;
-  if ((m.id as string) === 'MINE_L4') return 'cave';
+  if (m.id === 'MINE_L4') return 'cave';
   const zones = m.zonesAt(x, y);
   if (zones.includes('deep')) return 'deep';
   if (zones.includes('lake') || zones.includes('canal')) return 'lake';

@@ -72,8 +72,9 @@ import { WorldMap, handcarUnlocked } from '../ui/worldmap';
 import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
-import { mineTick, mineArrive, mineInteract, placeHemlock, placeTorch } from './mine';
-import { isDeepSeam, MINE_LEVELS } from '../data/mine';
+import { mineTick, mineArrive, mineInteract, placeHemlock, placeTorch, mineBusy, crawlBlocked, mineStep, throwCoal, mineEmptyA, banked } from './mine';
+import { MineMap } from '../ui/mineMap';
+import { isDeepSeam, isMineMap, MINE_LEVELS, MINERS } from '../data/mine';
 
 /** Rooms rebuilt to a new size since older saves (saves without a recorded size). */
 const RESIZED_MAPS: ReadonlySet<MapId> = new Set<MapId>(['CABIN_INTERIOR', 'LAMP_HOUSE']);
@@ -647,7 +648,13 @@ export class Game {
     p.radioDay = this.clock.day;
     const d = this.clock.day;
     let pages: string[];
-    if (p.flags.has('finale')) pages = RADIO_HOME[d % RADIO_HOME.length];
+    // Clara reads the names of the miners you've brought out, a few each night.
+    const unaired = MINERS.filter((m) => p.mine.tags[m.id] === 'out' && !p.mine.aired.includes(m.id));
+    if (unaired.length) {
+      for (const m of unaired) p.mine.aired.push(m.id);
+      const names = unaired.map((m) => `${m.name}, ${m.age}, ${m.job.split(',')[0]}`).join('. ');
+      pages = [`CLARA (WKPB): "...and before the music tonight, the names. ${names}. Brought out of No. 3 this week, after eighty-three years. Welcome home, gentlemen."`, 'Then four seconds of nothing at all, on purpose. In the Quiet Zone you can hear exactly how long four seconds is.'];
+    } else if (p.flags.has('finale')) pages = RADIO_HOME[d % RADIO_HOME.length];
     else if (p.act >= 3) pages = d % 2 ? RADIO_ELIAS[p.reason ?? 'belong'] : RADIO_STATIC[d % RADIO_STATIC.length];
     else if (p.donations >= 12) pages = d % 3 === 0 ? RADIO_STATIC[d % RADIO_STATIC.length] : RADIO_EARLY[d % RADIO_EARLY.length];
     else pages = RADIO_EARLY[d % RADIO_EARLY.length];
@@ -962,7 +969,9 @@ export class Game {
   /** Background music that fits the moment. */
   private musicTrack(): TrackId {
     if (this.mode === 'title') return 'title';
-    if (this.cur && isDeepSeam(this.cur.id)) return 'mine';
+    // The Deep Seam's drone warms as the tags come out; once it's sealed, the hymn.
+    if (this.cur && isDeepSeam(this.cur.id)) return this.progress.mine.sealed ? 'mine_hymn' : banked(this) >= 6 ? 'mine_warm' : 'mine';
+    if (eventNow(this)?.id === 'memorial' && this.cur.id === 'PINE_HOLLOW_TOWN') return 'mine_hymn';
     const top = this.overlays[this.overlays.length - 1];
     if (top instanceof Encounter) return 'encounter';
     if (top instanceof StoryPanels || top instanceof FinaleScene) return 'title';
@@ -1015,7 +1024,7 @@ export class Game {
     }
     if (inp.pressed('bag')) { sfx.open(); this.openOverlay(new BagMenu()); }
     else if (inp.pressed('dex')) { sfx.open(); this.openOverlay(new DexMenu()); }
-    else if (inp.pressed('map')) { sfx.open(); this.openOverlay(new WorldMap(this)); }
+    else if (inp.pressed('map')) { sfx.open(); this.openOverlay(isMineMap(this.cur.id) ? new MineMap() : new WorldMap(this)); }
   }
 
   /* ------------------------------------------------------------ */
@@ -1026,6 +1035,7 @@ export class Game {
     const p = this.player;
     const inp = this.input;
     p.bumpCd = Math.max(0, p.bumpCd - dt);
+    if (mineBusy()) return;
 
     if (p.action) {
       const a = p.action;
@@ -1112,6 +1122,7 @@ export class Game {
       return;
     }
     if (this.townsfolk.at(this.cur.id, nx, ny)) { p.chain = false; return; }
+    if (crawlBlocked(this, nx, ny)) { if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; } p.chain = false; return; }
     if (this.stallAt(nx, ny)) { if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; } p.chain = false; return; }
     if (this.cur.blocked(nx, ny, this.hasWaders())) {
       if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; }
@@ -1126,7 +1137,8 @@ export class Game {
     // Cryptid clues react to how you move: running spooks the shy ones, stepping onto one startles it.
     this.sightings.onStep(this, nx, ny, run);
     const surf = this.surfaceAt(p.tx - dx, p.ty - dy);
-    if (WADE_GROUND.has(this.cur.ground(nx, ny))) { sfx.wade(); this.particles.splash(nx * 16 + 8, ny * 16 + 12); }
+    if (isMineMap(this.cur.id)) { mineStep(this, nx, ny, run); if (WADE_GROUND.has(this.cur.ground(nx, ny))) this.particles.splash(nx * 16 + 8, ny * 16 + 12); }
+    else if (WADE_GROUND.has(this.cur.ground(nx, ny))) { sfx.wade(); this.particles.splash(nx * 16 + 8, ny * 16 + 12); }
     else sfx.step(surf);
     if (surf !== 'wood' && !this.cur.def.indoor) this.particles.dust((p.tx - dx) * 16 + 8, (p.ty - dy) * 16 + 15, d);
     const cover = this.cur.obj(nx, ny);
@@ -1233,11 +1245,14 @@ export class Game {
     const [tx, ty] = p.facing();
     if (!repeat && this.tryInteract(tx, ty)) return;
     const st = this.selected;
+    // Underground: A with nothing to use it on (and nothing usable in hand), twice quickly, sounds the bar.
+    if (!repeat && (!st || ITEMS[st.id].kind === 'tool') && !(st && ITEMS[st.id].tool === 'rod' && this.cur.id === 'MINE_L4') && mineEmptyA(this)) return;
+    if (!repeat && st?.id === 'coal_lump') { throwCoal(this); return; }
     if (!st) { if (!repeat) this.notice(touchOn() ? 'Nothing in hand. Tap a hotbar slot to pick it.' : 'Nothing in hand. Pick a hotbar slot with 1-9 or tap it.'); return; }
     if (!repeat && wardenUse(this, st.id)) return;
     const def = ITEMS[st.id];
     if (def.kind === 'tool' && def.tool) {
-      if (this.cur.def.indoor) { if (!repeat) this.notice(`Better not swing the ${def.name} indoors.`); return; }
+      if (this.cur.def.indoor && !(def.tool === 'rod' && this.cur.id === 'MINE_L4')) { if (!repeat) this.notice(`Better not swing the ${def.name} indoors.`); return; }
       if (def.tool === 'rod' || def.tool === 'bow' || def.tool === 'rifle') { if (!repeat) this.useOutdoorTool(def.tool, tx, ty); return; }
       this.startTool(def.tool, tx, ty);
       return;
@@ -2221,6 +2236,7 @@ export class Game {
     const kids = rescueOvernight(this);
     if (kids) lines.push(kids);
     lines.push(...morningNews(this.clock.day, this.progress.flags.has('finale')));
+    if (this.progress.days.memorial === this.clock.day) lines.push('Tonight: Memorial Night in the Town Park, 7 to 11 PM. Twelve lanterns for the men of the 1914 shift.');
     if (this.unreadLetters().length) lines.push('There\'s a letter waiting in your mailbox.');
     if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Park!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');

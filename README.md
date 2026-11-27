@@ -265,6 +265,11 @@ A non-combat folk-horror chapter under No. 3. See `MINE_EXPANSION.md` for the fu
   draw the Foreman. Pass out and you drop them where you fell.
 - **The Foreman** hunts open light and loud taps. Hide in man-trip alcoves. With all 12 out, wire the four Master
   Timber Cribs and crank the blasting box at the ore-cart lift to seal the Deep Seam for good.
+- **Second pass**: directional sound and your own breathing, a forward headlamp beam, coal decoys from the seams,
+  crawlways the Foreman can't follow, flooded drifts, a rideable ore car, a Foreman who learns your hiding places,
+  a named canary that needs feeding, a Miner's Almanac, the banking ceremony, a mine map, a difficulty setting
+  (Settings: THE MINE), Memorial Night, Barney's Sunday tours and the Old Works with blind cavefish. Details in
+  `MINE_EXPANSION.md` section 12.
 - **Pitch torches**: craft them at the Workbench and set them down underground to light big areas for good. But
   in torchlight, things down there can see you even with your shutter closed.
 - **Josef Meissgeier's ledger** (German script): Opa Walter translates it. Outfits: miner's coveralls and leather

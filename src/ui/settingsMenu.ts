@@ -6,11 +6,12 @@ import type { Rect } from './panel';
 import { drawText, drawTextCentered, drawTextRight } from '../graphics/font';
 import { P, hex } from '../graphics/palette';
 import { sfx } from '../audio/sfx';
-import { settings, setSettings, TEXT_SPEEDS } from '../engine/settings';
+import { settings, setSettings, TEXT_SPEEDS, MINE_MODES } from '../engine/settings';
 
-type Row = 'text' | 'music' | 'sfx' | 'shake' | 'done';
-const ROWS: Row[] = ['text', 'music', 'sfx', 'shake', 'done'];
-const LABEL: Record<Row, string> = { text: 'TEXT SPEED', music: 'MUSIC', sfx: 'SOUND FX', shake: 'SCREEN SHAKE', done: 'DONE' };
+type Row = 'text' | 'music' | 'sfx' | 'shake' | 'mine' | 'done';
+const ROWS: Row[] = ['text', 'music', 'sfx', 'shake', 'mine', 'done'];
+const LABEL: Record<Row, string> = { text: 'TEXT SPEED', music: 'MUSIC', sfx: 'SOUND FX', shake: 'SCREEN SHAKE', mine: 'THE MINE', done: 'DONE' };
+const MINE_LABEL: Record<string, string> = { lantern: 'LANTERN-LIT', standard: 'STANDARD', night: 'NIGHT SHIFT' };
 const ROW_H = 14;
 
 export class SettingsMenu implements Overlay {
@@ -28,6 +29,7 @@ export class SettingsMenu implements Overlay {
     } else if (row === 'music') setSettings({ music: s.music + d * 10 });
     else if (row === 'sfx') setSettings({ sfx: s.sfx + d * 10 });
     else if (row === 'shake') setSettings({ shake: !s.shake });
+    else if (row === 'mine') { const i = MINE_MODES.indexOf(s.mineMode); setSettings({ mineMode: MINE_MODES[(i + d + MINE_MODES.length) % MINE_MODES.length] }); }
     else return;
     sfx.blip();
   }
@@ -85,7 +87,7 @@ export class SettingsMenu implements Overlay {
         this.rects.push({ row, r, track });
         return;
       }
-      const val = row === 'text' ? s.textSpeed.toUpperCase() : s.shake ? 'ON' : 'OFF';
+      const val = row === 'text' ? s.textSpeed.toUpperCase() : row === 'mine' ? MINE_LABEL[s.mineMode] : s.shake ? 'ON' : 'OFF';
       drawText(g, '<', vx, ry, sel ? P.AMBER : P.SHADOW);
       drawTextCentered(g, val, vx + vw / 2, ry, sel ? P.LANTERN : P.FOG);
       drawTextRight(g, '>', x + w - 8, ry, sel ? P.AMBER : P.SHADOW);

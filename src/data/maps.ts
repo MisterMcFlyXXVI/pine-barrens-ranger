@@ -13,7 +13,7 @@ import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } fr
 import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
 import { placeStop } from './handcar';
 import { decorate } from './decor';
-import { buildLampHouse, buildMineL1, buildMineL2, buildMineL3 } from './mine';
+import { buildLampHouse, buildMineL1, buildMineL2, buildMineL3, buildMineL4 } from './mine';
 import { buildVance, buildFinch, buildMiller, buildCalloway, buildRuth, buildLoft, buildDinerRoom, buildMeissgeier } from './homes';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
@@ -23,7 +23,7 @@ export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>([
   'CABIN_YARD', 'CABIN_INTERIOR', 'PINE_TRAIL_AND_ORCHARD', 'CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL', 'RADIO_RIDGE_AND_CROSSROADS',
   'PINE_HOLLOW_TOWN', 'DINER_INT', 'STORE_INT', 'MUSEUM_INT', 'MUSEUM_BASEMENT',
   'HOUSE_VANCE', 'HOUSE_FINCH', 'HOUSE_MILLER', 'HOUSE_CALLOWAY', 'HOUSE_RUTH', 'STORE_LOFT', 'DINER_ROOM', 'HOUSE_MEISSGEIER',
-  'LAMP_HOUSE', 'MINE_L1', 'MINE_L2', 'MINE_L3',
+  'LAMP_HOUSE', 'MINE_L1', 'MINE_L2', 'MINE_L3', 'MINE_L4',
 ]);
 
 export const MAP_NAMES: Record<MapId, string> = {
@@ -51,6 +51,7 @@ export const MAP_NAMES: Record<MapId, string> = {
   MINE_L1: 'The Deep Seam: Level 1',
   MINE_L2: 'The Deep Seam: Level 2',
   MINE_L3: 'The Deep Seam: Level 3',
+  MINE_L4: 'The Old Works',
   EXPANSION_RAIL: 'Rail Line',
 };
 
@@ -313,6 +314,7 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'MINE_L1') m = buildMineL1();
     else if (id === 'MINE_L2') m = buildMineL2();
     else if (id === 'MINE_L3') m = buildMineL3();
+    else if (id === 'MINE_L4') m = buildMineL4();
     else throw new Error(`Region ${id} is not built yet`);
     decorate(m);
     placeStop(m);

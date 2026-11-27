@@ -23,7 +23,7 @@
  */
 import type { FriendId } from './friends';
 
-export type EventId = 'ramp_feed' | 'apple_butter' | 'buckwheat' | 'old_christmas' | 'new_year' | 'st_martin' | 'belsnickel' | 'fasnacht' | 'osterhase';
+export type EventId = 'ramp_feed' | 'apple_butter' | 'buckwheat' | 'old_christmas' | 'new_year' | 'st_martin' | 'belsnickel' | 'fasnacht' | 'osterhase' | 'memorial';
 
 export interface TownEvent {
   id: EventId;
@@ -46,7 +46,7 @@ export interface TownEvent {
   /** What townsfolk say at the gathering. */
   talk: Partial<Record<string, string[]>>;
   /** Something extra the activity does (see engine/calendar.ts). */
-  effect?: 'lanterns' | 'burn' | 'eggs';
+  effect?: 'lanterns' | 'burn' | 'eggs' | 'memorial';
   /** Townsfolk in costume for the night: npc id -> [outfit, hat] ('' keeps their own). */
   costumes?: Partial<Record<string, [string, string]>>;
 }
@@ -321,6 +321,30 @@ export const EVENTS: readonly TownEvent[] = [
     },
   },
 ];
+
+/** Memorial Night: the evening after the Deep Seam is sealed (not on the calendar; see engine/calendar.ts). */
+export const MEMORIAL: TownEvent = {
+  id: 'memorial', name: 'Memorial Night', season: -1, days: [], start: H(19), end: H(23), place: 'Town Park, 7-11 PM',
+  spot: [35, 31],
+  blurb: 'Memorial Night. The town is carrying twelve lanterns up to the park for the men of the 1914 night shift. 7 to 11 PM.',
+  activity: { label: 'Hang a lantern for the twelve', lines: [], give: ['hot_cider', 1] },
+  effect: 'memorial',
+  stock: [{ id: 'hot_cider', cost: 45 }, { id: 'pepperoni_roll', cost: 60 }],
+  talk: {
+    walter: ['Twelve lanterns, and one more I lit for Danny. Nobody minds. Josef would have lit one for everybody.'],
+    liesl: ['I baked twelve little loaves, the old way, for the men. Then I baked a hundred more because people are hungry. That is also the old way.'],
+    matthias: ['I carved a little name plate for every lantern. My hands wanted something to do.'],
+    agnes: ['Clement\'s chalk is going in a case at the Society, next to the board. With a very long placard. Very long.'],
+    vance: ['My great-uncle went back in for his men. Tonight his name is on a lantern in the park. I think that\'s the right size of thing.'],
+    pippa: ['Dewey Calloway was SEVENTEEN. That\'s only seven more than me. I\'m holding his lantern really carefully.'], sam: ['Grandma let me carry Silas Haddix\'s lantern. I didn\'t drop it once.'],
+    ruth: ['Silas Haddix was Earl\'s granddaddy. Earl\'s been gone nine years. I talked to both of them tonight, out loud. People can think what they like.'],
+    gideon: ['The hum\'s gone. I keep putting my hand on things to check.'],
+    mabel: ['Cider\'s on the house tonight, hon. Every cup. Don\'t argue with me in front of all these people.'],
+    barnaby: ['I rang the station bell twelve times at sundown. Slow. The whole valley heard it.'],
+    clara: ['I\'m reading the names on the air at midnight. Twelve names and then four minutes of nothing. The Quiet Zone can hold four minutes.'],
+    toby: ['I polished all twelve lantern bails. I wanted to do something with my hands too.'],
+  },
+};
 
 /** Birthdays: [season 0-3, day 1-28]. Elias's counts once he's home. */
 export const BIRTHDAYS: Record<FriendId | 'vance', [number, number]> = {

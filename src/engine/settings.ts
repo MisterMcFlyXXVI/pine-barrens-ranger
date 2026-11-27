@@ -4,6 +4,9 @@
  * fresh device brings its settings along.
  */
 export type TextSpeed = 'slow' | 'normal' | 'fast' | 'instant';
+/** The Deep Seam's difficulty: Lantern-lit (gentle), Standard, Night shift (one life a descent). */
+export type MineMode = 'lantern' | 'standard' | 'night';
+export const MINE_MODES: readonly MineMode[] = ['lantern', 'standard', 'night'];
 
 export interface Settings {
   textSpeed: TextSpeed;
@@ -12,10 +15,11 @@ export interface Settings {
   /** 0-100 */
   sfx: number;
   shake: boolean;
+  mineMode: MineMode;
 }
 
 const KEY = 'pbr_settings';
-export const DEFAULT_SETTINGS: Settings = { textSpeed: 'normal', music: 80, sfx: 80, shake: true };
+export const DEFAULT_SETTINGS: Settings = { textSpeed: 'normal', music: 80, sfx: 80, shake: true, mineMode: 'standard' };
 export const TEXT_SPEEDS: readonly TextSpeed[] = ['slow', 'normal', 'fast', 'instant'];
 
 let current: Settings = load();
@@ -33,6 +37,7 @@ function sanitize(s: Partial<Settings> | null | undefined): Settings {
     music: clamp(s?.music, d.music),
     sfx: clamp(s?.sfx, d.sfx),
     shake: typeof s?.shake === 'boolean' ? s.shake : d.shake,
+    mineMode: MINE_MODES.includes(s?.mineMode as MineMode) ? (s!.mineMode as MineMode) : d.mineMode,
   };
 }
 

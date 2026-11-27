@@ -145,7 +145,7 @@ export interface ShopEntry {
 export const STORE_STOCK: readonly ShopEntry[] = [
   { id: 'seed_clover', cost: 15 }, { id: 'seed_catnip', cost: 25 }, { id: 'seed_moss', cost: 30 }, { id: 'seed_corn', cost: 35 },
   { id: 'seed_pepper', cost: 55 }, { id: 'seed_cranberry', cost: 40 },
-  { id: 'mineral_salt', cost: 45 }, { id: 'iron_nail', cost: 18 }, { id: 'timber', cost: 25 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
+  { id: 'mineral_salt', cost: 45 }, { id: 'bird_seed', cost: 10, qty: 5 }, { id: 'iron_nail', cost: 18 }, { id: 'timber', cost: 25 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
   { id: 'fishing_rod', cost: 250 }, { id: 'hunting_bow', cost: 700 }, { id: 'arrow', cost: 30, qty: 5 },
   { id: 'deer_rifle', cost: 1400 }, { id: 'rifle_cartridge', cost: 40, qty: 5 },
 ];

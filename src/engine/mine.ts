@@ -10,12 +10,16 @@
 import type { Game } from './game';
 import type { MapId } from '../data/mapgen';
 import type { MineSave, MinerId, MineLevel, Pt, Crosscut } from '../data/mine';
-import { MINERS, MINER_BY_ID, MINE_LEVELS, LEDGER, LAMP_HOUSE, isMineMap, isDeepSeam } from '../data/mine';
+import { MINERS, MINER_BY_ID, MINE_LEVELS, LEDGER, LAMP_HOUSE, ALMANAC, isMineMap, isDeepSeam } from '../data/mine';
+import { settings } from './settings';
+import { NamePrompt } from '../ui/namePrompt';
+import { BankingScene } from '../ui/bankingScene';
 import { O, T } from '../data/tiles';
 import { ITEMS } from '../data/items';
 import { Dialog } from '../ui/menus';
 import type { Choice } from '../ui/menus';
 import { sfx } from '../audio/sfx';
+import { P } from '../graphics/palette';
 import { markMilestone } from './barks';
 
 /* ------------------------------------------------------------------ */
@@ -41,7 +45,7 @@ export interface Ent {
   /** Tile it's standing on / heading to. */
   tx: number; ty: number; gx: number; gy: number;
   route: Pt[]; idx: number; step: 1 | -1; loop: boolean;
-  mode: 'patrol' | 'hunt' | 'search';
+  mode: 'patrol' | 'hunt' | 'search' | 'sleep';
   target: Pt | null;
   lost: number;
   anim: number;
@@ -61,10 +65,38 @@ class MineRT {
   /** Something nearby is gas (for the canary and the safety lamp). */
   nearGas: 'choke' | 'fire' | null = null;
   inGas: 'choke' | 'fire' | null = null;
+  /** Atmosphere timers: your breathing, his chain, the uneasy little things, a sputtering lamp. */
+  breathT = 3; chainT = 1; uneaseT = 30; hissT = 2;
+  /** Seconds left of a lamp flicker (he's close, or something else is). */
+  flicker = 0;
+  /** Riding the ore car: from/to tile x on row y, progress 0..1. */
+  ride: { x0: number; x1: number; y: number; t: number } | null = null;
+  /** Last empty A press (double-tap A sounds the bar on touch). */
+  lastA = -9;
+  /** The alcove you're standing in (to count each hiding once). */
+  lastAlcove = '';
+  /** Kettle-bottoms the tempered bar already warned you about. */
+  warned = new Set<string>();
+  /** The canary sulking right now (unfed): sometimes it lies. */
+  sulkQuiet = false;
 }
 export const rt = new MineRT();
 
 export function mineState(game: Game): MineSave { return game.progress.mine; }
+
+/** Difficulty (Settings: THE MINE): Lantern-lit is gentler, Night shift harsher. */
+function tune(): { fuel: number; gas: number; speed: number; haze: number } {
+  const m = settings().mineMode;
+  return m === 'lantern' ? { fuel: 0.5, gas: 0.6, speed: 0.85, haze: 0.5 } : m === 'night' ? { fuel: 1.3, gas: 1.15, speed: 1.1, haze: 1.2 } : { fuel: 1, gas: 1, speed: 1, haze: 1 };
+}
+
+/** Write a Miner's Almanac entry the first time you meet something. */
+export function note(game: Game, k: keyof typeof ALMANAC): void {
+  const s = game.progress.mine;
+  if (s.seen.includes(k)) return;
+  s.seen.push(k);
+  game.toast(`MINER'S ALMANAC: ${ALMANAC[k].title}. (Journal)`);
+}
 const key = (map: MapId, x: number, y: number) => `${map}:${x},${y}`;
 
 /* ------------------------------------------------------------------ */
@@ -75,12 +107,20 @@ export function tagState(game: Game, id: MinerId): 'in' | 'carried' | 'dropped' 
 export function carried(game: Game): MinerId[] { return MINERS.filter((m) => tagState(game, m.id) === 'carried').map((m) => m.id); }
 export function banked(game: Game): number { return MINERS.filter((m) => tagState(game, m.id) === 'out').length; }
 /** The Foreman's coal-dust storm: 4 at full strength, weaker every 3 tags banked, gone when the seam is sealed. */
-export function hazeLevel(game: Game): number { return game.progress.mine.sealed ? 0 : Math.max(0, 4 - Math.floor(banked(game) / 3)); }
+export function hazeLevel(game: Game): number {
+  // Your first time down, Level 1 is just dark: learn the tools before anything rolls in.
+  if (game.progress.mine.sealed || game.cur.id === 'MINE_L4' || (game.cur.id === 'MINE_L1' && banked(game) === 0)) return 0;
+  return Math.max(0, 4 - Math.floor(banked(game) / 3));
+}
 export function hazeOn(game: Game): boolean { return hazeLevel(game) > 0 && isMineMap(game.cur.id) && rt.hazeClock % HAZE_PERIOD >= HAZE_PERIOD - HAZE_ON; }
 export function lampLit(game: Game): boolean { const s = game.progress.mine; return s.kit && s.fuel > 0; }
 /** Open carbide glare: what the husks and the Foreman are drawn to. */
 export function glare(game: Game): boolean { const s = game.progress.mine; return lampLit(game) && !s.shut; }
 export function inAlcove(game: Game): boolean { return game.cur.ground(game.player.tx, game.player.ty) === T.ALCOVE; }
+/** An alcove he's learned (you hid there three times while he was looking): no longer safe. */
+export function knownAlcove(game: Game): boolean { return (game.progress.mine.alcoves[key(game.cur.id, game.player.tx, game.player.ty)] ?? 0) >= 3; }
+/** Hidden from him: in an alcove he hasn't learned yet. */
+function hiddenNow(game: Game): boolean { return inAlcove(game) && !knownAlcove(game); }
 export function respirator(game: Game): boolean { return game.look.hat === 'brattice_respirator'; }
 export function levelOf(game: Game): MineLevel | null { return MINE_LEVELS[game.cur.id] ?? null; }
 
@@ -103,7 +143,9 @@ export function visible(game: Game): boolean { return glare(game) || inTorchLigh
 export function lightRadius(game: Game): number {
   if (!lampLit(game)) return 9;
   if (game.progress.mine.shut) return LIGHT_SHUT;
-  return LIGHT_OPEN - (hazeOn(game) ? hazeLevel(game) * 7 : 0);
+  const fl = rt.flicker > 0 ? Math.random() * 22 : 0;
+  const low = game.progress.mine.fuel < 20 ? Math.random() * 10 : 0;
+  return Math.max(14, LIGHT_OPEN - (hazeOn(game) ? hazeLevel(game) * 7 * tune().haze : 0) - fl - low);
 }
 
 function gasAt(L: MineLevel | null, x: number, y: number, pad = 0): 'choke' | 'fire' | null {
@@ -148,15 +190,44 @@ function enterLevel(game: Game): void {
   rt.breath = 100;
   const L = levelOf(game);
   if (!L) return;
-  for (const c of L.chewers) if (tagState(game, c.tag) === 'in') rt.ents.push(ent('chewer', c.path, false, c.tag));
+  const asleep = game.cur.id === 'MINE_L1' && banked(game) === 0;
+  for (const c of L.chewers) if (tagState(game, c.tag) === 'in') { const e = ent('chewer', c.path, false, c.tag); if (asleep) e.mode = 'sleep'; rt.ents.push(e); }
   if (foremanHere(game) && L.foreman) rt.ents.push(ent('foreman', L.foreman, true));
+  const s = game.progress.mine;
+  // The canary pecks its seed on the way down (once a day).
+  if (s.kit && s.canary.fed !== game.clock.day && game.inv.count('bird_seed') > 0) {
+    game.inv.remove('bird_seed', 1); s.canary.fed = game.clock.day;
+    game.toast(`${canaryName(game)} pecks at the seed and fluffs up. Good bird.`);
+  }
+  if (game.cur.id === 'MINE_L4') note(game, 'oldworks');
+  // After the seam is sealed: Walter comes down to Level 1 with you, once.
+  if (game.cur.id === 'MINE_L1' && s.sealed && !game.progress.flags.has('walter_down')) {
+    game.progress.flags.add('walter_down');
+    holdNpc(game, 'walter', L.arrive[0] + 1, L.arrive[1], 120);
+    game.openOverlay(new Dialog([
+      'Opa Walter is standing by the lift cage, one hand on the cold rail, the other on his walking stick. He came down behind you.',
+      'OPA WALTER: "Nineteen years. I said I would never again go where I could not see the sky." He looks up into the dark. "But it is a good dark now, ja? Quiet. The kind you can sleep in."',
+      'OPA WALTER: "Danny would have laughed at me. Standing here shaking like a leaf. Ach. Let him laugh." He pats the rib, gently, the way you pat a horse. "Gut. That is enough for today. Take me up?"',
+    ]));
+  }
+}
+
+/** The canary's name (or "the canary" until you name it). */
+export function canaryName(game: Game): string { return game.progress.mine.canary.name || 'The canary'; }
+/** Fed today or yesterday: otherwise it sulks. */
+function canarySulks(game: Game): boolean { const s = game.progress.mine; return s.kit && s.canary.fed < game.clock.day - 1; }
+
+/** Step a townsperson in beside you for a scene. */
+function holdNpc(game: Game, id: string, x: number, y: number, secs: number): void {
+  const npc = game.townsfolk.npcs.find((n) => n.def.id === id);
+  if (npc) game.townsfolk.hold(npc, game.cur.id, x, y, secs);
 }
 
 /** First step of the shortest walkable path from (fx,fy) toward (tx,ty) (null = stay). */
 function nextStep(game: Game, fx: number, fy: number, tx: number, ty: number): Pt | null {
   if (fx === tx && fy === ty) return null;
   const m = game.cur, W = m.w;
-  const ok = (x: number, y: number) => m.inBounds(x, y) && ((x === tx && y === ty) || !m.blocked(x, y, true));
+  const ok = (x: number, y: number) => m.inBounds(x, y) && m.ground(x, y) !== T.CRAWL && ((x === tx && y === ty) || !m.blocked(x, y, true));
   const prev = new Map<number, number>();
   const start = fy * W + fx, goal = ty * W + tx;
   prev.set(start, -1);
@@ -208,8 +279,9 @@ function moveEnt(game: Game, e: Ent, dt: number, speed: number): void {
 }
 
 /** The Foreman hears something (a tap, a falling kettle-bottom, tags clinking): he goes to look. */
-function alert(game: Game, x: number, y: number, radius: number, loud: boolean): void {
+function alert(game: Game, x: number, y: number, radius: number, loud: boolean, chewers = false): void {
   for (const e of rt.ents) {
+    if (chewers && e.kind === 'chewer' && e.mode !== 'hunt' && Math.hypot(e.x - x, e.y - y) <= 8) { e.mode = 'search'; e.target = [x, y]; e.lost = 0; continue; }
     if (e.kind !== 'foreman' || e.mode === 'hunt') continue;
     if (Math.hypot(e.x - x, e.y - y) > radius) continue;
     e.mode = 'search'; e.target = [x, y]; e.lost = 0;
@@ -219,21 +291,28 @@ function alert(game: Game, x: number, y: number, radius: number, loud: boolean):
 
 function updateEnts(game: Game, dt: number): void {
   const p = game.player, px = p.tx, py = p.ty;
-  const hidden = inAlcove(game);
+  const hidden = hiddenNow(game);
   const lit = visible(game);
+  const sp = tune().speed;
   for (const e of rt.ents) {
     e.anim += dt;
     const dist = Math.hypot(e.x - px, e.y - py);
     if (e.kind === 'chewer') {
+      if (e.mode === 'sleep') {
+        // Asleep on its feet, chewing slow. Light right in its face wakes it.
+        if (lit && dist <= 1.5) { e.mode = 'hunt'; e.target = [px, py]; sfx.chew(); game.toast('It wakes into your light!'); }
+        continue;
+      }
       // Drawn to open carbide light; lose interest once it's shuttered.
-      if (lit && !hidden && dist <= SEE_CHEWER && sight(game, Math.round(e.x), Math.round(e.y), px, py)) { e.mode = 'hunt'; e.target = [px, py]; e.lost = 0; }
+      if (lit && !hidden && dist <= SEE_CHEWER && sight(game, Math.round(e.x), Math.round(e.y), px, py)) { if (e.mode !== 'hunt') note(game, 'chewer'); e.mode = 'hunt'; e.target = [px, py]; e.lost = 0; }
       else if (e.mode === 'hunt') { e.lost += dt; if (e.lost > 2) { e.mode = 'patrol'; e.target = null; } }
-      moveEnt(game, e, dt, e.mode === 'hunt' ? 3.0 : 1.0);
+      else if (e.mode === 'search') { e.lost += dt; if (e.lost > 5 || (e.target && e.tx === e.target[0] && e.ty === e.target[1] && e.lost > 2)) { e.mode = 'patrol'; e.target = null; } }
+      moveEnt(game, e, dt, (e.mode === 'hunt' ? 3.0 : e.mode === 'search' ? 1.8 : 1.0) * sp);
       if (lit && !hidden && dist < 0.75) { passOut(game, 'chewer'); return; }
     } else {
       const sees = lit && !hidden && dist <= SEE_FOREMAN && sight(game, Math.round(e.x), Math.round(e.y), px, py);
       if (sees) {
-        if (e.mode !== 'hunt' && rt.whistleCd <= 0) { rt.whistleCd = 5; sfx.whistle(); game.shake(0.4); game.toast('THE FOREMAN\'S WHISTLE. He has seen your light. Shutter it and hide!'); }
+        if (e.mode !== 'hunt' && rt.whistleCd <= 0) { rt.whistleCd = 5; sfx.whistle(); game.shake(0.4); game.toast('THE FOREMAN\'S WHISTLE. He has seen your light. Shutter it and hide!'); note(game, 'foreman'); }
         e.mode = 'hunt'; e.target = [px, py]; e.lost = 0;
       } else if (e.mode === 'hunt') {
         e.lost += dt;
@@ -242,8 +321,23 @@ function updateEnts(game: Game, dt: number): void {
         e.lost += dt;
         if (e.lost > 6 || (e.target && e.tx === e.target[0] && e.ty === e.target[1])) { e.mode = 'patrol'; e.target = null; }
       }
+      // He learns your hiding places: an alcove you've used three times while he hunted, he checks.
+      if (inAlcove(game) && e.mode !== 'patrol' && dist < 12) {
+        const k = key(game.cur.id, px, py);
+        if (rt.lastAlcove !== k) {
+          rt.lastAlcove = k;
+          const n = (game.progress.mine.alcoves[k] ?? 0) + 1;
+          game.progress.mine.alcoves[k] = n;
+          if (n === 3) game.toast('A fresh chalk tally on this alcove\'s timber. He has been checking it. Find another.');
+        }
+      }
+      if (!inAlcove(game)) rt.lastAlcove = '';
+      // The drag of his tally chain, from wherever he is.
+      rt.chainT -= dt;
+      if (rt.chainT <= 0 && dist < 16) { rt.chainT = e.mode === 'hunt' ? 0.5 : 1.1; sfx.spatial((e.x - px) / 8, 1 - dist / 16, () => sfx.chain()); }
+      if (dist < 14 && rt.flicker <= 0 && Math.random() < dt * 0.25) rt.flicker = 0.6;
       const wired = game.progress.mine.wired.length === 4;
-      moveEnt(game, e, dt, e.mode === 'hunt' ? (wired ? 4.2 : 3.6) : e.mode === 'search' ? 2.2 : 1.4);
+      moveEnt(game, e, dt, (e.mode === 'hunt' ? (wired ? 4.2 : 3.6) : e.mode === 'search' ? 2.2 : 1.4) * sp);
       if (!hidden && dist < 0.75) { passOut(game, 'foreman'); return; }
     }
   }
@@ -254,18 +348,32 @@ function updateEnts(game: Game, dt: number): void {
 /* ------------------------------------------------------------------ */
 
 let regen = 0;
+/** Something in the mine has hold of the player (riding the ore car): no walking. */
+export function mineBusy(): boolean { return rt.ride !== null; }
+
+/** A sound from a tile, panned and faded by where it is relative to you. */
+function soundAt(game: Game, x: number, y: number, range: number, fn: () => void): void {
+  const p = game.player, d = Math.hypot(x - p.tx, y - p.ty);
+  sfx.spatial((x - p.tx) / 9, 1 - d / range, fn);
+}
+
 export function mineTick(game: Game, dt: number): void {
   // Walter's lapel tag: calm breathing, anywhere.
   if (game.look.outfit === 'lapel_tag') { regen += dt; if (regen >= 3) { regen = 0; game.stamina = Math.min(game.maxStamina, game.stamina + 1); } }
   const id = game.cur.id;
   document.body.classList.toggle('in-mine', isDeepSeam(id) && game.progress.mine.kit);
-  if (!isMineMap(id)) { rt.map = null; rt.ents = []; return; }
+  if (id === 'LAMP_HOUSE') lampHouseTick(game);
+  if (!isMineMap(id)) { rt.map = null; rt.ents = []; rt.ride = null; return; }
   if (rt.map !== id) enterLevel(game);
   if (rt.passing) return;
   const s = game.progress.mine, inp = game.input;
   const p = game.player;
+  const tn = tune();
   rt.whistleCd = Math.max(0, rt.whistleCd - dt);
+  rt.flicker = Math.max(0, rt.flicker - dt);
   rt.hazeClock += dt;
+
+  if (rt.ride) { rideTick(game, dt); return; }
 
   // Controls: shutter, sounding bar, refill (keys, touch pills, the HUD lamp).
   if (inp.pressed('shutter')) toggleShutter(game);
@@ -276,21 +384,27 @@ export function mineTick(game: Game, dt: number): void {
   // Carbide.
   if (s.kit && s.fuel > 0) {
     const before = s.fuel;
-    s.fuel = Math.max(0, s.fuel - (s.shut ? FUEL_SHUT : FUEL_OPEN) * dt);
+    s.fuel = Math.max(0, s.fuel - (s.shut ? FUEL_SHUT : FUEL_OPEN) * tn.fuel * dt);
     if (before > 20 && s.fuel <= 20) game.toast('Your headlamp is sputtering. Refill it: Carbide Pellets + Drip-Seep Water (R).');
     if (before > 0 && s.fuel === 0) { sfx.cancel(); game.toast('The carbide is spent. Your headlamp gutters out.'); }
+    rt.hissT -= dt;
+    if (s.fuel < 20 && rt.hissT <= 0) { rt.hissT = 2 + Math.random() * 2; sfx.hiss(); rt.flicker = Math.max(rt.flicker, 0.25); }
   }
 
   // Gas, haze and breath.
   const L = levelOf(game);
   rt.inGas = gasAt(L, p.tx, p.ty);
   rt.nearGas = rt.inGas ?? gasAt(L, p.tx, p.ty, 2);
+  if (rt.inGas) note(game, rt.inGas);
+  if (rt.nearGas === 'fire') note(game, 'safety');
   const haze = hazeOn(game) ? hazeLevel(game) : 0;
+  if (haze) note(game, 'haze');
   let drain = 0;
   if (rt.inGas === 'fire' && glare(game)) { passOut(game, 'firedamp'); return; }
   if (rt.inGas === 'choke') drain += respirator(game) ? CHOKE_DRAIN_MASK : CHOKE_DRAIN;
   if (rt.inGas === 'fire') drain += respirator(game) ? 1 : FIRE_DRAIN;
-  if (haze) drain += haze * 1.4 * (respirator(game) ? 0.2 : 1) * (game.look.outfit === 'fireboss_slicker' ? 0.7 : 1);
+  if (haze) drain += haze * 1.4 * tn.haze * (respirator(game) ? 0.2 : 1) * (game.look.outfit === 'fireboss_slicker' ? 0.7 : 1);
+  drain *= tn.gas * (game.inv.count('club_badge') ? 0.9 : 1);
   if (drain > 0) rt.breath -= drain * dt; else rt.breath = Math.min(100, rt.breath + BREATH_REGEN * dt);
   if (rt.breath <= 0) { passOut(game, haze && !rt.inGas ? 'haze' : 'gas'); return; }
 
@@ -301,22 +415,53 @@ export function mineTick(game: Game, dt: number): void {
   updateEnts(game, dt);
   if (rt.passing) return;
 
-  // Sound: the canary, the mine breathing, tags in your pocket.
+  // Your breathing: slow and steady, quick and ragged when he's close or the air is going.
+  const foreman = rt.ents.find((e) => e.kind === 'foreman');
+  const fd = foreman ? Math.hypot(foreman.x - p.tx, foreman.y - p.ty) : 99;
+  const tight = rt.breath < 50 || fd < 8 || rt.inGas !== null;
+  rt.breathT -= dt;
+  if (s.kit && rt.breathT <= 0) { rt.breathT = tight ? 0.9 + Math.max(0, fd - 3) * 0.06 : 3.4; sfx.breath(tight); }
+
+  // The canary: chirps in good air, rattles in bad. Unfed, it sulks, and a sulking canary lies.
   rt.chirp -= dt;
   if (s.kit && rt.chirp <= 0) {
     const quiet = rt.nearGas || haze;
-    if (quiet) { sfx.cageRattle(); rt.chirp = 1.6; } else { sfx.canary(); rt.chirp = 3.5 + Math.random() * 3; }
+    const sulk = canarySulks(game) && Math.random() < 0.35;
+    rt.sulkQuiet = sulk;
+    if (quiet && !sulk) { sfx.cageRattle(); rt.chirp = 1.6; } else if (!quiet && !sulk) { sfx.canary(); rt.chirp = 3.5 + Math.random() * 3; } else rt.chirp = 2.5;
   }
-  rt.drip -= dt; if (rt.drip <= 0) { sfx.drip(); rt.drip = 1.5 + Math.random() * 4; }
-  rt.creak -= dt; if (rt.creak <= 0) { sfx.creak(); rt.creak = 7 + Math.random() * 9; }
-  rt.pick -= dt; if (rt.pick <= 0) { sfx.pickClink(); rt.pick = 11 + Math.random() * 14; }
+  // The mine breathing: drips from the seeps, timbers working, picks somewhere far off. Quieter as the tags come out.
+  const calm = 1 + banked(game) / 6 + (s.sealed ? 1 : 0);
+  rt.drip -= dt;
+  if (rt.drip <= 0) {
+    rt.drip = (1.5 + Math.random() * 4) * calm;
+    const seep = nearestObj(game, O.SEEP);
+    if (seep) soundAt(game, seep[0], seep[1], 16, () => sfx.drip()); else sfx.spatial(Math.random() * 2 - 1, 0.5, () => sfx.drip());
+  }
+  rt.creak -= dt; if (rt.creak <= 0) { sfx.spatial(Math.random() * 2 - 1, 0.7, () => sfx.creak()); rt.creak = (7 + Math.random() * 9) * calm; }
+  rt.pick -= dt; if (rt.pick <= 0) { if (!s.sealed) sfx.spatial(Math.random() * 2 - 1, 0.45, () => sfx.pickClink()); rt.pick = 11 + Math.random() * 14; }
   rt.chewSnd -= dt;
-  if (rt.chewSnd <= 0) { rt.chewSnd = 2.5; if (rt.ents.some((e) => e.kind === 'chewer' && Math.hypot(e.x - p.tx, e.y - p.ty) < 7)) sfx.chew(); }
+  if (rt.chewSnd <= 0) {
+    rt.chewSnd = 2.5;
+    const c = rt.ents.filter((e) => e.kind === 'chewer').sort((a, b) => Math.hypot(a.x - p.tx, a.y - p.ty) - Math.hypot(b.x - p.tx, b.y - p.ty))[0];
+    if (c) soundAt(game, c.x, c.y, 9, () => sfx.chew());
+  }
   rt.clink -= dt;
   if (p.moving && carried(game).length && rt.clink <= 0) {
     rt.clink = 0.6;
     sfx.tagClink();
     alert(game, p.tx, p.ty, HEAR_CLINK, false);
+  }
+  uneaseTick(game, dt);
+  // The tempered bar hums near a kettle-bottom you haven't found.
+  if (game.progress.flags.has('bar_tempered') && L) {
+    for (const [kx, ky] of L.kettles) {
+      const k = key(id, kx, ky);
+      if (s.kettles.includes(k) || rt.warned.has(k) || Math.abs(kx - p.tx) + Math.abs(ky - p.ty) > 2) continue;
+      rt.warned.add(k);
+      sfx.tapThud();
+      game.toast('Gideon\'s tempered bar hums in your hand: a kettle-bottom, close. Tap it down.');
+    }
   }
   // A carried tag pulls the Foreman up to Level 2.
   if (game.cur.id === 'MINE_L2' && foremanHere(game) && !rt.ents.some((e) => e.kind === 'foreman')) {
@@ -325,6 +470,59 @@ export function mineTick(game: Game, dt: number): void {
     sfx.whistle();
     game.toast('Far off, down the slope from Level 3: a whistle. He can hear your tags clinking.');
   }
+}
+
+/** The nearest object of a kind on this level (for placing sounds). */
+function nearestObj(game: Game, o: number): Pt | null {
+  const m = game.cur, p = game.player;
+  let best: Pt | null = null, bd = 1e9;
+  for (let y = Math.max(0, p.ty - 14); y < Math.min(m.h, p.ty + 15); y++) for (let x = Math.max(0, p.tx - 14); x < Math.min(m.w, p.tx + 15); x++) {
+    if (m.obj(x, y) !== o) continue;
+    const d = Math.abs(x - p.tx) + Math.abs(y - p.ty);
+    if (d < bd) { bd = d; best = [x, y]; }
+  }
+  return best;
+}
+
+/** Small wrong things, now and then, while the seam is still open. */
+function uneaseTick(game: Game, dt: number): void {
+  const s = game.progress.mine;
+  if (s.sealed || game.cur.id === 'MINE_L4') return;
+  rt.uneaseT -= dt;
+  if (rt.uneaseT > 0) return;
+  rt.uneaseT = 25 + Math.random() * 30;
+  const p = game.player, m = game.cur;
+  const roll = Math.random();
+  if (roll < 0.35) {
+    // A whistle, a long way off. Nothing comes.
+    sfx.spatial(Math.random() < 0.5 ? -0.9 : 0.9, 0.25, () => sfx.whistle());
+  } else if (roll < 0.6) {
+    rt.flicker = 0.8;
+  } else if (roll < 0.85) {
+    // Fresh chalk on a rib you just passed.
+    for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1], [0, -2]]) {
+      const x = p.tx + dx, y = p.ty + dy;
+      if (m.ground(x, y) !== T.COAL_RIB || m.obj(x, y) !== O.NONE) continue;
+      let near = 0;
+      for (const [, o] of m.placed) if (o === O.CHALK) near++;
+      if (near >= 6) break;
+      m.placeObject(m.idx(x, y), O.CHALK);
+      game.toast('Chalk dust is still falling from the rib beside you: a new row of tally marks. You did not hear anyone.');
+      break;
+    }
+  } else {
+    sfx.spatial(Math.random() * 2 - 1, 0.35, () => sfx.chain());
+  }
+}
+
+/** The Lamp House: Walter on your first visit and when the board is full; Barney's Sunday tours after. */
+function lampHouseTick(game: Game): void {
+  const s = game.progress.mine, f = game.progress.flags;
+  const here = (id: string) => game.townsfolk.npcs.find((n) => n.def.id === id && n.map === 'LAMP_HOUSE');
+  if (!f.has('walter_lamphouse')) { f.add('walter_lamphouse'); holdNpc(game, 'walter', 4, 6, 150); }
+  if (banked(game) === 12 && !s.sealed && !here('walter')) holdNpc(game, 'walter', 4, 6, 600);
+  const c = game.clock;
+  if (s.sealed && c.weekday === 'Sun' && c.minutes >= 13 * 60 && c.minutes < 16 * 60 && !here('barnaby')) holdNpc(game, 'barnaby', 8, 5, (16 * 60 - c.minutes) * 0.7);
 }
 
 /** Stepped onto a tile: dropped tags, kettle-bottoms. */
@@ -339,14 +537,40 @@ export function mineArrive(game: Game, x: number, y: number): void {
     sfx.tagClink();
     game.toast(`Picked up check ${MINER_BY_ID[t.id].check} (${MINER_BY_ID[t.id].name}) where you fell.`);
   }
+  const g = game.cur.ground(x, y);
+  if (g === T.ALCOVE) note(game, 'alcove');
+  if (g === T.CRAWL) note(game, 'crawl');
+  if (g === T.SHALLOW) note(game, 'flood');
   const L = levelOf(game);
   if (L && L.kettles.some(([kx, ky]) => kx === x && ky === y) && !s.kettles.includes(key(id, x, y))) {
     s.kettles.push(key(id, x, y));
+    note(game, 'kettle');
     sfx.caveIn(); game.shake(0.5);
     game.stamina = Math.max(0, game.stamina - 15);
     game.notice('A kettle-bottom drops out of the roof and glances off your shoulder! (-15 energy. Tap ahead with the Sounding Bar to find them first.)');
     alert(game, x, y, 9, true);
   }
+}
+
+/** A crawlway is too low for a lit cap lamp: shutter it first. Returns true if the step is blocked. */
+export function crawlBlocked(game: Game, x: number, y: number): boolean {
+  if (game.cur.ground(x, y) !== T.CRAWL) return false;
+  const s = game.progress.mine;
+  if (s.kit && s.shut) return false;
+  game.notice('A crawlway, barely knee-high. Your lit cap lamp won\'t clear the roof: shutter it (F) and crawl.');
+  return true;
+}
+
+/** Footsteps underfoot: coal crunch, a ring off the rail, a splash. Running is loud enough for him to hear. */
+export function mineStep(game: Game, x: number, y: number, run: boolean): void {
+  const g = game.cur.ground(x, y);
+  const kind = g === T.MINE_RAIL ? 'rail' : g === T.SHALLOW || nearSeep(game, x, y) ? 'splash' : 'coal';
+  sfx.mineStep(kind, run);
+  if (run && !game.progress.mine.sealed) alert(game, x, y, 6, false);
+}
+function nearSeep(game: Game, x: number, y: number): boolean {
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (game.cur.obj(x + dx, y + dy) === O.SEEP) return true;
+  return false;
 }
 
 /* ------------------------------------------------------------------ */
@@ -379,7 +603,8 @@ export function soundTap(game: Game): void {
   const [x, y] = game.player.facing();
   const m = game.cur, o = m.obj(x, y), id = m.id;
   const L = levelOf(game);
-  alert(game, game.player.tx, game.player.ty, HEAR_TAP, true);
+  alert(game, game.player.tx, game.player.ty, game.progress.flags.has('bar_tempered') ? HEAR_TAP - 2 : HEAR_TAP, true);
+  note(game, 'bar');
   const thud = (msg: string) => { sfx.tapThud(); game.notice(`HOLLOW THUD. ${msg}`); };
   const ring = (msg: string) => { sfx.tapRing(); game.notice(`RING. ${msg}`); };
   if (o === O.CALCIFIED) { thud(shored(game, x, y) ? 'A false support, but the hemlock beside it takes the weight now. Press A to pry the tag loose.' : 'Not slate: a false, petrified support holding the roof. Shore it with a Hemlock Prop on the floor beside it before you pry.'); return; }
@@ -391,18 +616,82 @@ export function soundTap(game: Game): void {
   }
   if (L && L.kettles.some(([kx, ky]) => kx === x && ky === y) && !s.kettles.includes(key(id, x, y))) {
     s.kettles.push(key(id, x, y));
+    note(game, 'kettle');
     sfx.tapThud(); sfx.caveIn(); game.shake(0.3);
-    game.notice('HOLLOW THUD overhead: a kettle-bottom! You knock it down with the bar and step back as it smashes. Safe now.');
     alert(game, x, y, 9, true);
+    // Sometimes the slab was hiding something.
+    const r = Math.random();
+    const [it, n, what] = r < 0.45 ? ['coal_lump', 2, 'two good lumps of coal'] : r < 0.75 ? ['carbide_pellets', 2, 'a rusted tin with two carbide pellets in it'] : ['brass_button', 1, 'a brass company-store button'];
+    give(game, it as string, n as number);
+    game.notice(`HOLLOW THUD overhead: a kettle-bottom! You knock it down with the bar and step back as it smashes. In the rubble: ${what}.`);
     return;
   }
   if (o === O.CRIB) { ring('Solid as the day Josef notched it.'); return; }
+  if (o === O.COAL_SEAM) { ring('A good bright seam. Press A to work a few lumps loose.'); return; }
   if (o === O.HEMLOCK_PROP) { ring('Green hemlock, tight and true.'); return; }
   ring('Solid slate.');
 }
 
 function shored(game: Game, x: number, y: number): boolean {
   return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => game.cur.obj(x + dx, y + dy) === O.HEMLOCK_PROP);
+}
+
+/** Throw a lump of coal ahead: the clatter pulls the Foreman and the Coal-Chewers away to look. */
+export function throwCoal(game: Game): void {
+  const m = game.cur, p = game.player;
+  if (!isMineMap(m.id)) { game.notice('A good lump of coal. (Underground, select it and press A to throw it as a decoy.)'); return; }
+  const [dx, dy] = p.dir === 'up' ? [0, -1] : p.dir === 'down' ? [0, 1] : p.dir === 'left' ? [-1, 0] : [1, 0];
+  let lx = p.tx, ly = p.ty;
+  for (let k = 0; k < 6; k++) {
+    const nx = lx + dx, ny = ly + dy;
+    if (!m.inBounds(nx, ny) || (m.blocked(nx, ny, true) && m.ground(nx, ny) !== T.SHALLOW)) break;
+    lx = nx; ly = ny;
+  }
+  game.inv.removeAt(game.sel, 1);
+  note(game, 'decoy');
+  game.particles.clods(lx * 16 + 8, ly * 16 + 10, [P.VOID, P.SHADOW, P.TWILIGHT]);
+  soundAt(game, lx, ly, 12, () => sfx.clatter());
+  alert(game, lx, ly, 14, false, true);
+  if (lx === p.tx && ly === p.ty) game.toast('The lump bounces off the rib at your feet. Loud.');
+}
+
+/** Ride Level 1's ore car the length of the haulage. Fast, and very loud. */
+function rideCart(game: Game, x: number, y: number): void {
+  const L = levelOf(game);
+  if (!L?.cart) return;
+  const [a, b] = L.cart;
+  const atStart = x === a[0] && y === a[1];
+  const to = atStart ? b : a;
+  game.openOverlay(new Dialog(['An ore car on the haulage rail, its wheels freshly greased by somebody. It would get you to the other end of the haulageway in seconds. Every husk on the level will hear it.'], [
+    { label: 'Ride it', fn: () => {
+      game.cur.removeObject(game.cur.idx(x, y));
+      rt.ride = { x0: x, x1: to[0], y, t: 0 };
+      game.player.place(x, y, to[0] > x ? 'right' : 'left');
+      note(game, 'cart');
+      sfx.door();
+    } },
+    { label: 'Leave it', fn: () => undefined },
+  ]));
+}
+
+function rideTick(game: Game, dt: number): void {
+  const r = rt.ride!;
+  const len = Math.abs(r.x1 - r.x0);
+  r.t = Math.min(1, r.t + (dt * 11) / Math.max(1, len));
+  const fx = r.x0 + (r.x1 - r.x0) * r.t;
+  const p = game.player;
+  p.place(Math.round(fx), r.y, r.x1 > r.x0 ? 'right' : 'left');
+  p.x = fx * 16;
+  rt.clink -= dt;
+  if (rt.clink <= 0) { rt.clink = 0.12; sfx.cartRattle(); }
+  if (r.t < 1) return;
+  const m = game.cur, step = r.x1 > r.x0 ? -1 : 1;
+  m.placeObject(m.idx(r.x1, r.y), O.RIDE_CART);
+  p.place(r.x1 + step, r.y, r.x1 > r.x0 ? 'right' : 'left');
+  rt.ride = null;
+  sfx.rockHit(); game.shake(0.4);
+  alert(game, r.x1, r.y, 30, false, true);
+  game.toast('The car slams into the stop block. Every husk on the level heard that.');
 }
 
 /** Set a pitch torch down on the floor of a mine level. */
@@ -415,6 +704,7 @@ export function placeTorch(game: Game, x: number, y: number): void {
   }
   m.placeObject(m.idx(x, y), O.TORCH);
   game.inv.removeAt(game.sel, 1);
+  note(game, 'torch');
   sfx.refill();
   game.toast('You drive the torch into the coal floor. Warm light, a long way out. (In its light, they can see you.)');
 }
@@ -446,12 +736,25 @@ const WAKE: Record<string, string> = {
   cavein: 'The roof came in. You remember the sound most of all, like a ship\'s timbers going.',
 };
 
+/** Night shift: a tag lost in the dark goes back to its puzzle (a calcified man stands again). */
+function restorePuzzle(game: Game, id: MinerId): void {
+  for (const L of Object.values(MINE_LEVELS)) {
+    const pr = L.props.find((x) => x.tag === id);
+    if (!pr) continue;
+    const m = game.getMap(L.id), i = m.idx(pr.at[0], pr.at[1]);
+    if (m.objects[i] === O.NONE) m.placeObject(i, O.CALCIFIED);
+  }
+}
+
 export function passOut(game: Game, cause: keyof typeof WAKE): void {
   if (rt.passing) return;
   rt.passing = true;
   const s = game.progress.mine, map = game.cur.id, p = game.player;
-  const dropped = carried(game);
-  for (const id of dropped) { s.tags[id] = 'dropped'; s.dropped.push({ id, map, x: p.tx, y: p.ty }); }
+  const mode = settings().mineMode;
+  // Lantern-lit: you keep what you carry. Night shift: they go back to the dark, puzzles and all.
+  const dropped = mode === 'lantern' ? [] : carried(game);
+  if (mode === 'night') for (const id of dropped) { delete s.tags[id]; restorePuzzle(game, id); }
+  else for (const id of dropped) { s.tags[id] = 'dropped'; s.dropped.push({ id, map, x: p.tx, y: p.ty }); }
   sfx.caveIn(); game.shake(0.8);
   game.transition(() => {
     game.overlays.length = 0;
@@ -462,7 +765,8 @@ export function passOut(game: Game, cause: keyof typeof WAKE): void {
     rt.passing = false;
     rt.map = null;
     const pages = [WAKE[cause], 'You come to on the lamp-house bench, coughing. Somebody hauled you up in the cage. Nobody will say who. There is a sooty handprint on your sleeve, and it is too small to be a man\'s.'];
-    if (dropped.length) pages.push(`Your pockets are lighter: ${dropped.length} brass tag${dropped.length > 1 ? 's' : ''} fell where you went down. They\'re still there, glinting. Go back for ${dropped.length > 1 ? 'them' : 'it'}.`);
+    if (dropped.length && mode === 'night') pages.push(`Your pockets are empty. The ${dropped.length > 1 ? 'tags you carried are' : 'tag you carried is'} back where you found ${dropped.length > 1 ? 'them' : 'it'}, in the dark. (Night shift: one life a descent.)`);
+    else if (dropped.length) pages.push(`Your pockets are lighter: ${dropped.length} brass tag${dropped.length > 1 ? 's' : ''} fell where you went down. They\'re still there, glinting. Go back for ${dropped.length > 1 ? 'them' : 'it'}.`);
     game.openOverlay(new Dialog(pages));
   });
 }
@@ -503,6 +807,7 @@ export function mineInteract(game: Game, tx: number, ty: number): boolean {
     if (!m.inBounds(tx, ty) || m.objects[m.anchorIdx(m.idx(tx, ty))] !== O.LAMP_HOUSE) return false;
     return enterLampHouse(game, tx, ty);
   }
+  if (id === 'CABIN_INTERIOR' && m.inBounds(tx, ty) && m.obj(tx, ty) === O.CANARY_CAGE) { canaryCage(game); return true; }
   if (!isDeepSeam(id)) return false;
   const s = game.progress.mine;
   const ch = chewerAt(tx, ty);
@@ -569,6 +874,15 @@ export function mineInteract(game: Game, tx: number, ty: number): boolean {
         { label: 'Leave it burning', fn: () => undefined },
       ]));
       return true;
+    case O.COAL_SEAM:
+      if (!once(game, id, ax, ay)) { say('A coal seam glinting in the rib. You have worked the loose lumps out of it for today.'); return true; }
+      give(game, 'coal_lump', 2); sfx.rockHit(); game.particles.clods(ax * 16 + 8, ay * 16 + 12, [P.VOID, P.SHADOW, P.TWILIGHT]);
+      note(game, 'decoy');
+      game.toast('You work two lumps of coal loose. (Select one and press A to throw it: a decoy.)');
+      return true;
+    case O.RIDE_CART: rideCart(game, ax, ay); return true;
+    case O.GLOW_FUNGUS: say('Pale cave fungus, faintly glowing green, like a handful of moonlight left on the stone. It smells of mushrooms and old pennies.'); return true;
+    case O.CHALK: say(sign ?? 'Fresh chalk tally marks, five and five and five. The dust is still on the floor beneath them.'); return true;
     case O.HEMLOCK_PROP: say('Your hemlock prop, wedged tight. It smells like Christmas down here, which is strange.'); return true;
     case O.MINE_POST: say('An old timber set: two legs and a collar beam, black with a century of damp. (Tap things with the Sounding Bar, T, to hear what\'s sound.)'); return true;
     default:
@@ -607,7 +921,8 @@ function locker(game: Game): void {
   if (!s.kit) {
     s.kit = true; s.fuel = 100; s.shut = false;
     game.wardrobe.add('miner_coveralls'); game.wardrobe.add('miner_cap');
-    give(game, 'carbide_pellets', 4); give(game, 'seep_water', 2); give(game, 'miner_biscuit', 2); give(game, 'mine_ledger', 1); give(game, 'pitch_torch', 3);
+    give(game, 'carbide_pellets', 4); give(game, 'seep_water', 2); give(game, 'miner_biscuit', 2); give(game, 'mine_ledger', 1); give(game, 'pitch_torch', 3); give(game, 'bird_seed', 5);
+    for (const k of ['headlamp', 'canary', 'bar', 'safety'] as const) if (!s.seen.includes(k)) s.seen.push(k);
     sfx.fanfare();
     game.openOverlay(new Dialog([
       'THE MINE KIT. You take down, one by one:',
@@ -617,7 +932,9 @@ function locker(game: Game): void {
       'A DAVY SAFETY LAMP for your belt. (It burns blue-green near firedamp: shutter your carbide there or it ignites. It picks out the calcified props that are holding up the roof.)',
       'Also: Canvas Miner\'s Coveralls and a Hard-Boiled Leather Cap (wardrobe), carbide, water, biscuits, the BLACK-EDGED MINE LEDGER for any pages you find, and three PITCH TORCHES. (Set them down to light a big circle for good. More at the Porch Workbench: 1 Timber, 1 Pine Resin, 2 Plant Fiber. In torchlight, things down there can see you.)',
       'The lift cage is in the corner. Twelve checks on the board say IN. Bring them OUT.',
+      'Gideon, from the doorway: "That canary\'s yours now. Feed it every day (seed\'s in your pack; the Outfitter sells more). And give it a name. A bird you\'ve named, you listen to."',
     ]));
+    game.afterOverlays(() => game.openOverlay(new NamePrompt('NAME YOUR CANARY', ['JOSIE', 'BUTTONS', 'PIP', 'CLEMENTINE'], (n) => { s.canary.name = n.charAt(0) + n.slice(1).toLowerCase(); s.canary.fed = game.clock.day; game.toast(`${s.canary.name} chirps from the cage.`); })));
     return;
   }
   if (banked(game) === 12 && !s.sealed && game.inv.count('blasting_box') + game.storage.count('blasting_box') === 0) {
@@ -650,11 +967,7 @@ function board(game: Game): void {
     ]));
     return;
   }
-  const pages: string[][] = [];
-  for (const id of mine) {
-    s.tags[id] = 'out';
-    pages.push([`You hang check ${MINER_BY_ID[id].check} on the OUT peg.`, ...MINER_BY_ID[id].memory]);
-  }
+  for (const id of mine) s.tags[id] = 'out';
   const n = banked(game);
   const notes: string[] = [];
   const before = n - mine.length;
@@ -662,9 +975,8 @@ function board(game: Game): void {
   if (before < 6 && n >= 6) { game.wardrobe.add('fireboss_slicker'); notes.push('A peg by the board holds a FIRE-BOSS HEAVY OILSKIN SLICKER that wasn\'t there before, C.V. inked inside the collar. (Wardrobe.)'); }
   if (n === 12) notes.push('All twelve. The board is quiet. There is one more thing in the locker now: Gideon left it.');
   markMilestone(game, 'mine_tags');
-  sfx.trustChime();
-  if (notes.length) game.openOverlay(new Dialog(notes));
-  for (const p of pages.reverse()) game.openOverlay(new Dialog(p));
+  // The ceremony: each check slides across to OUT, one at a time, and his memory plays.
+  game.openOverlay(new BankingScene(mine, notes));
 }
 
 function lift(game: Game): void {
@@ -690,6 +1002,7 @@ function lift(game: Game): void {
   if (here !== 'MINE_L1') choices.push({ label: 'Level 1: Main Haulageway', fn: go('MINE_L1') });
   if (here !== 'MINE_L2') choices.push({ label: 'Level 2: Room & Pillar', fn: go('MINE_L2') });
   if (here !== 'MINE_L3' && !s.sealed) choices.push({ label: 'Level 3: The Deep Face', fn: go('MINE_L3') });
+  if (here !== 'MINE_L4' && s.sealed) choices.push({ label: 'The Old Works (1888)', fn: go('MINE_L4') });
   choices.push({ label: 'Stay', fn: () => undefined });
   sfx.blip();
   game.openOverlay(new Dialog([here === 'LAMP_HOUSE' ? 'The lift cage, iron and oak, hanging over the dark. Ring the bell for a level.' : `The lift cage. ${s.sealed ? 'Level 3\'s gate is chained: below it, solid rock.' : 'The bell rope is wet.'}`], choices));
@@ -824,9 +1137,14 @@ function finale(game: Game): void {
     'Somewhere in the dust the Foreman\'s whistle blows, and blows, and is cut off in the middle of a note.',
     'You throw yourself into the ore cart and pull the brake, and the C&O lift hauls you up through the roaring dark, past Level 2, past Level 1, past the drift mouth, into lamplight.',
   ]));
+  game.progress.days.memorial = game.clock.day + 1;
   game.afterOverlays(() => game.transition(() => {
     game.enterMap('LAMP_HOUSE', LAMP_HOUSE.wake[0], LAMP_HOUSE.wake[1], 'down');
+    holdNpc(game, 'walter', 4, 6, 90); holdNpc(game, 'gideon', 8, 5, 90); holdNpc(game, 'vance', 7, 7, 90);
     game.wardrobe.add('lapel_tag');
+    // The canary retires to your cabin window.
+    const cab = game.getMap('CABIN_INTERIOR');
+    if (!cab.countPlaced(O.CANARY_CAGE)) cab.placeObject(cab.idx(3, 8), O.CANARY_CAGE);
     sfx.fanfare();
     game.openOverlay(new Dialog([
       'Dust is still sifting from the lamp-house rafters. Opa Walter is there, and Gideon with his hand on the lift rope, and behind them, in the doorway, Elias Vance with his hat in his hands.',
@@ -834,9 +1152,25 @@ function finale(game: Game): void {
       'GIDEON: "The hum\'s stopped. I put my hand on the boards out there. Nothing. Just a hill."',
       'ELIAS: "Clement Vance was my great-uncle. My mother used to say he went back in for his men. Thank you for bringing him out."',
       'Opa Walter pins something to your collar: his own brass check, 312, polished bright and soldered onto a lapel pin. "I turned this in a long time ago. Now I give it to somebody who came out. Wear it. Breathe slow."',
-      '(Walter\'s Restored Brass Lapel Tag is in your wardrobe. The Deep Seam is sealed. Levels 1 and 2 stay open, and quiet now.)',
+      `GIDEON: "And that bird of yours has earned its rest. I'll hang ${canaryName(game) === 'The canary' ? 'it' : canaryName(game)} in your cabin window. It can sing at the jays."`,
+      'OPA WALTER: "Tomorrow night, the town walks up with lanterns. Twelve of them. Come."',
+      '(Walter\'s Restored Brass Lapel Tag is in your wardrobe. The Deep Seam is sealed. Levels 1 and 2 stay open, quiet now, and the lift goes somewhere new: the Old Works.)',
     ]));
   }));
+}
+
+/** A in the mine with nothing to do with it: a quick second tap sounds the bar (handy on touch). */
+export function mineEmptyA(game: Game): boolean {
+  if (!isMineMap(game.cur.id) || !game.progress.mine.kit) return false;
+  if (game.time - rt.lastA < 0.35) { rt.lastA = -9; soundTap(game); }
+  else rt.lastA = game.time;
+  return true;
+}
+
+/** Your canary's cage, home in the cabin window. */
+export function canaryCage(game: Game): void {
+  sfx.canary();
+  game.openOverlay(new Dialog([`${canaryName(game)} hops along the perch and sings, loud and pleased with itself, at the jays outside the window. It has earned a quiet life.`]));
 }
 
 /** Ledger pages Walter hasn't read to you yet. */

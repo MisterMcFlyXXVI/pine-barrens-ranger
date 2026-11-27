@@ -11,7 +11,7 @@ import { drawText } from '../graphics/font';
 import { panel, bar } from '../ui/panel';
 import { MINE_LEVELS, isMineMap, MINERS } from '../data/mine';
 import { O } from '../data/tiles';
-import { rt, glare, lampLit, lightRadius, torchesHere, TORCH_RADIUS, LISTEN, hazeOn, hazeLevel, carried, banked, lampedProps, spiritsShown, respirator } from './mine';
+import { rt, glare, lampLit, lightRadius, banked as bankedCount, torchesHere, TORCH_RADIUS, LISTEN, hazeOn, hazeLevel, carried, banked, lampedProps, spiritsShown, respirator } from './mine';
 
 type Draw = { y: number; fn: () => void };
 
@@ -20,14 +20,20 @@ export function mineDrawables(game: Game, g: CanvasRenderingContext2D, cx: numbe
   if (!isMineMap(game.cur.id)) return;
   const shutView = !glare(game);
   for (const e of rt.ents) {
-    const f = Math.floor(e.anim * (e.kind === 'foreman' ? 2 : 4)) % 2;
+    const sleeping = e.mode === 'sleep';
+    const f = Math.floor(e.anim * (e.kind === 'foreman' ? 2 : sleeping ? 1 : 4)) % 2;
     const img = e.kind === 'foreman' ? MO.foreman[f] : MO.chewer[f];
     const dx = Math.round(e.x * 16) + 8 - Math.floor(img.width / 2) - cx, dy = Math.round(e.y * 16) + 16 - img.height - cy;
     list.push({ y: e.y * 16 + 16.2, fn: () => {
       g.globalAlpha = 0.4; g.fillStyle = hex(P.VOID); g.fillRect(dx + 3, dy + img.height - 2, img.width - 6, 2); g.globalAlpha = 1;
       // With the shutter closed you only make them out as shapes.
-      if (shutView) { g.globalAlpha = 0.55; g.drawImage(img, dx, dy); g.globalAlpha = 1; } else g.drawImage(img, dx, dy);
+      if (shutView || sleeping) { g.globalAlpha = sleeping ? 0.7 : 0.55; g.drawImage(img, dx, dy + (sleeping ? 2 : 0)); g.globalAlpha = 1; } else g.drawImage(img, dx, dy);
     } });
+  }
+  // The ore car under you while you ride it.
+  if (rt.ride) {
+    const p = game.player, img = MO.rideCart[0];
+    list.push({ y: p.y + 16.6, fn: () => g.drawImage(img, Math.round(p.x) - cx, Math.round(p.y) + 6 - cy) });
   }
   for (const { c } of spiritsShown(game)) {
     const img = MO.spirit[Math.floor(time * 1.2) % 2];
@@ -52,9 +58,10 @@ function ensure(w: number, h: number): CanvasRenderingContext2D {
 }
 
 function hole(g: CanvasRenderingContext2D, x: number, y: number, r: number, strength: number): void {
-  for (let k = 0; k < 4; k++) {
-    g.fillStyle = `rgba(0,0,0,${(0.26 * strength).toFixed(3)})`;
-    g.beginPath(); g.arc(Math.round(x), Math.round(y), Math.max(1, Math.round(r * (1 - k * 0.18))), 0, Math.PI * 2); g.fill();
+  // Six stepped rings: a soft falloff that still reads as pixel art.
+  for (let k = 0; k < 6; k++) {
+    g.fillStyle = `rgba(0,0,0,${(0.19 * strength).toFixed(3)})`;
+    g.beginPath(); g.arc(Math.round(x), Math.round(y), Math.max(1, Math.round(r * (1 - k * 0.13))), 0, Math.PI * 2); g.fill();
   }
 }
 
@@ -86,6 +93,17 @@ export function drawMineOverlay(game: Game, g: CanvasRenderingContext2D, cx: num
   const fl = Math.sin(time * 11) * 1.2 + Math.sin(time * 27) * 0.6;
   const R = lightRadius(game) + (glare(game) ? fl : 0);
   hole(o, px, py, R, 1);
+  // The headlamp throws forward: a beam where you're facing.
+  const [fx, fy] = game.player.dir === 'up' ? [0, -1] : game.player.dir === 'down' ? [0, 1] : game.player.dir === 'left' ? [-1, 0] : [1, 0];
+  if (glare(game)) { hole(o, px + fx * R * 0.6, py + fy * R * 0.6, R * 0.78, 0.9); hole(o, px + fx * R * 1.15, py + fy * R * 1.15, R * 0.5, 0.7); }
+  // Cave fungus, the man-trip lamp somebody keeps lit.
+  const glows: Array<[number, number]> = [];
+  for (let ty = Math.max(0, Math.floor(cy / 16) - 2); ty < Math.min(game.cur.h, Math.floor((cy + h) / 16) + 3); ty++)
+    for (let tx = Math.max(0, Math.floor(cx / 16) - 2); tx < Math.min(game.cur.w, Math.floor((cx + w) / 16) + 3); tx++)
+      if (game.cur.obj(tx, ty) === O.GLOW_FUNGUS) glows.push([tx, ty]);
+  for (const [gx, gy] of glows) hole(o, gx * 16 + 8 - cx, gy * 16 + 8 - cy, 26 + Math.sin(time * 1.5 + gx) * 2, 0.75);
+  const tripLamp = game.cur.id === 'MINE_L1' && bankedCount(game) >= 1 && !game.progress.mine.sealed;
+  if (tripLamp) hole(o, 7 * 16 + 8 - cx, 31 * 16 - 2 - cy, 20 + Math.sin(time * 8) * 1.5, 0.85);
   // The lift lamp, and the little blue flame of the safety lamp at your belt.
   if (L) hole(o, (L.lift[0] + 0.5) * 16 - cx, L.lift[1] * 16 + 2 - cy, 18, 0.7);
   const torches = torchesHere(game);
@@ -96,15 +114,33 @@ export function drawMineOverlay(game: Game, g: CanvasRenderingContext2D, cx: num
 
   // Tint inside your light: sulfur amber open, phosphor green shut; coal-dust haze over everything.
   const open = glare(game);
+  for (const [gx, gy] of glows) { const [r, gg, b] = rgbOf(P.FERN); g.fillStyle = `rgba(${r},${gg},${b},0.08)`; g.beginPath(); g.arc(gx * 16 + 8 - cx, gy * 16 + 8 - cy, 22, 0, Math.PI * 2); g.fill(); }
+  if (tripLamp) { g.fillStyle = hex(P.LANTERN); g.fillRect(7 * 16 + 7 - cx, 31 * 16 - 4 - cy, 2, 3); }
+  // Dust motes drifting through the beam.
+  if (open) {
+    g.fillStyle = hex(P.FOG);
+    for (let k = 0; k < 18; k++) {
+      const a = k * 2.399 + time * 0.07 * (1 + (k % 3)), rr = (R * 0.9) * (((k * 37) % 100) / 100);
+      const mx = px + fx * R * 0.5 + Math.cos(a) * rr, my = py + fy * R * 0.5 + Math.sin(a) * rr * 0.8 + Math.sin(time * 0.6 + k) * 3;
+      g.globalAlpha = 0.18 + 0.12 * Math.sin(time * 2 + k); g.fillRect(Math.round(mx), Math.round(my), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+  // Water dripping from the seeps you can see.
+  for (let ty = Math.max(0, game.player.ty - 6); ty <= game.player.ty + 6; ty++) for (let tx = game.player.tx - 7; tx <= game.player.tx + 7; tx++) {
+    if (game.cur.obj(tx, ty) !== O.SEEP || Math.hypot(tx - game.player.tx, ty - game.player.ty) * 16 > R + 10) continue;
+    const ph = (time * 0.9 + tx * 0.37) % 1;
+    g.fillStyle = hex(P.MIST); g.fillRect(tx * 16 + 8 - cx, ty * 16 + 2 + Math.floor(ph * 10) - cy, 1, 2);
+  }
   // Torchlight: warm and wide, red at the edges.
   const [qr, qg, qb] = rgbOf(P.AMBER);
   for (const [tx, ty] of torches) {
     g.fillStyle = `rgba(${qr},${qg},${qb},${(0.1 + Math.sin(time * 11 + tx) * 0.02).toFixed(3)})`;
     g.beginPath(); g.arc(tx * 16 + 8 - cx, ty * 16 - cy, Math.round(TORCH_RADIUS * 0.75), 0, Math.PI * 2); g.fill();
   }
-  const [tr, tg, tb] = rgbOf(open ? P.LANTERN : P.FERN);
-  g.fillStyle = `rgba(${tr},${tg},${tb},${open ? 0.08 : 0.1})`;
-  g.beginPath(); g.arc(Math.round(px), Math.round(py), Math.round(R * 0.7), 0, Math.PI * 2); g.fill();
+  // Warm stepped glow from the carbide flame (amber at the edge, lantern-white close in); phosphor green when shut.
+  const rings: Array<[number, number, number]> = open ? [[P.AMBER, 0.85, 0.035], [P.AMBER, 0.6, 0.035], [P.LANTERN, 0.35, 0.04]] : [[P.MOSS, 0.9, 0.05], [P.FERN, 0.55, 0.05]];
+  for (const [c, f, a] of rings) { const [tr, tg, tb] = rgbOf(c); g.fillStyle = `rgba(${tr},${tg},${tb},${a})`; g.beginPath(); g.arc(Math.round(px), Math.round(py), Math.round(R * f), 0, Math.PI * 2); g.fill(); }
   if (haze) {
     const [hr, hg, hb] = rgbOf(P.SHADOW);
     g.fillStyle = `rgba(${hr},${hg},${hb},${(0.12 + haze * 0.06 + Math.sin(time * 1.3) * 0.03).toFixed(3)})`;
@@ -127,6 +163,23 @@ export function drawMineOverlay(game: Game, g: CanvasRenderingContext2D, cx: num
   for (const e of rt.ents) {
     const d = Math.hypot(e.x - p.tx, e.y - p.ty);
     const ex = Math.round(e.x * 16) + 8 - cx, ey = Math.round(e.y * 16) - cy;
+    if (e.kind === 'chewer' && e.mode === 'sleep' && d < 7) drawText(g, Math.floor(time * 1.5) % 2 ? 'z' : 'Z', ex + 6, ey - 12 - (Math.floor(time * 3) % 3), P.MIST);
+    if (e.kind === 'foreman') {
+      // Embers rising off the slag on him.
+      for (let k = 0; k < 5; k++) {
+        const ph = (time * 0.6 + k * 0.21) % 1;
+        g.globalAlpha = (1 - ph) * 0.8; g.fillStyle = hex(k % 2 ? P.RED : P.AMBER);
+        g.fillRect(ex - 6 + ((k * 5) % 12), ey + 8 - Math.floor(ph * 24), 1, 1);
+      }
+      g.globalAlpha = 1;
+      // The shape at the edge of sight: there while you look away, gone when you look at him.
+      const facing = (e.x - p.tx) * fx + (e.y - p.ty) * fy;
+      if (d > R / 16 + 1 && d < 20 && facing < d * 0.4 && Math.sin(time * 0.7 + e.anim) > 0.1) {
+        g.globalAlpha = 0.16 + 0.06 * Math.sin(time * 3);
+        g.drawImage(MO.foremanShape[0], ex - 12, ey + 16 - 34);
+        g.globalAlpha = 1;
+      }
+    }
     // You hear them: a green outline when they're inside the circle.
     if (!open && d <= listen) {
       g.globalAlpha = 0.6; g.fillStyle = hex(P.FERN);
@@ -175,7 +228,7 @@ export function drawMineHud(game: Game, g: CanvasRenderingContext2D): void {
   const open = !s.shut, lit = lampLit(game);
   const icons = [
     MHUD[`lamp_${open ? 'open' : 'shut'}_${lit ? 'lit' : 'out'}`],
-    rt.nearGas || hazeOn(game) ? MHUD.canaryQuiet : MHUD.canary,
+    rt.nearGas || hazeOn(game) || rt.sulkQuiet ? MHUD.canaryQuiet : MHUD.canary,
     MHUD.bar,
     MHUD[`safety_${rt.nearGas === 'fire' ? 'fire' : rt.nearGas === 'choke' ? 'choke' : 'clear'}`],
   ];

@@ -18,6 +18,26 @@ class Sfx {
   private noiseBuf: AudioBuffer | null = null;
   muted: boolean;
   private stepFlip = false;
+  /** Spatial placement for the next sounds (see `spatial`): -1 left .. 1 right, and a volume scale. */
+  private pan = 0;
+  private vs = 1;
+
+  /** Play `fn`'s sounds from somewhere: panned left/right and quieter with distance. */
+  spatial(pan: number, vol: number, fn: () => void): void {
+    if (vol <= 0.02) return;
+    this.pan = Math.max(-1, Math.min(1, pan)); this.vs = Math.max(0, Math.min(1, vol));
+    try { fn(); } finally { this.pan = 0; this.vs = 1; }
+  }
+
+  /** The output for one sound: through a stereo panner when it's placed off-centre. */
+  private out(ac: AudioContext): AudioNode {
+    const dest = this.sfxBus ?? this.master!;
+    if (!this.pan || typeof ac.createStereoPanner !== 'function') return dest;
+    const pn = ac.createStereoPanner();
+    pn.pan.value = this.pan;
+    pn.connect(dest);
+    return pn;
+  }
 
   constructor() {
     let m = false;
@@ -78,6 +98,7 @@ class Sfx {
   }
 
   private tone(type: Wave, f0: number, f1: number, dur: number, vol: number, delay = 0): void {
+    vol *= this.vs;
     const ac = this.ready();
     if (!ac || !this.master) return;
     const t = ac.currentTime + delay;
@@ -89,12 +110,13 @@ class Sfx {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.sfxBus ?? this.master);
+    o.connect(g).connect(this.out(ac));
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
   private noise(dur: number, vol: number, type: BiquadFilterType, f0: number, f1 = f0, q = 1, delay = 0): void {
+    vol *= this.vs;
     const ac = this.ready();
     if (!ac || !this.master || !this.noiseBuf) return;
     const t = ac.currentTime + delay;
@@ -110,7 +132,7 @@ class Sfx {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(this.sfxBus ?? this.master);
+    src.connect(f).connect(g).connect(this.out(ac));
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + 0.02);
   }
@@ -303,6 +325,26 @@ class Sfx {
   caveIn(): void { this.noise(1.6, 0.22, 'lowpass', 600, 60, 1); this.tone('sawtooth', 70, 40, 1.4, 0.08); for (let k = 0; k < 6; k++) this.noise(0.08, 0.1, 'bandpass', 900, 500, 2, 0.1 + k * 0.18); }
   /** A Coal-Chewer's ember-throat rasp. */
   chew(): void { this.noise(0.2, 0.04, 'bandpass', 700, 400, 5); this.tone('sawtooth', 95, 80, 0.2, 0.02); }
+  /** Your own breathing: in, out. `tight` when it's ragged (bad air, something close). */
+  breath(tight: boolean): void {
+    this.noise(tight ? 0.28 : 0.5, tight ? 0.035 : 0.022, 'bandpass', 900, 1300, 1.2);
+    this.noise(tight ? 0.32 : 0.6, tight ? 0.03 : 0.018, 'bandpass', 700, 450, 1.2, tight ? 0.34 : 0.65);
+  }
+  /** Footsteps below: coal crunch, a ring off the rail, a splash in seep water. */
+  mineStep(kind: 'coal' | 'rail' | 'splash', loud: boolean): void {
+    const v = loud ? 1.6 : 1;
+    if (kind === 'coal') { this.noise(0.05, 0.09 * v, 'bandpass', 2600, 1200, 1.5); this.noise(0.03, 0.05 * v, 'highpass', 4000, 3000, 1, 0.02); }
+    else if (kind === 'rail') { this.tone('triangle', 1900, 1850, 0.12, 0.035 * v); this.noise(0.03, 0.04 * v, 'highpass', 3500); }
+    else { this.noise(0.14, 0.08 * v, 'lowpass', 1400, 400, 3); this.tone('sine', 520, 260, 0.08, 0.03 * v, 0.03); }
+  }
+  /** The Foreman's tally chain dragging on coal. */
+  chain(): void { for (let k = 0; k < 4; k++) this.tone('square', 1400 + Math.random() * 400, 1200, 0.03, 0.02, k * 0.06); this.noise(0.25, 0.03, 'lowpass', 400, 200, 2); }
+  /** Iron wheels on the haulage rail. */
+  cartRattle(): void { this.noise(0.08, 0.07, 'bandpass', 1800, 1100, 3); this.tone('square', 210, 190, 0.05, 0.03); }
+  /** A sputtering carbide flame. */
+  hiss(): void { this.noise(0.4, 0.03, 'highpass', 5000, 3000, 1); }
+  /** A lump of coal thrown and clattering down. */
+  clatter(): void { for (let k = 0; k < 4; k++) this.noise(0.05, 0.08 - k * 0.015, 'bandpass', 2200 - k * 200, 1200, 2, k * 0.09); }
   /** The blasting box's crank, then the shot. */
   crank(): void { for (let k = 0; k < 6; k++) this.tone('square', 220 + k * 60, 200 + k * 60, 0.06, 0.05, k * 0.09); }
   trustChime(): void { [784, 988, 1175].forEach((f, i) => this.tone('triangle', f, f, 0.2, 0.08, i * 0.07)); }

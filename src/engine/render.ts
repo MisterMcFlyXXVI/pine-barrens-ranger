@@ -135,7 +135,11 @@ function drawGround(g: CanvasRenderingContext2D, m: MapRuntime, x: number, y: nu
     case T.DOOR: g.drawImage(GROUND.door[0], sx, sy); return;
     case T.HEARTH: g.drawImage(GROUND.hearth[0], sx, sy); return;
     // ---- The Deep Seam ----
-    case T.COAL_FLOOR: g.drawImage(pick(MG.floor, h), sx, sy); return;
+    case T.COAL_FLOOR:
+      g.drawImage(pick(MG.floor, h), sx, sy);
+      // Seep water pools on the floor around the drips.
+      if (h2 < 0.5 && [[0, -1], [1, 0], [-1, 0], [0, 1], [0, -2]].some(([dx, dy]) => m.obj(x + dx, y + dy) === O.SEEP)) g.drawImage(pick(MG.puddle, h2 * 2), sx, sy);
+      return;
     case T.COAL_RIB: {
       const below = m.ground(x, y + 1);
       const face = below === T.COAL_FLOOR || below === T.MINE_RAIL || below === T.ALCOVE;
@@ -146,6 +150,7 @@ function drawGround(g: CanvasRenderingContext2D, m: MapRuntime, x: number, y: nu
     case T.ALCOVE: g.drawImage(MG.alcove[0], sx, sy); return;
     case T.GOB: g.drawImage(pick(MG.gob, h), sx, sy); return;
     case T.LAMP_FLOOR: g.drawImage(pick(MG.lampFloor, h), sx, sy); return;
+    case T.CRAWL: g.drawImage(m.ground(x - 1, y) === T.CRAWL || m.ground(x + 1, y) === T.CRAWL ? MG.crawlH[0] : MG.crawlV[0], sx, sy); return;
     default: g.drawImage(GROUND.void[0], sx, sy);
   }
 }
@@ -362,6 +367,10 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.FIRST_AID: return MO.firstAid[0];
     case O.CUPBOARD: return MO.cupboard[0];
     case O.TORCH: return MO.torch[Math.floor(time * 6 + h * 4) % 2];
+    case O.COAL_SEAM: return MO.seam[Math.floor(time * 1.3 + h * 5) % 2];
+    case O.RIDE_CART: return MO.rideCart[0];
+    case O.CANARY_CAGE: return MO.canaryCage[Math.floor(time * 2) % 2];
+    case O.GLOW_FUNGUS: return MO.fungus[Math.floor(time * 0.8 + h * 3) % 2];
     default: return null;
   }
 }

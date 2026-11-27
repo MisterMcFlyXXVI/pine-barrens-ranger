@@ -9,7 +9,7 @@ import { P } from './palette';
 import { mulberry32 } from '../util';
 import { ICON } from './sprites';
 
-const { VOID, SHADOW, MOSS, FERN, FOG, LANTERN, AMBER, RUST, CRAN, RED, TWILIGHT, MIST, MOON } = P;
+const { VOID, SHADOW, PINE, MOSS, FERN, FOG, LANTERN, AMBER, RUST, CRAN, RED, TWILIGHT, MIST, MOON } = P;
 
 export const MG: Record<string, Canv[]> = {};
 export const MO: Record<string, Canv[]> = {};
@@ -26,9 +26,13 @@ function art(w: number, h: number, draw: (p: Pen) => void, line = false): Canv {
 function coalFloor(seed: number): Canv {
   return art(16, 16, (p) => {
     const r = mulberry32(seed);
+    // Trodden coal dust: dark, earthy, a few lumps underfoot and the odd glint.
     p.rect(0, 0, 16, 16, SHADOW);
-    for (let k = 0; k < 14; k++) p.px(Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? VOID : TWILIGHT);
-    for (let k = 0; k < 3; k++) { const x = Math.floor(r() * 14), y = Math.floor(r() * 14); p.px(x, y, MIST); p.px(x + 1, y, VOID); }
+    for (let k = 0; k < 16; k++) p.px(Math.floor(r() * 16), Math.floor(r() * 16), VOID);
+    for (let k = 0; k < 4; k++) p.px(Math.floor(r() * 16), Math.floor(r() * 16), PINE);
+    for (let k = 0; k < 2; k++) { const x = 1 + Math.floor(r() * 12), y = 1 + Math.floor(r() * 12); p.rect(x, y, 3, 2, VOID); p.px(x + 1, y, TWILIGHT); }
+    if (r() < 0.5) p.px(Math.floor(r() * 16), Math.floor(r() * 16), MIST);
+    if (r() < 0.25) { const x = 2 + Math.floor(r() * 11), y = 2 + Math.floor(r() * 11); p.hline(x, x + 2, y, RUST); } // an old rail spike
   });
 }
 
@@ -44,11 +48,14 @@ function ribTop(seed: number): Canv {
 function ribFace(seed: number): Canv {
   return art(16, 16, (p) => {
     const r = mulberry32(seed);
+    // Banded coal face: bright and dull bands, slate partings, the odd pyrite glint; timber lagging on some.
     p.rect(0, 0, 16, 16, VOID);
-    for (let y = 2; y < 16; y += 4) p.hline(0, 15, y, SHADOW);
-    for (let k = 0; k < 8; k++) { const x = Math.floor(r() * 15), y = 1 + Math.floor(r() * 14); p.px(x, y, TWILIGHT); p.px(x + 1, y, MIST); }
-    p.hline(0, 15, 15, SHADOW);
-    if (r() < 0.4) { const x = 2 + Math.floor(r() * 10); p.px(x, 8, AMBER); } // a pyrite glint
+    for (let y = 0; y < 16; y += 4) { p.hline(0, 15, y + 1, SHADOW); p.hline(0, 15, y + 2, SHADOW); p.hline(0, 15, y + 3, (y / 4) % 2 ? PINE : VOID); }
+    for (let k = 0; k < 6; k++) { const x = Math.floor(r() * 15), y = Math.floor(r() * 4) * 4 + 1; p.px(x, y, TWILIGHT); p.px(x + 1, y, MIST); }
+    for (let k = 0; k < 3; k++) { const x = Math.floor(r() * 14); p.vline(x, 0, 15, VOID); } // cleats
+    p.hline(0, 15, 14, SHADOW); p.hline(0, 15, 15, VOID);
+    if (r() < 0.4) { const x = 2 + Math.floor(r() * 10); p.px(x, 6, AMBER); p.px(x + 1, 6, LANTERN); }
+    if (r() < 0.3) { for (const x of [1, 5, 9, 13]) { p.rect(x, 0, 3, 14, RUST); p.vline(x, 0, 13, CRAN); p.px(x + 1, 3 + (x % 7), AMBER); } } // lagging boards
   });
 }
 
@@ -89,7 +96,69 @@ function lampFloor(seed: number): Canv {
   });
 }
 
+/** A crawlway: a low hole in the coal, roof hanging close (dark bands above and below). */
+function crawlTile(horiz: boolean): Canv {
+  return art(16, 16, (p) => {
+    p.rect(0, 0, 16, 16, VOID);
+    const put = (a: number, b: number, c: number) => (horiz ? p.px(a, b, c) : p.px(b, a, c));
+    for (let a = 0; a < 16; a++) for (let b = 4; b < 12; b++) put(a, b, (a * 7 + b * 3) % 11 === 0 ? TWILIGHT : SHADOW);
+    for (let a = 0; a < 16; a++) { put(a, 3, TWILIGHT); put(a, 12, VOID); if (a % 5 === 2) put(a, 4, MIST); }
+  });
+}
+
+/** A seep puddle on the floor (drawn over coal floor near seeps). */
+function puddle(seed: number): Canv {
+  return art(16, 16, (p) => {
+    const r = mulberry32(seed);
+    const cx = 5 + Math.floor(r() * 6), cy = 6 + Math.floor(r() * 5);
+    p.ellipse(cx, cy, 4 + r() * 2, 1.6 + r(), TWILIGHT); p.ellipse(cx, cy, 2.5, 0.8, MIST); p.px(cx - 1, cy - 1, FOG);
+  });
+}
+
 /* ---------------- objects ---------------- */
+
+/** A coal seam in the rib: bright bands with a glint. */
+function seam(f: number): Canv {
+  return art(16, 16, (p) => {
+    p.g.drawImage(MG.ribFace[1], 0, 0);
+    for (const y of [5, 9, 12]) { p.hline(1, 14, y, VOID); p.hline(2, 13, y - 1, TWILIGHT); }
+    for (const [x, y] of [[4, 8], [10, 4], [12, 11], [6, 11]]) p.px(x, y, MIST);
+    p.px(9 + f, 8, FOG); p.px(3, 4 + f, LANTERN);
+    p.rect(5, 14, 6, 2, SHADOW); p.px(6, 14, TWILIGHT); p.px(9, 15, MIST); // loose lumps at its foot
+  });
+}
+
+/** The rideable ore car, empty, wheels greased. */
+function rideCart(): Canv {
+  return art(16, 16, (p) => {
+    p.rect(1, 4, 14, 8, RUST); p.hline(1, 14, 4, AMBER); p.rect(2, 5, 12, 3, SHADOW);
+    for (const x of [3, 7, 11]) p.vline(x, 5, 11, CRAN);
+    p.ellipse(4, 13, 2, 2, VOID); p.ellipse(12, 13, 2, 2, VOID); p.px(4, 13, LANTERN); p.px(12, 13, LANTERN);
+    p.hline(0, 1, 8, SHADOW); p.hline(14, 15, 8, SHADOW); // couplers
+  }, true);
+}
+
+/** The canary in its cage (cabin window, after). */
+function canaryCage(f: number): Canv {
+  return art(16, 22, (p) => {
+    p.vline(8, 0, 3, SHADOW); p.ellipse(8, 5, 5, 2, AMBER);
+    for (const x of [3, 6, 10, 13]) p.vline(x, 5, 17, AMBER);
+    p.hline(3, 13, 17, AMBER); p.rect(2, 18, 13, 3, RUST); p.hline(2, 14, 18, AMBER);
+    p.hline(4, 12, 12, RUST); // perch
+    p.ellipse(8 + f, 10, 2, 1.6, LANTERN); p.px(10 + f, 9, AMBER); p.px(7 + f, 9, VOID); p.px(6 + f, 11, AMBER);
+  }, true);
+}
+
+/** Pale cave fungus that glows faintly. */
+function fungus(f: number): Canv {
+  return art(16, 16, (p) => {
+    for (const [x, y, r] of [[5, 11, 2], [9, 9, 3], [12, 12, 2]] as Array<[number, number, number]>) {
+      p.vline(x, y, 14, MIST); p.ellipse(x, y, r, r * 0.6, f ? FERN : MOSS); p.px(x - 1, y - 1, FOG);
+    }
+  });
+}
+
+
 
 /** A miner turned to anthracite, braced against the roof; a brass check at his collar. */
 function calcified(f: number): Canv {
@@ -297,6 +366,15 @@ function foreman(f: number): Canv {
   }, true);
 }
 
+/** The Foreman as a shape in the dark: solid shadow, no detail. */
+function foremanShape(): Canv {
+  return art(24, 34, (p) => {
+    p.rect(8, 0, 8, 3, SHADOW); p.hline(6, 17, 2, SHADOW); p.rect(8, 3, 8, 7, SHADOW);
+    p.rect(5, 10, 14, 13, SHADOW); p.rect(2, 11, 3, 11, SHADOW); p.rect(19, 11, 3, 10, SHADOW);
+    p.rect(7, 23, 4, 11, SHADOW); p.rect(13, 23, 4, 11, SHADOW);
+  });
+}
+
 /** A crosscut spirit: faint, seated, waiting for the whistle. */
 function spirit(f: number): Canv {
   return art(16, 22, (p) => {
@@ -350,7 +428,7 @@ function hudBox(): Canv {
 export function bakeMine(): void {
   MG.floor = [coalFloor(901), coalFloor(902), coalFloor(903)];
   MG.ribTop = [ribTop(911), ribTop(912)];
-  MG.ribFace = [ribFace(921), ribFace(922), ribFace(923)];
+  MG.ribFace = [ribFace(921), ribFace(922), ribFace(923), ribFace(924), ribFace(925), ribFace(926)];
   MG.railH = [mineRail(true)]; MG.railV = [mineRail(false)];
   MG.alcove = [alcove()];
   MG.gob = [gob(931), gob(932)];
@@ -374,6 +452,13 @@ export function bakeMine(): void {
   MO.firstAid = [firstAid()];
   MO.cupboard = [cupboard()];
   MO.torch = [torch(0), torch(1)];
+  MG.crawlH = [crawlTile(true)]; MG.crawlV = [crawlTile(false)];
+  MG.puddle = [puddle(961), puddle(962), puddle(963)];
+  MO.seam = [seam(0), seam(1)];
+  MO.rideCart = [rideCart()];
+  MO.canaryCage = [canaryCage(0), canaryCage(1)];
+  MO.fungus = [fungus(0), fungus(1)];
+  MO.foremanShape = [foremanShape()];
   MO.chewer = [chewer(0), chewer(1)];
   MO.foreman = [foreman(0), foreman(1)];
   MO.spirit = [spirit(0), spirit(1)];
@@ -387,6 +472,12 @@ export function bakeMine(): void {
   ICON.seep_water = art(16, 16, (p) => { p.rect(5, 4, 6, 10, MIST); p.rect(6, 6, 4, 7, TWILIGHT); p.hline(6, 9, 6, FOG); p.rect(6, 2, 4, 2, RUST); }, true);
   ICON.hemlock_prop = art(16, 16, (p) => { p.line(3, 13, 12, 2, AMBER); p.line(4, 13, 13, 2, RUST); p.px(12, 2, LANTERN); p.px(6, 10, MOSS); }, true);
   ICON.pitch_torch = art(16, 16, (p) => { p.line(4, 14, 9, 6, SHADOW); p.line(5, 14, 10, 6, TWILIGHT); p.rect(9, 4, 3, 3, RUST); p.rect(9, 1, 3, 3, RED); p.px(10, 1, AMBER); p.px(10, 0, LANTERN); }, true);
+  ICON.coal_lump = art(16, 16, (p) => { p.ellipse(8, 9, 5, 4, VOID); p.ellipse(7, 8, 3, 2.5, SHADOW); p.px(6, 7, MIST); p.px(10, 10, TWILIGHT); }, true);
+  ICON.brass_button = art(16, 16, (p) => { p.ellipse(8, 8, 5, 5, AMBER); p.ellipse(8, 8, 3.5, 3.5, LANTERN); for (const [x, y] of [[7, 7], [9, 7], [7, 9], [9, 9]]) p.px(x, y, RUST); }, true);
+  ICON.bird_seed = art(16, 16, (p) => { p.rect(4, 5, 8, 9, FOG); p.hline(4, 11, 5, MIST); p.rect(5, 2, 6, 3, AMBER); for (const [x, y] of [[6, 8], [9, 9], [7, 11], [10, 12], [5, 12]]) p.px(x, y, AMBER); }, true);
+  ICON.club_badge = art(16, 16, (p) => { p.ellipse(8, 8, 6, 6, RED); p.ellipse(8, 8, 4.5, 4.5, LANTERN); p.rect(6, 6, 5, 4, VOID); p.px(7, 7, LANTERN); p.px(9, 7, LANTERN); }, true);
+  ICON.blind_cavefish = art(16, 16, (p) => { p.ellipse(8, 8, 6, 2.6, MOON); p.hline(4, 11, 10, FOG); p.rect(1, 6, 2, 5, FOG); p.px(8, 5, MIST); }, true);
+  ICON.cave_crayfish = art(16, 16, (p) => { p.ellipse(8, 9, 4, 2, FOG); p.rect(2, 7, 3, 2, MOON); p.rect(11, 7, 3, 2, MOON); p.px(4, 6, MIST); p.px(12, 6, MIST); for (let x = 5; x < 12; x += 2) p.px(x, 11, MIST); }, true);
   ICON.miner_biscuit = art(16, 16, (p) => { p.ellipse(8, 9, 5, 3.5, AMBER); p.ellipse(8, 8, 4, 2.5, LANTERN); p.px(6, 8, RUST); p.px(10, 9, RUST); }, true);
   ICON.black_powder = art(16, 16, (p) => { p.rect(4, 4, 8, 9, FOG); p.rect(5, 5, 6, 7, MOON); p.hline(5, 10, 8, VOID); p.line(12, 6, 15, 2, AMBER); }, true);
   ICON.blasting_box = art(16, 16, (p) => { p.rect(3, 7, 10, 7, RUST); p.hline(3, 12, 7, AMBER); p.vline(8, 2, 7, MIST); p.hline(5, 11, 2, MIST); p.px(11, 9, RED); }, true);

@@ -488,6 +488,17 @@ function eventProp(kind: string, f: number): Canv {
       }
       return;
     }
+    if (kind === 'memorial') {
+      // A rope between two posts, twelve paper lanterns on it, a thirteenth with no name.
+      p.vline(1, 6, 31, RUST); p.vline(30, 6, 31, RUST);
+      for (let x = 2; x < 30; x++) p.px(x, 7 + Math.round(Math.sin(((x - 2) / 27) * Math.PI) * 4), SHADOW);
+      for (let k = 0; k < 12; k++) {
+        const x = 3 + k * 2.2, y = 9 + Math.round(Math.sin(((x - 2) / 27) * Math.PI) * 4);
+        p.rect(Math.round(x), y, 2, 3, (k + f) % 3 ? LANTERN : AMBER);
+      }
+      p.rect(14, 22, 4, 5, (f ? MOON : FOG)); p.px(15, 21, SHADOW);
+      return;
+    }
     if (kind === 'osterhase') {
       // A moss-lined basket of painted eggs and Matthias's wooden hare (with antlers, at Pippa's insistence).
       p.ellipse(13, 25, 10, 5, AMBER); p.hline(3, 23, 22, RUST); for (let x = 5; x < 23; x += 3) p.vline(x, 22, 29, RUST);
@@ -702,7 +713,7 @@ export function bakeDecor(): void {
   PROP.gazebo = [gazebo(false), gazebo(true)];
   for (const k of ['ramp_feed', 'apple_butter', 'buckwheat', 'old_christmas']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
   PROP.ledger = [ledgerStand()];
-  for (const k of ['new_year', 'st_martin', 'belsnickel', 'fasnacht', 'fasnacht_burnt', 'osterhase']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
+  for (const k of ['new_year', 'st_martin', 'belsnickel', 'fasnacht', 'fasnacht_burnt', 'osterhase', 'memorial']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
   PROP.barnstar = [barnStarPost()];
   PROP.candletree = [candleTree(0), candleTree(1)];
   for (const k of ['pie', 'cider', 'lantern', 'crafts']) PROP[`stall_${k}`] = [stall(0, k), stall(1, k), stall(2, k)];

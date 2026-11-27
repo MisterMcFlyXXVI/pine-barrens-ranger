@@ -6,7 +6,7 @@
  */
 import { sfx } from './sfx';
 
-export type TrackId = 'title' | 'cabin' | 'town' | 'woods' | 'bog' | 'ridge' | 'night' | 'interior' | 'encounter' | 'festival' | 'mine';
+export type TrackId = 'title' | 'cabin' | 'town' | 'woods' | 'bog' | 'ridge' | 'night' | 'interior' | 'encounter' | 'festival' | 'mine' | 'mine_warm' | 'mine_hymn';
 
 interface Note { s: number; m: number; l: number; v?: number }
 interface Voice { wave: OscillatorType; gain: number; notes: Note[]; pluck?: boolean; detune?: number }
@@ -128,6 +128,10 @@ const SPECS: Record<TrackId, Spec> = {
   encounter: { seed: 81, bpm: 66, root: 50, mode: MINOR, prog: [0, 0, 5, 5, 3, 3, 1, 1], bass: 'none', arp: 'sparse', melody: 'none', drums: 'ambient', arpWave: 'triangle' },
   // The Deep Seam: a low drone, water dripping and a slow heartbeat. No melody.
   mine: { seed: 314, bpm: 54, root: 45, mode: MINOR, prog: [0, 0, 1, 1, 0, 0, 5, 5], bass: 'drone', arp: 'none', melody: 'none', drums: 'drips' },
+  // Half the board OUT: the drone gets a slow arpeggio under it, a little warmth.
+  mine_warm: { seed: 315, bpm: 58, root: 45, mode: DORIAN, prog: [0, 0, 3, 3, 0, 0, 4, 4], bass: 'drone', arp: 'sparse', melody: 'none', drums: 'drips', arpWave: 'triangle' },
+  // The seam sealed (and Memorial Night): a slow miners' hymn.
+  mine_hymn: { seed: 316, bpm: 66, root: 50, mode: MAJOR, prog: [0, 3, 4, 0, 5, 3, 4, 0], bass: 'drone', arp: 'none', melody: 'lyric', drums: 'none', melodyWave: 'triangle', melodyGain: 0.16 },
   // Folklore Festival fiddle reel.
   festival: { seed: 91, bpm: 132, root: 62, mode: MIXO, prog: [0, 0, 6, 6, 0, 0, 3, 4], bass: 'boomchick', arp: 'roll', melody: 'busy', drums: 'reel', melodyGain: 0.11 },
 };

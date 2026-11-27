@@ -121,6 +121,29 @@ export const LEDGER: readonly LedgerPage[] = [
   ] },
 ];
 
+/** The Miner's Almanac: what you learn about the Deep Seam as you meet it (Journal page). */
+export const ALMANAC: Readonly<Record<string, { title: string; text: string }>> = {
+  headlamp: { title: 'CARBIDE HEADLAMP', text: 'Water drips on calcium carbide and makes acetylene; the flame burns at the reflector. Shutter it and they cannot see you. Refill: 1 pellet, 1 water (R).' },
+  canary: { title: 'THE CANARY', text: 'Sings in good air. Goes quiet and rattles the cage in gas or haze. Feed it seed once a day, or it sulks, and a sulking canary lies.' },
+  bar: { title: 'SOUNDING BAR', text: 'Tap the roof and the rib. RING is sound slate. HOLLOW THUD is a kettle-bottom, a false support, or a keystone. Loud.' },
+  safety: { title: 'DAVY LAMP', text: 'A flame behind wire gauze that cannot ignite gas. Burns blue-green near firedamp. Picks out props that are holding the roof.' },
+  choke: { title: 'CHOKEDAMP', text: 'Blackdamp: air with the life taken out of it. Heavy, sweet, pools in low places and sealed crosscuts. The wet-wool respirator slows it.' },
+  fire: { title: 'FIREDAMP', text: 'Methane. Invisible, and an open flame sets it off. Shutter the carbide and never set a torch in it.' },
+  haze: { title: "THE FOREMAN'S HAZE", text: 'Coal dust that rolls through the drifts on its own. Shrinks your light and thins your air. Weaker every three tags you bring out.' },
+  kettle: { title: 'KETTLE-BOTTOM', text: 'A fossil tree stump in the roof slate, smooth-sided, that drops without warning. Tap ahead: a thud means stand back and knock it down.' },
+  alcove: { title: 'MAN-TRIP ALCOVE', text: 'A refuge notch cut into the rib so men could step clear of the coal trips. The Foreman walks past anyone in one. But hide in the same one too often and he learns it.' },
+  crawl: { title: 'CRAWLWAY', text: 'A low hole between workings. Too low for your lit cap lamp: shutter it and crawl. Far too low for the Foreman.' },
+  flood: { title: 'FLOODED DRIFT', text: 'Old workings full of seep water. Bog Waders get you through.' },
+  chewer: { title: 'COAL-CHEWER', text: 'What hunger made of a man. Drawn to light. In the dark, offer water or something warm and the trance breaks.' },
+  foreman: { title: 'THE FOREMAN', text: 'Amos Garrity, or what is left of him. Sees your light, hears your bar, follows the clink of tags. Hide, go dark, or crawl.' },
+  calcified: { title: 'CALCIFIED PROP', text: 'A man turned to anthracite holding the roof. Shore him with hemlock first, then pry his tag.' },
+  crosscut: { title: 'SEALED CROSSCUT', text: 'Bricked up by the company in 1914. One stone is the keystone. Chokedamp waits behind it.' },
+  torch: { title: 'PITCH TORCH', text: 'Lights a wide circle for good. In its light they can see you, shutter or no.' },
+  decoy: { title: 'COAL DECOY', text: 'Throw a lump (select it, press A). The clatter pulls them to look. Seams in the rib give more.' },
+  cart: { title: 'THE ORE CAR', text: 'Level 1 haulage. Ride it end to end, fast and very loud.' },
+  oldworks: { title: 'THE OLD WORKS', text: 'An 1888 drift under Level 2, opened by the blast. A black lake, pale fish, fungus that glows. Nothing hunts here.' },
+};
+
 /* ------------------------------------------------------------------ */
 /* Level layouts                                                       */
 /* ------------------------------------------------------------------ */
@@ -145,6 +168,10 @@ export interface MineLevel {
   /** The Foreman's patrol loop (Level 3 always; Level 2 while you carry tags). */
   foreman?: Pt[];
   cribs?: Pt[];
+  /** Coal seams in the rib (lumps for decoys). */
+  seams?: Pt[];
+  /** The rideable ore car's two ends on the haulage rail (Level 1). */
+  cart?: [Pt, Pt];
 }
 
 const L1: MineLevel = {
@@ -157,6 +184,8 @@ const L1: MineLevel = {
   crosscuts: [],
   gas: [{ x: 48, y: 29, w: 5, h: 6, kind: 'choke' }],
   kettles: [[20, 18], [33, 17], [47, 19]],
+  seams: [[22, 20], [12, 2], [44, 4], [19, 32]],
+  cart: [[5, 18], [60, 18]],
 };
 
 const L2: MineLevel = {
@@ -170,6 +199,7 @@ const L2: MineLevel = {
   gas: [{ x: 58, y: 18, w: 4, h: 7, kind: 'choke' }, { x: 15, y: 38, w: 7, h: 3, kind: 'fire' }],
   kettles: [[11, 18], [39, 31], [31, 11]],
   foreman: [[53, 44], [53, 39], [32, 39], [32, 11], [10, 11], [32, 11], [32, 39], [53, 39]],
+  seams: [[9, 15], [30, 29], [48, 22], [20, 42]],
 };
 
 const L3: MineLevel = {
@@ -184,10 +214,18 @@ const L3: MineLevel = {
   kettles: [[35, 4], [5, 15], [45, 39], [52, 30]],
   foreman: [[29, 4], [50, 4], [52, 4], [52, 21], [52, 39], [29, 39], [29, 30], [29, 13]],
   cribs: [[21, 15], [38, 15], [21, 28], [38, 28]],
+  seams: [[30, 2], [50, 14], [17, 20]],
 };
 
-export const MINE_LEVELS: Readonly<Record<string, MineLevel>> = { MINE_L1: L1, MINE_L2: L2, MINE_L3: L3 };
-export const MINE_MAPS: ReadonlySet<MapId> = new Set<MapId>(['MINE_L1', 'MINE_L2', 'MINE_L3']);
+/** The Old Works: the 1880s drift under Level 2 that the blast shook open. Quiet, black water, and pale things living in it. */
+const L4: MineLevel = {
+  id: 'MINE_L4', name: 'The Old Works (1888)', arrive: [5, 4], lift: [4, 3],
+  props: [], chewers: [], crosscuts: [], gas: [], kettles: [],
+  seams: [[9, 1], [20, 8], [42, 14]],
+};
+
+export const MINE_LEVELS: Readonly<Record<string, MineLevel>> = { MINE_L1: L1, MINE_L2: L2, MINE_L3: L3, MINE_L4: L4 };
+export const MINE_MAPS: ReadonlySet<MapId> = new Set<MapId>(['MINE_L1', 'MINE_L2', 'MINE_L3', 'MINE_L4']);
 /** The Lamp House and everything below it use the mine palette and rules. */
 export const isMineMap = (id: MapId): boolean => MINE_MAPS.has(id);
 export const isDeepSeam = (id: MapId): boolean => MINE_MAPS.has(id) || id === 'LAMP_HOUSE';
@@ -219,6 +257,10 @@ function alcoves(b: Builder, pts: Pt[]): void { for (const [x, y] of pts) if (b.
 function posts(b: Builder, y: number, x0: number, x1: number, step: number): void {
   for (let x = x0; x <= x1; x += step) if (b.g(x, y) === T.COAL_RIB && b.o(x, y) === O.NONE) b.setO(x, y, O.MINE_POST);
 }
+/** A low crawlway through the coal (shutter your lamp to fit; too low for the Foreman). */
+function crawl(b: Builder, x: number, y: number, w: number, h: number): void { for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) b.setG(xx, yy, T.CRAWL); }
+/** A drift flooded knee-deep (Bog Waders to wade it). */
+function flood(b: Builder, x: number, y: number, w: number, h: number): void { for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { b.setG(xx, yy, T.SHALLOW); b.setO(xx, yy, O.NONE); } }
 function level(b: Builder, L: MineLevel, portals: MapDef['portals']): MapDef {
   for (const p of L.props) put(b, p.at[0], p.at[1], O.CALCIFIED);
   for (const c of L.crosscuts) {
@@ -226,6 +268,8 @@ function level(b: Builder, L: MineLevel, portals: MapDef['portals']): MapDef {
     put(b, c.bucket[0], c.bucket[1], O.BUCKET);
   }
   for (const [x, y] of L.cribs ?? []) put(b, x, y, O.CRIB);
+  for (const [x, y] of L.seams ?? []) put(b, x, y, O.COAL_SEAM);
+  if (L.cart) put(b, L.cart[0][0], L.cart[0][1], O.RIDE_CART);
   put(b, L.lift[0], L.lift[1], O.LIFT);
   return wrap(b, L.id, L.name, { indoor: true, wild: false, portals, battleColors: [P.SHADOW, P.VOID] });
 }
@@ -264,6 +308,8 @@ export function buildMineL1(): MapDef {
   rail(b, [[45, 20], [45, 31]]);
   alcoves(b, [[10, 16], [18, 16], [26, 16], [34, 16], [42, 16], [50, 16], [58, 16], [16, 20], [32, 20], [52, 20], [3, 24]]);
   posts(b, 16, 7, 60, 4); posts(b, 20, 9, 60, 4);
+  crawl(b, 19, 4, 13, 1);                // a crawlway between the two north rooms
+  flood(b, 32, 33, 8, 1);                // a flooded drift between the two south rooms
   put(b, 9, 3, O.TIMBER_RACK);
   put(b, 18, 3, O.CHALK, 'CHALK ON THE RIB, a fire boss\'s morning mark: "C.V. 3-11-14 -- GAS IN 20 -- ALL CLEAR HERE." Under it, tally marks: one crew\'s cars, shift by shift. The last row of strokes trails off.');
   put(b, 33, 3, O.SEEP); put(b, 34, 3, O.CARBIDE);
@@ -287,6 +333,8 @@ export function buildMineL2(): MapDef {
   // Robbed pillars: where the shift cut them out, a man is holding the roof now.
   carve(b, 27, 20, 4, 4); carve(b, 41, 34, 4, 4);
   for (const [x, y, w, h] of [[10, 23, 3, 2], [24, 38, 3, 2], [45, 10, 2, 3], [53, 27, 3, 2], [17, 3, 3, 2]] as Array<[number, number, number, number]>) b.rectG(x, y, w, h, T.GOB);
+  crawl(b, 13, 28, 4, 1); crawl(b, 35, 13, 1, 4); // crawlways bored through two pillars
+  flood(b, 24, 38, 7, 3);                // a flooded room (it used to be a gob pile)
   carve(b, 58, 18, 4, 7);                // Anselm's sealed crosscut
   carve(b, 56, 20, 2, 3);
   rail(b, [[3, 25], [55, 25]]); rail(b, [[32, 3], [32, 44]]);
@@ -319,17 +367,39 @@ export function buildMineL3(): MapDef {
   carve(b, 28, 6, 3, 6); carve(b, 28, 32, 3, 6); carve(b, 7, 26, 11, 3); carve(b, 42, 20, 9, 3);
   carve(b, 8, 18, 5, 7);                 // Clement Vance's sealed crosscut
   carve(b, 28, 42, 7, 4);                // Benjy Lusk's sealed crosscut
+  crawl(b, 7, 16, 11, 1);                // a crawlway from the west drift into the Tally Chamber (he can't follow)
+  flood(b, 10, 38, 11, 3);               // the bottom drift, flooded
   rail(b, [[8, 4], [49, 4]]); rail(b, [[5, 39], [52, 39]]); rail(b, [[29, 13], [29, 30]]);
   alcoves(b, [[15, 2], [25, 2], [38, 2], [10, 41], [20, 41], [44, 41], [54, 16], [54, 26], [54, 34], [3, 12], [3, 30], [20, 11], [40, 11], [20, 32], [40, 32]]);
   posts(b, 2, 12, 48, 5); posts(b, 41, 6, 52, 5);
   put(b, 9, 3, O.SEEP); put(b, 8, 6, O.CARBIDE); put(b, 40, 40, O.SEEP); put(b, 47, 2, O.TIMBER_RACK); put(b, 19, 30, O.TIMBER_RACK);
-  put(b, 24, 12, O.CHALK, 'THE FOREMAN\'S TALLY. Floor to roof, the rib is covered in chalk strokes, thousands of them, in sets of five. The newest ones are fresh. They are still being made.');
+  put(b, 26, 12, O.CHALK, 'THE FOREMAN\'S TALLY. Floor to roof, the rib is covered in chalk strokes, thousands of them, in sets of five. The newest ones are fresh. They are still being made.');
   put(b, 40, 12, O.BUCKET, 'A foreman\'s dinner bucket, nickel-plated, too good for down here. Inside: a gold watch stopped at 2:14, and a company bonus slip for $144.00.');
   put(b, 24, 22, O.ORE_CART, 'A coal car heaped with lumps of slag, each one shaped a little like a fist.');
   put(b, 35, 22, O.ORE_CART, 'A coal car full of brass checks, hundreds of them, from every year the mine ran. None of the numbers you are looking for. He collects them.');
   const pages: Array<[number, Pt]> = [[7, [56, 10]], [8, [33, 24]], [9, [33, 45]]];
   for (const [n, [x, y]] of pages) { put(b, x, y, O.LEDGER_PAGE); b.meta.set(b.i(x, y), `page:${n}`); }
   return level(b, L3, [{ x: 2, y: 4, w: 1, h: 1, to: 'MINE_L2', tx: 52, ty: 44, dir: 'up', closedMsg: '' }]);
+}
+
+export function buildMineL4(): MapDef {
+  const b = cave(48, 36);
+  carve(b, 2, 2, 8, 5);                  // the landing
+  carve(b, 10, 4, 6, 3);                 // the old drift
+  carve(b, 15, 6, 3, 7);                 // and down into the cavern
+  // The cavern: an open chamber in the slate, and the black lake in the middle of it.
+  for (let y = 1; y < 35; y++) for (let x = 1; x < 47; x++) {
+    const e = ((x - 29) / 16) ** 2 + ((y - 19) / 13) ** 2;
+    if (e <= 1) b.setG(x, y, T.COAL_FLOOR);
+    const lake = ((x - 31) / 10) ** 2 + ((y - 21) / 6.5) ** 2;
+    if (lake <= 1) b.setG(x, y, T.WATER);
+  }
+  for (const [x, y] of [[17, 12], [40, 9], [43, 26], [20, 29], [26, 10]] as Pt[]) b.setG(x, y, T.GOB);
+  for (const [x, y] of [[16, 16], [19, 26], [24, 30], [36, 30], [42, 22], [41, 12], [33, 8], [22, 13], [13, 5], [7, 6]] as Pt[]) if (b.g(x, y) === T.COAL_FLOOR) put(b, x, y, O.GLOW_FUNGUS);
+  put(b, 15, 4, O.CHALK, 'Chalk on the slate, so old it has gone into the stone: "1888. NO. 1 DRIFT. WATER HIGH. -- O.P." Beside it someone has drawn a fish with no eyes.');
+  put(b, 8, 2, O.SEEP);
+  put(b, 24, 9, O.BUCKET, 'A rusted lard pail with a wire bail. Inside, a fishing line wound on a stick, and a hook made from a bent horseshoe nail. Somebody fished this lake on their dinner break, a hundred years ago.');
+  return level(b, L4, []);
 }
 
 /* ------------------------------------------------------------------ */
@@ -361,10 +431,18 @@ export interface MineSave {
   kettles: string[];
   /** Once-a-day supply markers ("MAP:x,y" -> day). */
   stock: Record<string, number>;
+  /** How often you've hidden in each alcove while he was looking ("MAP:x,y" -> times). He learns. */
+  alcoves: Record<string, number>;
+  /** Your canary: its name (once you've named it) and the last day it was fed. */
+  canary: { name: string; fed: number };
+  /** Miner's Almanac entries you've come across. */
+  seen: string[];
+  /** Miners Clara has read out on the radio. */
+  aired: MinerId[];
 }
 
 export function freshMine(): MineSave {
-  return { kit: false, fuel: 100, shut: false, tags: {}, dropped: [], pages: [], translated: [], wired: [], sealed: false, keystones: [], kettles: [], stock: {} };
+  return { kit: false, fuel: 100, shut: false, tags: {}, dropped: [], pages: [], translated: [], wired: [], sealed: false, keystones: [], kettles: [], stock: {}, alcoves: {}, canary: { name: '', fed: 0 }, seen: [], aired: [] };
 }
 
 export function loadMine(d: Partial<MineSave> | undefined): MineSave {
@@ -388,5 +466,9 @@ export function loadMine(d: Partial<MineSave> | undefined): MineSave {
   m.keystones = [...(d.keystones ?? [])];
   m.kettles = [...(d.kettles ?? [])];
   m.stock = { ...(d.stock ?? {}) };
+  m.alcoves = { ...(d.alcoves ?? {}) };
+  m.canary = { name: typeof d.canary?.name === 'string' ? d.canary.name : '', fed: Number(d.canary?.fed ?? 0) || 0 };
+  m.seen = (d.seen ?? []).filter((k) => k in ALMANAC);
+  m.aired = (d.aired ?? []).filter((k) => ids.has(k));
   return m;
 }

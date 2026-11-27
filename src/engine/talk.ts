@@ -3,7 +3,7 @@ import { O } from '../data/tiles';
 import { oriTalk } from './orientation';
 import { isBirthday, birthdayLine, eventOn } from './calendar';
 import { barkFor } from './barks';
-import { untranslated, translatePages } from './mine';
+import { untranslated, translatePages, banked } from './mine';
 import type { Game } from './game';
 import type { NpcRT } from './townsfolk';
 import { kidsHiding, rescueKids } from './heartScenes';
@@ -233,6 +233,15 @@ export function talkTo(game: Game, npc: NpcRT): void {
     case 'gideon':
       // Shop at the counter, or while he's working the anvil out by the store.
       if (npc.map === 'STORE_INT' || tag === 'anvil') choices.push({ label: 'Shop', fn: () => game.openOverlay(new StoreMenu(STORE_STOCK)) });
+      // Three of the twelve out: he'll temper your Sounding Bar.
+      if (banked(game) >= 3 && !p.flags.has('bar_tempered')) choices.unshift({ label: 'Temper the Sounding Bar?', fn: () => {
+        p.flags.add('bar_tempered'); sfx.rockHit();
+        game.openOverlay(new Dialog([
+          'Gideon takes the fire-boss bar, heats the point cherry-red and quenches it in the slack tub, three times, listening each time.',
+          'GIDEON: "There. Tempered right, a bar sings back at you. Get close to a kettle-bottom and it\'ll hum in your hand before you ever tap it. And it rings quieter. He won\'t hear it as far."',
+          '(Your Sounding Bar now warns you near hidden kettle-bottoms, and taps carry less far.)',
+        ]));
+      } });
       else pages.push(tag === 'lunch' ? '(The Outfitter\'s closed for lunch till 1.)' : tag === 'fishing' ? '(The Outfitter closes Sunday afternoons.)' : '(The Outfitter is open 8 to 5, lunch 12 to 1. Late afternoons, Gideon works his anvil outside the store.)');
       break;
     case 'liesl':
@@ -247,6 +256,39 @@ export function talkTo(game: Game, npc: NpcRT): void {
     case 'matthias':
       // He'll show you how to carve a Fasnacht mask once he knows you a little (or any time on Fasnacht).
       if (!p.flags.has('taught_masks') && (hearts(game, 'matthias') >= 1 || eventOn(game.clock.day)?.id === 'fasnacht')) choices.push({ label: 'Carve a mask?', fn: () => teachMasks(game) });
+      break;
+    case 'pippa':
+      // She wants to come down the mine. You say no. Then she makes you a badge.
+      if (p.mine.kit && !p.flags.has('pippa_mine')) choices.unshift({ label: 'About the mine...', fn: () => {
+        p.flags.add('pippa_mine'); p.days.pippa_mine = game.clock.day;
+        game.openOverlay(new Dialog([
+          'PIPPA: "Take me down the mine. I\'m serious. I have a flashlight AND a whistle AND Sam says I\'m brave in a way that worries him."',
+          'You tell her no. Not even a little bit. Not even to the first level.',
+          'PIPPA: "...Fine." She sulks magnificently for about four seconds. "Then I\'m making you something. Club business. Come back tomorrow."',
+        ]));
+      } });
+      else if (p.flags.has('pippa_mine') && !p.flags.has('pippa_badge') && game.clock.day > (p.days.pippa_mine ?? 0)) choices.unshift({ label: 'The club business?', fn: () => {
+        p.flags.add('pippa_badge');
+        const left = game.inv.add('club_badge', 1); if (left) game.storage.add('club_badge', left);
+        sfx.trustChime();
+        game.openOverlay(new Dialog([
+          'Pippa presses a badge into your hand: a bottle cap, painted, with a safety pin glued on. "JUNIOR CRYPTID CLUB -- DEEP SEAM DIVISION."',
+          'PIPPA: "You\'re the whole division. It\'s an honor. Breathe slow down there, okay? Sam looked it up. Breathing slow is the main thing."',
+          '(The club badge steadies your breathing a little underground while you carry it.)',
+        ]));
+      } });
+      break;
+    case 'barnaby':
+      // After the seam is sealed: Sunday mine tours from the Lamp House.
+      if (npc.map === 'LAMP_HOUSE') choices.unshift({ label: 'The tour?', fn: () => {
+        const first = !p.flags.has('tour_souvenir');
+        if (first) { p.flags.add('tour_souvenir'); const left = game.inv.add('coal_lump', 3); if (left) game.storage.add('coal_lump', left); }
+        game.openOverlay(new Dialog([
+          'BARNEY: "Pine Hollow No. 3 Mine Tours! Sundays, one to four, weather no object, it\'s always the same weather down there." He has made a little sign. It has a drawing of you on it.',
+          'BARNEY: "I ride folks down to Level 1 in the cage, show \'em the haulage, the man-trip car, the alcoves. Never past Level 2. Some places you leave be."',
+          ...(first ? ['BARNEY: "Here: a souvenir. Real No. 3 coal. Sell it, throw it, keep it on your mantel. That\'s three lumps, and the first ones are free."'] : []),
+        ]));
+      } });
       break;
     case 'ezri':
     case 'pike':

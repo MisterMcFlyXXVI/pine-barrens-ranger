@@ -4,7 +4,7 @@ import { PhotoAlbum } from './album';
 import { goldCount } from '../engine/album';
 import { SettingsMenu } from './settingsMenu';
 import { EVENTS } from '../data/calendar';
-import { LEDGER, MINERS } from '../data/mine';
+import { LEDGER, MINERS, ALMANAC } from '../data/mine';
 import { seasonIndex, dayOfSeason, eventOn, birthdaysOn, friendName } from '../engine/calendar';
 import { PETS } from '../data/pets';
 import { bondWord } from '../engine/pet';
@@ -456,10 +456,10 @@ export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
-  private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls', 'mineledger'] as const;
+  private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls', 'mineledger', 'minealmanac'] as const;
   /** The pages you have: the MINE LEDGER only once you've geared up in the Lamp House. */
   private static idsFor(game: Game): ReadonlyArray<typeof JournalMenu.IDS[number]> {
-    return JournalMenu.IDS.filter((id) => id !== 'mineledger' || game.progress.mine.kit);
+    return JournalMenu.IDS.filter((id) => (id !== 'mineledger' && id !== 'minealmanac') || game.progress.mine.kit);
   }
   /** The page's action button (Photo Album, Settings), for A and taps. */
   private action: { rect: Rect; open: () => void } | null = null;
@@ -491,7 +491,7 @@ export class JournalMenu implements Overlay {
     panel(g, x, y, w, h, 'paper');
     this.mores = [];
     const ids = JournalMenu.idsFor(game);
-    const titles: Record<string, string> = { campaign: 'CAMPAIGN', journal: 'FIELD JOURNAL', quests: 'QUEST LOG', materials: 'MATERIALS LIST', folks: 'TOWNSFOLK', calendar: 'CALENDAR', album: 'PHOTO ALBUM', almanac: 'ALMANAC & KIT', controls: 'CONTROLS & SETTINGS', mineledger: 'BLACK-EDGED MINE LEDGER' };
+    const titles: Record<string, string> = { campaign: 'CAMPAIGN', journal: 'FIELD JOURNAL', quests: 'QUEST LOG', materials: 'MATERIALS LIST', folks: 'TOWNSFOLK', calendar: 'CALENDAR', album: 'PHOTO ALBUM', almanac: 'ALMANAC & KIT', controls: 'CONTROLS & SETTINGS', mineledger: 'BLACK-EDGED MINE LEDGER', minealmanac: "MINER'S ALMANAC" };
     if (this.page >= ids.length) this.page = 0;
     drawText(g, titles[ids[this.page]], x + 5, y + 5, P.CRAN);
     this.action = null;
@@ -501,6 +501,20 @@ export class JournalMenu implements Overlay {
     const line = (s: string, c: number = P.RUST) => { drawText(g, s, lx, ly, c); ly += 8; };
     const id = ids[this.page];
     if (id === 'calendar') { this.drawCalendar(game, g, x, y, w, h); return; }
+    if (id === 'minealmanac') {
+      const s = game.progress.mine;
+      const keys = Object.keys(ALMANAC);
+      line(`${s.seen.length}/${keys.length} ENTRIES.  ${s.canary.name ? `CANARY: ${s.canary.name.toUpperCase()}` : ''}`, P.CRAN);
+      const col = Math.floor((w - 12) / 2);
+      keys.forEach((k, i) => {
+        const cx2 = lx + (i % 2) * col, cy2 = ly + Math.floor(i / 2) * 8;
+        if (cy2 > y + h - 14) return;
+        const got = s.seen.includes(k);
+        drawText(g, got ? ALMANAC[k].title.slice(0, 24) : '???', cx2, cy2, got ? P.FOREST : P.MIST);
+        if (got) this.mores.push({ rect: { x: cx2 - 2, y: cy2 - 2, w: col - 2, h: 8 }, title: ALMANAC[k].title, body: [{ text: ALMANAC[k].text, color: P.SHADOW }] });
+      });
+      return;
+    }
     if (id === 'mineledger') {
       const s = game.progress.mine;
       const out = MINERS.filter((mm) => s.tags[mm.id] === 'out').length;
