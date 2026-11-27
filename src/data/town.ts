@@ -219,7 +219,7 @@ export function buildTown(): MapDef {
       { x: 33, y: 55, w: 1, h: 1, to: 'HOUSE_RUTH', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
       // MINE_ENTRANCE_PORTAL — stub for the future underground dungeon.
       { x: 54, y: 6, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up',
-        closedMsg: 'Planks are nailed across the mine adit. Gideon says the Restoration Grant could pay to reopen it.',
+        closedMsg: 'Planks are nailed across the mine adit. Gideon says the town could pay to reopen it someday (the Restoration Ledger, at the Historical Society).',
         grantMsg: 'The boards are down and fresh timbers shore up the adit, but the tunnels are still being surveyed. (The underground expansion opens in a future update!)' },
       // EXPANSION_RAIL_PORTAL — gated rail-car stub for future regional expansions.
       { x: 72, y: 46, w: 2, h: 1, to: 'EXPANSION_RAIL', tx: 0, ty: 0, dir: 'up',
@@ -300,6 +300,7 @@ export function buildMuseum(): MapDef {
   for (let x = 11; x <= 15; x++) b.setO(x, 15, O.COUNTER);
   b.setO(15, 15, O.REGISTER);
   b.setO(22, 17, O.KIOSK);
+  b.setO(10, 15, O.LEDGER); // the Town Restoration Ledger, open on a lectern
   b.setG(2, 17, T.STAIRS);
   b.setO(12, 4, O.PLANT); b.setO(14, 4, O.PLANT);
   b.setO(10, 9, O.BENCH); b.setO(15, 9, O.BENCH);

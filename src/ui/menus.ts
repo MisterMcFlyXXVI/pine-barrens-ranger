@@ -1,4 +1,6 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
+import { foresightText, bondsMade } from '../engine/bonds';
+import { HEART_SCENES } from '../data/heartScenes';
 import type { Game } from '../engine/game';
 import { CRYPTIDS } from '../data/cryptids';
 import type { Overlay } from './overlay';
@@ -25,7 +27,7 @@ import { accountEmail } from '../engine/account';
 import { drawClipped, More, tapMore } from './readMore';
 import { listStatus } from '../engine/materials';
 import { friendState, giftedToday, hearts, taste } from '../engine/friends';
-import { FRIENDS, FriendId, MAX_HEARTS } from '../data/friends';
+import { FRIENDS, FriendId, MAX_HEARTS, POINTS_PER_HEART } from '../data/friends';
 import { UPGRADES } from '../data/economy';
 
 function anyConfirm(game: Game): boolean {
@@ -484,7 +486,7 @@ export class JournalMenu implements Overlay {
       if (shown < list.length) drawText(g, `+${list.length - shown} MORE: SEE THE WORKBENCH LIST TAB`, lx, bottom, P.CRAN);
     } else if (page === 3) {
       // Townsfolk friendships: hearts, today's gift, and (on tap) tastes found + rewards.
-      const names: Record<FriendId, string> = { mabel: 'MABEL', gideon: 'GIDEON', agnes: 'AGNES', barnaby: 'BARNEY', clara: 'DR. OKAFOR', pippa: 'PIPPA', sam: 'SAM', toby: 'TOBY' };
+      const names: Record<FriendId, string> = { mabel: 'MABEL', gideon: 'GIDEON', agnes: 'AGNES', barnaby: 'BARNEY', clara: 'DR. OKAFOR', pippa: 'PIPPA', sam: 'SAM', toby: 'TOBY', ruth: 'RUTH' };
       for (const id of Object.keys(names) as FriendId[]) {
         const h = hearts(game, id);
         const st = friendState(game, id);
@@ -499,9 +501,15 @@ export class JournalMenu implements Overlay {
           { text: `Likes: ${tastes('like').join(', ') || '???'}`, color: P.SHADOW },
           { text: `Dislikes: ${tastes('dislike').join(', ') || '???'}`, color: P.RUST },
           ...FRIENDS[id].rewards.map((r) => ({ text: `${r.hearts} hearts: ${st.claimed.includes(r.hearts) ? r.note : '???'}`, color: st.claimed.includes(r.hearts) ? P.FOREST : P.RUST })),
+          ...HEART_SCENES.filter((s) => s.who === id || (s.who === 'kids' && (id === 'pippa' || id === 'sam'))).map((s) => {
+            const seen = game.progress.flags.has(`heart_${s.id}`);
+            const pts = s.who === 'kids' ? Math.max(friendState(game, 'pippa').pts, friendState(game, 'sam').pts) : st.pts;
+            const open = pts >= s.hearts * POINTS_PER_HEART;
+            return { text: seen ? `Memory: "${s.title}"` : `${s.hearts}<3 memory: ${open ? s.hint : '???'}`, color: seen ? P.FOREST : open ? P.CRAN : P.RUST };
+          }),
         ];
         this.mores.push({ rect: { x: lx - 2, y: ly - 2, w: w - 10, h: 10 }, title: names[id], body });
-        ly += 11;
+        ly += 10;
       }
       ly += 2;
       wrapText('Hold something and talk to give it as a gift. Tap a name to see what they like.', w - 12).forEach((l) => line(l, P.FOREST));
@@ -520,6 +528,12 @@ export class JournalMenu implements Overlay {
       line(email ? `CLOUD SAVES: ON (${email.toUpperCase()})` : 'CLOUD SAVES: OFF (SIGN IN FROM THE TITLE SCREEN)', email ? P.FOREST : P.RUST);
       if (game.wispNight === c.day) line('WISP-LIGHT OIL ACTIVE TONIGHT', P.VIOLET);
       if (game.lunarNight === c.day) line('LUNAR DEW: 3X RARE VARIANTS TONIGHT', P.VIOLET);
+      const fs = foresightText(game);
+      if (fs) line(fs, P.VIOLET);
+      const bonds = bondsMade(game);
+      if (bonds.length) line(`HOMESTEAD BONDS: ${bonds.length}/5`, P.FOREST);
+      const keeps = ['radio_key', 'conductor_whistle', 'lamphouse_key', 'binocular_strap', 'handcar_crank'].filter((id) => game.keepsake(id));
+      if (keeps.length) wrapText(`KEEPSAKES: ${keeps.map((id) => ITEMS[id].name).join(', ')}`, w - 12).forEach((l) => line(l, P.AMBER));
     } else {
       const rows = touchOn() ? [
         'MOVE: D-PAD (SLIDE YOUR THUMB TO TURN)', 'A: USE, TALK, PICK   B: CANCEL, HOLD TO RUN',

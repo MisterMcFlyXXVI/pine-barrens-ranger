@@ -52,7 +52,7 @@ export const HOMES: Record<HomeId, HomeDef> = {
     welcome: ['Pippa: "You\'re here! Official Club HQ tour! Wipe your feet -- Mom and Dad work nights at the hospital in Elkins, so I\'m in charge of floors."'],
   },
   HOUSE_RUTH: {
-    id: 'HOUSE_RUTH', name: "Ruth Haddix's House", residents: ['ruth', 'sam'], friends: ['sam'],
+    id: 'HOUSE_RUTH', name: "Ruth Haddix's House", residents: ['ruth', 'sam'], friends: ['sam', 'ruth'],
     knock: 'Ruth calls from inside, kindly: "Bless you for stopping, honey, but I\'m not decent. Come back another time."',
     welcome: ['Ruth: "Samuel talks about you every night at supper. Every. Night. Come sit by the fire."', 'Sam goes very red and pretends to look for something.'],
   },

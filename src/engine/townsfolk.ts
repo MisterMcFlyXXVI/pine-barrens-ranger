@@ -19,6 +19,8 @@ import { moonPhase } from '../data/weather';
 import type { Dir } from '../util';
 import { DIR_VEC } from '../util';
 import { sfx } from '../audio/sfx';
+import { kidsHiding } from './heartScenes';
+import { foggyWeekend } from './restoration';
 import { P } from '../graphics/palette';
 
 const STEP = 0.3;
@@ -92,6 +94,16 @@ export class Townsfolk {
   readonly npcs: NpcRT[] = NPCS.map((d) => new NpcRT(d));
   private resolved = new Map<string, [number, number]>();
   private routes = new Map<string, Portal | null>();
+  /** Townsfolk stepped into a heart scene: they stay put a few seconds after it ends. */
+  private held = new Map<string, { stop: Stop; t: number }>();
+
+  /** Put someone right here for a scene (they go back to their day afterwards). */
+  hold(npc: NpcRT, map: MapId, x: number, y: number, secs: number): void {
+    npc.inBed = false;
+    npc.place(map, x, y, npc.dir);
+    npc.hopT = 0;
+    this.held.set(npc.def.id, { stop: { map, x, y, dir: npc.dir, wander: 0 }, t: secs });
+  }
 
   ctx(game: Game): ScheduleCtx {
     const c = game.clock;
@@ -101,6 +113,7 @@ export class Townsfolk {
       weekday: c.weekday,
       festival: game.isFestival(),
       foggyNight: game.dayWeather.evening === 'FOG' && c.minutes >= 1080,
+      foggyWeekend: foggyWeekend(game),
       wet: w === 'RAIN' || w === 'STORM',
       day: c.day,
       flag: (f) => game.progress.flags.has(f),
@@ -113,6 +126,10 @@ export class Townsfolk {
 
   private whereFor(game: Game, npc: NpcRT, ctx: ScheduleCtx): Stop | null {
     const id = npc.def.id;
+    const held = this.held.get(id);
+    if (held) return { ...held.stop, dir: npc.dir };
+    const hiding = kidsHiding(game, id);
+    if (hiding) return { map: 'OLD_GROWTH_AND_SAWMILL', x: hiding[0], y: hiding[1], dir: 'down', wander: 0 };
     if ((id === 'buster' || id === 'toby') && game.progress.stage(id) === 1 && !game.progress.done(id)) {
       const end = game.progress.trailEnd(id);
       if (end) return { map: id === 'buster' ? 'PINE_TRAIL_AND_ORCHARD' : 'CRANBERRY_BOG_AND_SPRINGS', x: end[0], y: end[1], dir: 'down', wander: 0 };
@@ -164,6 +181,7 @@ export class Townsfolk {
   update(game: Game, dt: number): void {
     const ctx = this.ctx(game);
     const curId = game.cur.id;
+    for (const [id, h] of this.held) { h.t -= dt; if (h.t <= 0 || h.stop.map !== curId) this.held.delete(id); }
     for (const npc of this.npcs) {
       const stop = this.whereFor(game, npc, ctx);
       npc.stop = stop;

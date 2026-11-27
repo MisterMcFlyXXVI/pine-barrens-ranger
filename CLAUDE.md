@@ -166,7 +166,7 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 - **20 Donations:** **Mothman Goggles** (built-in permanent Thermal Vision in fog/darkness)  
 - **24 Donations:** Unlocks **Pine Hollow Folklore Festival** (night festival in Town Square; Traveling Merchants appear; Rare Variant odds surge)  
 - **28 Donations:** **Wendigo Antler Mantle** (Apex Presence: Predator cryptids never force player retreat)  
-- **32 Donations:** **Town Restoration Grant** (repairs Broken-Down Train Station & unseals Abandoned Coal Mine entrance)  
+- **32 Donations:** **County Restoration Grant** (matches the town: Restoration Ledger projects cost half; restores the rail car. The station and mine are Ledger projects P2/P4.)  
 - **36 Donations:** **Indrid Cold’s Shimmer Suit** (2x Rare Variant spawn rate globally + 25% shop discount)  
   
 ### Scheduled Town NPCs & Side Quests  
@@ -192,6 +192,12 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 - Opening: Barney asks why you came (`progress.reason`: `loss` | `burnout` | `belong`), reflected in `rangerLog`, the inspector's third answer and Elias's finale lines. Porch radio (`O.PORCH_RADIO`) check-ins once a night by story stage.
 - Act II: story letters (`LETTERS`, `progress.mail` = arrival day, `read_<id>` flags) at 6/12/18/24 donations; County Inspector `inspector` NPC (flags `inspector_done`, `funded`); festival prep stalls (`FESTIVAL_STALLS`, `Game.prepStage`); first festival the evening the 24 letter is read (`progress.firstFest`); Agnes gives the Ridge Survey Map at the festival bonfire (`ridge_map`, Act III).
 - Finale `finaleBeats(reason)` (tuning + conversation choices), then the dawn epilogue at the station (flags `finale`, `carving`, `cabin_deed`); the carving shows in the museum's Sheepsquatch case.
+
+### Pass B: heart scenes, bonds & the Ledger
+- **Heart scenes** (`src/data/heartScenes.ts` data, `src/engine/heartScenes.ts` engine): `HEART_SCENES` (id, who, hearts incl. halves, map, `near`, `when(SceneTime)`, hint, lines, give/flag/wear, `special: 'rescue'`). `heartTick` runs with `campaignTick`; one scene a day (`progress.days.scene`), flag `heart_<id>`, earlier scenes per person first; `Townsfolk.hold()` steps the cast in beside you. `sceneWaitingIn` opens a home's door for its scene. Kids' rescue: flag `kids_lost` (cleared overnight), `kidsHiding`, boot `rescueTracks`, a `Sightings.pin`ned Sheepsquatch, `rescueKids` from talk.ts. Keepsakes are `kind: 'keepsake'` items (not giftable); check with `game.keepsake(id)`.
+- **Bonds** (`src/engine/bonds.ts`): homestead visitors (3-star cryptids, one a day by `todaysVisitor`, `visit_<id>` day marks, `bond_<id>` flags), Foresight (`days.foresight`, `rareBiome`, `foresightMult` in `rareMult`). Warden arcs: flags `arc_<id>_1` then `arc_<id>`; `O.OLD_TRAP` in the Old Growth; `wardenMount` (chime/rod), `wardenUse` (bell/dish on the cliffs), `awfulTick`; `arcBonus` +25 Trust in the encounter intro. Act III shows them as `optional` objectives (never block the act).
+- **Restoration Ledger** (`src/data/restoration.ts`, `src/engine/restoration.ts`): `PROJECTS` with flags `proj_neon`, `proj_station`, `proj_gazebo`, `mine_open`; `O.LEDGER` lectern in the museum + Workbench choice. `applyRestoration` places `O.GAZEBO` at `GAZEBO` (re-applied on load). Station art/lights/signal key off `proj_station` (old saves with the Grant get it); the mine off `mine_open` (P4 needs flag `finale` + `lamphouse_key`). The Grant halves Ledger coin costs. `friendMult` (Friday story hour), `porchMusic` (Sunday gazebo, `festival` track), `handcarClosed` (6 AM-7 PM, midnight with P2; crank/whistle any hour), `foggyWeekend` ScheduleCtx for merchants.
+- `progress.days`: generic once-a-day markers (save field `days`).
 
 ### Town life & homes
 - **Homes** (`src/data/homes.ts`): `HOMES` (residents, friends who can invite you at 4 hearts, knock/welcome text), `HOME_SPOTS` (sit/morning/bed per NPC), and the 7 furnished interiors (`HOUSE_*`, `STORE_LOFT`, `DINER_ROOM`; map `home: true`, every object's description in `signs`). Doors use `requires: 'home'`, checked by `Game.homeClosed`.

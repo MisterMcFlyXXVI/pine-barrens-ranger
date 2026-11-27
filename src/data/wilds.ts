@@ -317,6 +317,17 @@ export function buildOldGrowth(): MapDef {
   b.sign(43, 49, 'ABANDONED SAWMILL. Floors are rotten. The roof loft collapsed in the storm of \'79. Moths everywhere.');
   b.sign(46, 79, 'OLD GROWTH. These hemlocks are older than the town. Ferns rustle where nothing walks.');
 
+  // Elias's old leg-hold traps, chained to the hemlocks along the west trail (the Sasquatch arc).
+  for (const [ax, ay] of [[31, 59], [26, 53], [21, 46]] as Array<[number, number]>) {
+    search: for (let r = 1; r < 5; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = ax + dx, y = ay + dy;
+      if (b.g(x, y) !== T.HEMLOCK || !b.free(x, y) || b.g(x, y + 1) === T.PATH || b.g(x, y - 1) === T.PATH) continue;
+      if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([ex, ey]) => b.g(x + ex, y + ey) === T.PATH || b.g(x + ex * 2, y + ey * 2) === T.PATH)) continue;
+      b.setO(x, y, O.OLD_TRAP);
+      break search;
+    }
+  }
+
   const general = b.collect((x, y) => (b.g(x, y) === T.HEMLOCK || b.g(x, y) === T.GRASS) && b.free(x, y) && nearTree(b, x, y));
   const mill = b.collect((x, y) => b.g(x, y) === T.RUIN_FLOOR && b.free(x, y));
   const mine = b.collect((x, y) => b.g(x, y) === T.ROCKY && b.free(x, y) && b.neighbors4(x, y, (_g, o) => o === O.SLAG));
@@ -327,7 +338,7 @@ export function buildOldGrowth(): MapDef {
       { x: 0, y: 18, w: 1, h: 10, to: 'RADIO_RIDGE_AND_CROSSROADS', tx: 62, ty: 1, dir: 'down', closedMsg: '' },
       { x: 89, y: 66, w: 1, h: 10, to: 'CRANBERRY_BOG_AND_SPRINGS', tx: 62, ty: 1, dir: 'down', closedMsg: '' },
       // MINE_ENTRANCE_PORTAL — stub for the future underground dungeon expansion.
-      { x: 77, y: 8, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up', closedMsg: 'The rusted iron gate is chained shut. A Town Restoration Grant would unseal it someday.', grantMsg: 'The chains are off, but the tunnels beyond are still being shored up. (The underground expansion opens in a future update!)' },
+      { x: 77, y: 8, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up', closedMsg: 'The rusted iron gate is chained shut. The town is saving to reopen No. 3 (the Restoration Ledger, at the Historical Society).', grantMsg: 'The chains are off, but the tunnels beyond are still being shored up. (The underground expansion opens in a future update!)' },
     ],
     forage: [
       { spots: general, count: 8, table: ['pine_resin', 'charred_wood', 'foraged_meat', 'foraged_meat', 'wild_honeycomb', 'wild_acorn', 'foraged_egg', 'frost_rim_antler'] },

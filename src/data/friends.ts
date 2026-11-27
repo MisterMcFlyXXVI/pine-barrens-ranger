@@ -5,7 +5,7 @@
  * handcar, barney_fishing.
  */
 
-export type FriendId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby';
+export type FriendId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'ruth';
 
 export interface HeartReward {
   hearts: number;
@@ -99,6 +99,16 @@ export const FRIENDS: Record<FriendId, FriendDef> = {
       { hearts: 2, give: [['seed_shroom', 3]], note: '3 Glow-Shroom seeds.', lines: ['Sam: "I grew these in a shoebox under my bed. Mom doesn\'t know. They glow!"'] },
       { hearts: 4, give: [['pawpaw_bread', 2]], note: '2 Pawpaw Bread.', lines: ['Sam: "Grandma baked these. I told her you\'re the bravest person in Pine Holler."'] },
       { hearts: 5, note: 'Best friends.', lines: ['Sam shows you his sketchbook: page after page of you, mid-encounter, drawn with great care.'] },
+    ],
+  },
+  ruth: {
+    loves: ['foraged_egg', 'wild_honeycomb', 'pawpaw', 'pepperoni_roll'],
+    likes: ['wild_onion', 'cranberries', 'wild_apple', 'black_coffee', 'soup_beans'],
+    dislikes: ['bog_slime', 'sulfur_egg', 'ghost_pepper'],
+    rewards: [
+      { hearts: 2, give: [['foraged_egg', 6]], note: 'Half a dozen eggs from Pip and the girls.', lines: ['Ruth presses a basket into your hands. "From the girls. Pip laid the little one. She tries her best."'] },
+      { hearts: 4, give: [['pawpaw_bread', 3]], note: '3 loaves of Pawpaw Bread.', lines: ['Ruth: "Pawpaw bread, honey. Walter\'s mother\'s recipe. You\'re family now, so you get the good pan."'] },
+      { hearts: 5, note: 'Best friends.', lines: ['Ruth: "Walter would\'ve put you to work and fed you twice. I\'m doing my best to keep up the tradition."'] },
     ],
   },
   toby: {

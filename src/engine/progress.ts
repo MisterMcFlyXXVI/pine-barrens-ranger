@@ -37,6 +37,8 @@ export interface ProgressSave {
   radioDay?: number;
   festRollDay?: number;
   firstFest?: number;
+  // Pass B
+  days?: Record<string, number>;
 }
 
 export interface Track {
@@ -77,6 +79,11 @@ export class Progress {
   festRollDay = 0;
   /** The day of the first Folklore Festival (the Act II climax). */
   firstFest = 0;
+  /**
+   * Day markers for once-a-day things: 'scene' (last heart scene), 'visit_<cryptid>'
+   * (homestead visits), 'rescue' (kids lost at the sawmill), 'foresight', 'porchMusic'.
+   */
+  days: Record<string, number> = {};
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -90,6 +97,7 @@ export class Progress {
       tools: { ...this.tools }, buffs: { ...this.buffs }, boardDay: this.boardDay, displays: { ...this.displays }, archiveRead: this.archiveRead,
       act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited], friends: JSON.parse(JSON.stringify(this.friends)),
       reason: this.reason ?? undefined, mail: { ...this.mail }, radioDay: this.radioDay, festRollDay: this.festRollDay, firstFest: this.firstFest,
+      days: { ...this.days },
     };
   }
 
@@ -115,6 +123,7 @@ export class Progress {
     p.radioDay = d.radioDay ?? 0;
     p.festRollDay = d.festRollDay ?? 0;
     p.firstFest = d.firstFest ?? 0;
+    p.days = { ...(d.days ?? {}) };
     // The Archive Basement now opens at 6 donations (was 8): don't announce it twice to older saves.
     if (p.claimed.has(8)) p.claimed.add(6);
     return p;
@@ -167,7 +176,7 @@ export class Progress {
 }
 
 /** BFS the generated map (no briars, optional wading) and drop tracks along the path. */
-function layTrail(spec: TrailSpec): Track[] {
+export function layTrail(spec: TrailSpec): Track[] {
   const d = getMapDef(spec.map);
   const W = d.w, Hh = d.h;
   const ok = (x: number, y: number) => {

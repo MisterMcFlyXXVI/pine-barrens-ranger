@@ -182,6 +182,14 @@ function stopSign(): Canv {
 }
 
 export function bakeOutdoors(): void {
+  // ---- Pass B: timber, the lucky clover and townsfolk keepsakes ----
+  ICON.timber = icon((p) => { for (const y of [5, 8, 11]) { p.rect(2, y, 12, 3, AMBER); p.hline(2, 13, y, LANTERN); p.px(4, y + 1, RUST); p.px(10, y + 2, RUST); } });
+  ICON.lucky_clover = icon((p) => { for (const [x, y] of [[6, 5], [10, 5], [6, 9], [10, 9]]) { p.rect(x - 2, y - 2, 4, 4, MOSS); p.px(x - 1, y - 1, FERN); } p.line(8, 9, 9, 15, FOREST); p.px(8, 7, LANTERN); });
+  ICON.radio_key = icon((p) => { p.rect(3, 10, 10, 3, RUST); p.hline(3, 12, 10, AMBER); p.line(6, 10, 11, 5, AMBER); p.rect(10, 3, 3, 3, SHADOW); p.px(11, 4, LANTERN); });
+  ICON.conductor_whistle = icon((p) => { p.rect(3, 7, 9, 4, AMBER); p.hline(3, 11, 7, LANTERN); p.rect(11, 6, 3, 6, RUST); p.px(5, 9, SHADOW); p.line(2, 9, 0, 7, MIST); });
+  ICON.lamphouse_key = icon((p) => { p.ellipse(5, 6, 3, 3, AMBER); p.px(5, 6, VOID); p.line(7, 8, 13, 14, AMBER); p.hline(11, 13, 12, AMBER); p.px(12, 14, AMBER); });
+  ICON.binocular_strap = icon((p) => { p.rect(3, 6, 4, 6, SHADOW); p.rect(9, 6, 4, 6, SHADOW); p.px(4, 7, MIST); p.px(10, 7, MIST); p.hline(6, 9, 8, SHADOW); p.line(3, 5, 8, 1, RUST); p.line(13, 5, 8, 1, RUST); });
+  ICON.handcar_crank = icon((p) => { p.line(3, 13, 11, 5, RUST); p.rect(10, 3, 4, 3, SHADOW); p.rect(2, 12, 3, 3, AMBER); p.rect(9, 9, 5, 4, FOG); p.hline(10, 12, 10, SHADOW); });
   // ---- tools & ammo ----
   ICON.fishing_rod = icon((p) => { p.line(3, 14, 13, 2, RUST); p.line(4, 14, 14, 2, AMBER); p.rect(3, 11, 2, 2, SHADOW); p.line(14, 2, 14, 9, FOG); p.px(14, 10, RED); });
   ICON.hunting_bow = icon((p) => { for (let y = 2; y <= 14; y++) p.px(Math.round(5 + Math.sin(((y - 2) / 12) * Math.PI) * 5), y, RUST); p.vline(5, 2, 14, FOG); p.rect(8, 7, 3, 3, AMBER); });

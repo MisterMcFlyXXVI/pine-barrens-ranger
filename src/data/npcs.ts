@@ -33,6 +33,8 @@ export interface ScheduleCtx {
   weekday: string;
   festival: boolean;
   foggyNight: boolean;
+  /** Foggy weekend afternoon once the station is restored: merchants come in by rail. */
+  foggyWeekend: boolean;
   /** Raining or storming right now. */
   wet: boolean;
   /** Absolute day number, a story flag check, and the day a story letter arrives (0 = not yet sent). */
@@ -467,7 +469,7 @@ export const NPCS: readonly NpcDef[] = [
     id: 'ezri', name: 'Old Ezri Vance-Kerr', title: 'Traveling Apothecary', kind: 'person',
     body: body('ezri', P.LANTERN, P.AMBER, P.MOON, P.FOG, P.SHADOW, 'long'),
     look: { outfit: 'npc_ezri', hat: 'none' },
-    where: (c) => ((c.festival || c.foggyNight) && c.minutes >= H(18) ? { map: 'PINE_HOLLOW_TOWN', x: 33, y: 33, dir: 'down' } : null),
+    where: (c) => ((c.festival || c.foggyNight) && c.minutes >= H(18) ? { map: 'PINE_HOLLOW_TOWN', x: 33, y: 33, dir: 'down' } : c.foggyWeekend ? { map: 'PINE_HOLLOW_TOWN', x: 67, y: 38, dir: 'left' } : null),
     greet: ['Mist and moonlight, Ranger. I have just the thing.', 'My cousin Agnes keeps the dead things. I keep the living secrets.'],
     chat: ['Lunar Dew draws the elder spirits. A drop on the tongue of the night.', 'The wisps flee from lies. Bring them oil that does not lie.'],
     rumor: 'Ezri stirs a vial: "The {c} walks {time} near {place}. It drinks of {lure}."',
@@ -476,7 +478,7 @@ export const NPCS: readonly NpcDef[] = [
     id: 'pike', name: 'Professor Sterling Pike', title: 'Anomaly Machinist', kind: 'person',
     body: body('pike', P.LANTERN, P.AMBER, P.MIST, P.TWILIGHT, P.SHADOW, 'short'),
     look: { outfit: 'npc_pike', hat: 'npc_pike_goggles' },
-    where: (c) => ((c.festival || c.foggyNight) && c.minutes >= H(18) ? { map: 'PINE_HOLLOW_TOWN', x: 43, y: 33, dir: 'down' } : null),
+    where: (c) => ((c.festival || c.foggyNight) && c.minutes >= H(18) ? { map: 'PINE_HOLLOW_TOWN', x: 43, y: 33, dir: 'down' } : c.foggyWeekend ? { map: 'PINE_HOLLOW_TOWN', x: 67, y: 41, dir: 'left' } : null),
     greet: ['Ah! A field operative! Have you any Static Feathers? No? Pity.', 'Fog is excellent for conductivity. Also for business.'],
     chat: ['My Tesla Pylon is perfectly safe. Mostly safe. Stand back.', 'The Chronos Shutter freezes a fraction of a second. Long enough.'],
     rumor: 'Pike adjusts his goggles: "Electromagnetic spikes: the {c}, {time}, at {place}. Attracted to {lure}."',

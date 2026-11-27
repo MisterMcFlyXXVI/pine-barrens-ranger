@@ -39,6 +39,8 @@ export interface Sign {
   prints: Array<[number, number]>;
   /** Random phase for animation. */
   seed: number;
+  /** Set out by a scene: stays until you deal with it, whatever the hour. */
+  pinned?: boolean;
 }
 
 const WATERY = new Set<number>([T.WATER, T.SHALLOW, T.SPRING]);
@@ -62,7 +64,7 @@ export class Sightings {
     const m = game.cur;
     if (m.id !== this.map) { this.signs = []; this.map = m.id; this.spawnT = 2 + Math.random() * 2; }
     if (!m.def.wild || m.def.indoor) { this.signs.length = 0; return; }
-    if (game.quietToday()) { for (const s of this.signs) this.leave(s); }
+    if (game.quietToday()) { for (const s of this.signs) if (!s.pinned) this.leave(s); }
     this.cool = Math.max(0, this.cool - dt);
     this.checkT -= dt;
     const recheck = this.checkT <= 0;
@@ -70,6 +72,7 @@ export class Sightings {
     for (const s of this.signs) {
       if (!s.live) { s.fade -= dt; continue; }
       s.age += dt;
+      if (s.pinned) continue;
       // Gone with time, or when the hour/weather no longer suits it.
       if (s.age > s.ttl || (recheck && !eligible(s.def, game.spawnCtx(s.x, s.y)))) this.leave(s);
     }
@@ -90,8 +93,15 @@ export class Sightings {
     this.spawnT -= dt;
     if (this.spawnT > 0) return;
     this.spawnT = SPAWN_MIN + Math.random() * SPAWN_JITTER;
-    const cap = CAP + (game.wispNight === game.clock.day ? 1 : 0);
-    if (this.signs.filter((s) => s.live).length < cap) this.trySpawn(game);
+    // A wisp night and Elias's binocular strap each let you keep track of one more.
+    const cap = CAP + (game.wispNight === game.clock.day ? 1 : 0) + (game.keepsake('binocular_strap') ? 1 : 0);
+    if (this.signs.filter((s) => s.live && !s.pinned).length < cap) this.trySpawn(game);
+  }
+
+  /** A scene sets something out on purpose (eyes in the dark, waiting). */
+  pin(game: Game, def: CryptidDef, x: number, y: number): void {
+    const dark = game.clock.phase() !== 'day' || game.weatherNow() === 'FOG';
+    this.signs.push({ x, y, kind: dark ? 'eyes' : 'rustle', def, variant: 'normal', age: 0, ttl: 1e9, live: true, fade: 0, prints: [], seed: Math.random() * 100, pinned: true });
   }
 
   /** Slip away (fades out over a second). */

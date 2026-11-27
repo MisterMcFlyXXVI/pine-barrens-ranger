@@ -1,4 +1,6 @@
 /** World renderer: ground autotiles → y-sorted objects/actors → particles → lighting. */
+import { rescueTracks } from './heartScenes';
+import { visitorHere, visitorPos } from './bonds';
 import type { Game } from './game';
 import type { MapRuntime } from './world';
 import { GROUND, OVER, OBJ, STRUCT, CROP, ICON, MISC } from '../graphics/sprites';
@@ -136,7 +138,7 @@ function fenceMask(m: MapRuntime, x: number, y: number): number {
 
 /** Pick the sprite for an object tile, honouring variants & animation frames. */
 /** Progress-dependent visuals, set once per frame by renderWorld. */
-const flags = { grant: false, gift: false };
+const flags = { grant: false, gift: false, station: false, mine: false, neon: false };
 
 /** Set each frame: is this map's handcar stop repaired? (objSprite has no game handle.) */
 let stopFixed = false;
@@ -218,7 +220,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.MAP_TABLE: return OBJ.maptable[0];
     case O.RAILCAR: return OBJ.railcar[flags.grant ? 1 : 0];
     case O.TICKET_BOOTH: return OBJ.booth[0];
-    case O.SIGNAL_LANTERN: return OBJ.signal[flags.grant ? 1 : Math.floor(time * 7 + h * 5) % 5 === 0 ? 1 : 0];
+    case O.SIGNAL_LANTERN: return OBJ.signal[flags.station ? 1 : Math.floor(time * 7 + h * 5) % 5 === 0 ? 1 : 0];
     case O.REGISTER: return OBJ.register[0];
     case O.POSTER: return OBJ.poster[0];
     case O.HEDGE: return OBJ.hedge[0];
@@ -304,11 +306,14 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.WATER_TOWER: return PROP.watertower[0];
     case O.TIPPLE: return PROP.tipple[0];
     case O.MINE_CART: return PROP.minecart[0];
-    case O.LAMP_HOUSE: return PROP.lamphouse[night ? 1 : 0];
+    case O.LAMP_HOUSE: return PROP.lamphouse[night && flags.mine ? 1 : 0];
+    case O.GAZEBO: return PROP.gazebo[night ? 1 : 0];
+    case O.LEDGER: return PROP.ledger[0];
     case O.DOG: return PROP.dog[Math.floor(time * 0.7 + h * 3) % 2];
     case O.WALL_FRAME: return (PROP[`frame_${m.def.meta?.get(m.idx(x, y)) ?? 'photo'}`] ?? PROP.frame_photo)[0];
     case O.MODEL_TRAIN: return PROP.modeltrain[Math.floor(time * 3) % 8];
     case O.RADIO_RIG: return PROP.radiorig[Math.floor(time * 2 + h) % 2];
+    case O.OLD_TRAP: return PROP.oldtrap[0];
     case O.PORCH_RADIO: return PROP.porchradio[radioCalling && Math.floor(time * 2) % 2 === 0 ? 1 : 0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
@@ -476,6 +481,9 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   }
 
   flags.grant = game.progress.has('grant');
+  flags.station = game.progress.flags.has('proj_station');
+  flags.mine = game.progress.flags.has('mine_open');
+  flags.neon = game.progress.flags.has('proj_neon');
   flags.gift = game.progress.has('giftshop');
 
   // ---- Quest tracks / pages (flat decals) ----
@@ -488,6 +496,12 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       const bob = t.kind === 'page' || t.kind === 'book' ? Math.round(Math.sin(time * 3 + k)) : 0;
       g.drawImage(img, t.x * 16 - cx, t.y * 16 - cy + bob);
     });
+  }
+
+  // The kids' boot prints, heading off toward the sawmill.
+  for (const t of rescueTracks(game)) {
+    if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) continue;
+    g.drawImage(MISC.boot, t.x * 16 - cx, t.y * 16 - cy);
   }
 
   // ---- Torn Vance journal pages (fluttering) ----
@@ -543,7 +557,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           } });
         }
         if (o === O.LAMP && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 10 - cy, r: 46, flicker: true });
-        if (o === O.LAMP_HOUSE && night) lights.push({ x: x * 16 + 9 - cx, y: (y + 1) * 16 - 15 - cy, r: 13 });
+        if (o === O.GAZEBO && night) for (const lx of [6, 24, 42]) lights.push({ x: x * 16 + lx - cx, y: (y + 1) * 16 - 30 - cy, r: 22, flicker: true });
+        if (o === O.LAMP_HOUSE && night && flags.mine) lights.push({ x: x * 16 + 9 - cx, y: (y + 1) * 16 - 15 - cy, r: 13 });
         if (o === O.PYLON && night) lights.push({ x: x * 16 + 8 - cx, y: y * 16 - 12 - cy, r: 30, flicker: true });
         if (o === O.TOTEM || o === O.CHIME || o === O.ROD || o === O.PYLON) {
           const c = game.summonAt(o);
@@ -586,7 +601,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   });
   // Structures
   for (const s of m.def.structures) {
-    const artKey = s.kind === 'house' ? `house${s.variant ?? (s.x + s.y) % 3}` : s.kind === 'station' ? `station${flags.grant ? 1 : 0}` : s.kind;
+    const artKey = s.kind === 'house' ? `house${s.variant ?? (s.x + s.y) % 3}` : s.kind === 'station' ? `station${flags.station ? 1 : 0}` : s.kind;
     const art = TOWN_ART[artKey];
     let img: Canv;
     let layers: Canv[] = [];
@@ -598,7 +613,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
         for (const k of ['lamp', ...groups]) for (const [wx, wy] of art.lights[k] ?? []) lights.push({ x: s.x * 16 + wx - cx, y: (s.y + s.h) * 16 - img.height + wy - cy, r: k === 'lamp' ? 11 : 13 });
       }
     } else {
-      const frames = s.kind === 'mine' ? (flags.grant ? STRUCT.mineOpen : m.id === 'PINE_HOLLOW_TOWN' ? STRUCT.mineBoarded : STRUCT.mine) : STRUCT[s.kind];
+      const frames = s.kind === 'mine' ? (flags.mine ? STRUCT.mineOpen : m.id === 'PINE_HOLLOW_TOWN' ? STRUCT.mineBoarded : STRUCT.mine) : STRUCT[s.kind];
       img = s.kind === 'tower' ? frames[Math.floor(time * 1.2) % 2] : frames[night && frames.length > 1 ? 1 : 0];
       if (night) for (const [wx, wy] of s.windows) lights.push({ x: s.x * 16 + wx - cx, y: s.y * 16 + wy - cy, r: s.kind === 'tower' ? 18 : 26 });
     }
@@ -738,6 +753,19 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     const bx = sg.x * 16 - cx, by = sg.y * 16 - cy;
     list.push({ y: (sg.y + 1) * 16 + 0.3, fn: () => drawRustle(g, bx, by, time + sg.seed, k) });
   }
+  // A mastered cryptid dropping by the homestead.
+  const visitor = visitorHere(game);
+  if (visitor) {
+    const [vx, vy] = visitorPos(game, visitor);
+    const spr = cryptidFrame(visitor.id, 'normal', Math.floor(time * 2) % 2);
+    const lift = visitor.lift ?? 0;
+    const flip = visitor.id === 'nightcrawler' && (time * 0.12) % 2 > 1;
+    list.push({ y: (vy + 1) * 16 + (visitor.id === 'mothman' ? 64 : 0.6), fn: () => {
+      const sx = vx * 16 - cx - 4, sy = vy * 16 - cy - 8 - lift;
+      g.globalAlpha = 0.3; g.fillStyle = hex(P.VOID); g.fillRect(sx + 6, sy + 22, 12, 2); g.globalAlpha = 1;
+      if (flip) { g.save(); g.translate(sx + 24, sy); g.scale(-1, 1); g.drawImage(spr, 0, 0); g.restore(); } else g.drawImage(spr, sx, sy);
+    } });
+  }
   list.sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
 
@@ -763,6 +791,11 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   game.lighting.render(g, game.w, game.h, game.clock.minutes, m.def.indoor, lights, time);
   drawFireflies(game, g, view);
   drawSignsGlow(game, g, cx, cy, time);
+  if (visitor && ph !== 'day') {
+    // Their eyes catch the light after dark.
+    const [vx, vy] = visitorPos(game, visitor);
+    g.drawImage(eyesOf(visitor.id, Math.floor(time * 2) % 2), vx * 16 - cx - 4, vy * 16 - cy - 8 - (visitor.lift ?? 0));
+  }
   if (outdoors) {
     game.weatherFx.drawParticles(g, game.w, game.h, wthr, time, cx, cy);
     game.weatherFx.drawFlash(g, game.w, game.h);
@@ -787,10 +820,11 @@ function litGroups(game: Game, s: Structure, home: MapId | undefined): string[] 
   const late = game.clock.minutes >= 19 * 60 + 30;
   switch (s.kind) {
     case 'house': return home && tf.awakeIn(home) ? (late ? ['main', 'attic'] : ['main']) : [];
-    case 'diner': return tf.awakeIn('DINER_INT') ? ['main', 'sign'] : [];
+    // The EAT sign only glows once the town has paid to rewire it (Restoration Ledger P1).
+    case 'diner': return [...(tf.awakeIn('DINER_INT') ? ['main'] : []), ...(flags.neon && game.clock.phase() !== 'day' ? ['sign'] : [])];
     case 'store': return [...(tf.awakeIn('STORE_INT') ? ['main'] : []), ...(tf.awakeIn('STORE_LOFT') ? ['attic'] : [])];
     case 'museum': return tf.awakeIn('MUSEUM_INT') ? ['main', 'upper'] : [];
-    case 'station': return flags.grant && game.clock.minutes < 22 * 60 ? ['main'] : [];
+    case 'station': return flags.station && game.clock.minutes < 24 * 60 ? ['main'] : [];
     default: return [];
   }
 }
@@ -835,6 +869,27 @@ function drawRustle(g: CanvasRenderingContext2D, bx: number, by: number, t: numb
 }
 
 /** Eyes in the brush shine through the dark; Wisp-Light Oil makes every clue glow. */
+/** Just the red and lantern-yellow pixels of a cryptid frame (its eyes), to draw over the night tint. */
+const eyeCache = new Map<string, HTMLCanvasElement>();
+function eyesOf(id: string, f: number): HTMLCanvasElement {
+  const key = `${id}:${f}`;
+  const hit = eyeCache.get(key);
+  if (hit) return hit;
+  const src = cryptidFrame(id, 'normal', f);
+  const { c, g: cg } = makeCanvas(src.width, src.height);
+  cg.drawImage(src, 0, 0);
+  const img = cg.getImageData(0, 0, c.width, c.height);
+  const [rr, rg, rb] = rgbOf(P.RED), [lr, lg, lb] = rgbOf(P.LANTERN);
+  for (let k = 0; k < img.data.length; k += 4) {
+    const r = img.data[k], gg = img.data[k + 1], b = img.data[k + 2];
+    const eye = (r === rr && gg === rg && b === rb) || (r === lr && gg === lg && b === lb);
+    if (!eye) img.data[k + 3] = 0;
+  }
+  cg.putImageData(img, 0, 0);
+  eyeCache.set(key, c);
+  return c;
+}
+
 function drawSignsGlow(game: Game, g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
   const wisp = game.wispNight === game.clock.day;
   for (const sg of game.sightings.signs) {

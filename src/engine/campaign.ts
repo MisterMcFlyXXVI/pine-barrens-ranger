@@ -9,6 +9,9 @@ import { ACT_TITLES, WARDENS, JOURNAL_PAGES, ACT4_CALL, DECODE_SCENE } from '../
 import { CRYPTIDS, CRYPTID_BY_ID } from '../data/cryptids';
 import type { MapId } from '../data/mapgen';
 import { dexTotals } from './dex';
+import { PROJECTS } from '../data/restoration';
+import { arcStatus, arcDone } from './bonds';
+import type { WardenId } from './bonds';
 import { Dialog } from '../ui/menus';
 import { ActCard } from '../ui/intro';
 import { sfx } from '../audio/sfx';
@@ -16,6 +19,8 @@ import { sfx } from '../audio/sfx';
 export interface Objective {
   text: string;
   done: boolean;
+  /** Nice to do, never required to move the story on. */
+  optional?: boolean;
 }
 
 const WARDEN_HINT: Record<string, string> = {
@@ -58,7 +63,11 @@ export function objectives(game: Game, act: number): Objective[] {
       return list;
     }
     case 3:
-      return WARDENS.map((id) => ({ text: `Log ${CRYPTID_BY_ID[id].name}: ${WARDEN_HINT[id]}`, done: game.dex[id].logged }));
+      return WARDENS.flatMap((id) => [
+        { text: `Log ${CRYPTID_BY_ID[id].name}: ${WARDEN_HINT[id]}`, done: game.dex[id].logged },
+        // Optional errand that makes the meeting gentler.
+        { text: `  Optional: ${arcStatus(game, id as WardenId)}`, done: arcDone(game, id), optional: true },
+      ]);
     case 4:
       return [
         { text: 'Carry a Static Radio (craft it at your Porch Workbench)', done: game.inv.count('static_radio') > 0 },
@@ -66,8 +75,9 @@ export function objectives(game: Game, act: number): Objective[] {
       ];
     default:
       return [
-        { text: `Reach 32 donations: Town Restoration Grant (${p.donations}/32)`, done: p.donations >= 32 },
-        { text: 'Inspect the reopened Coal Mine gate', done: p.flags.has('mine') },
+        { text: `Reach 32 donations: the County Restoration Grant (${p.donations}/32)`, done: p.donations >= 32 },
+        { text: `Fund the Town Restoration Ledger (${PROJECTS.filter((x) => p.flags.has(x.flag)).length}/4 projects)`, done: PROJECTS.every((x) => p.flags.has(x.flag)) },
+        { text: 'Re-light the Lamp House and walk up to the open mine gate', done: p.flags.has('mine') },
         { text: `Complete the Cryptid-Dex (${tot.entries}/${CRYPTIDS.length * 2})`, done: tot.entries >= CRYPTIDS.length * 2 },
         { text: `Recover every journal page (${pagesFound(game)}/${JOURNAL_PAGES.length - 1})`, done: pagesFound(game) >= JOURNAL_PAGES.length - 1 },
       ];
@@ -94,7 +104,7 @@ export function campaignTick(game: Game): void {
     }
   }
   if (p.act === 1 && objectives(game, 1).every((o) => o.done)) setAct(game, 2);
-  else if (p.act === 3 && objectives(game, 3).every((o) => o.done)) {
+  else if (p.act === 3 && objectives(game, 3).every((o) => o.done || o.optional)) {
     p.act = 4;
     sfx.alert();
     game.openOverlay(new Dialog([...ACT4_CALL]));

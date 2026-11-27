@@ -42,6 +42,9 @@ import { QUESTS } from '../data/quests';
 import { CRYPTIDS } from '../data/cryptids';
 import { hash2, touchOn } from '../util';
 import { campaignTick, setAct } from './campaign';
+import { heartTick, sceneWaitingIn, rescueOvernight } from './heartScenes';
+import { openLedger, gazeboRest, applyRestoration, handcarClosed, porchMusic, funded, friendMult } from './restoration';
+import { bondsTick, visitorAt, dismantleTrap, wardenMount, wardenUse, awfulTick, foresightMult } from './bonds';
 import { playIntro, playEpilogue } from '../ui/intro';
 import { VanceJournal } from '../ui/vanceJournal';
 import { FinaleScene } from '../ui/finale';
@@ -262,6 +265,9 @@ export class Game {
       this.progress.flags.add('carry2');
     }
     this.inv.resize(this.bagCapacity());
+    // The Grant used to repair the station: keep it repaired for those saves (now a Ledger project).
+    if (this.progress.has('grant')) this.progress.flags.add('proj_station');
+    applyRestoration(this);
     // Story letters for milestones reached before letters existed: past Act II they're filed away, otherwise delivered now.
     for (const l of LETTERS) {
       if (this.progress.donations < l.donations || l.id in this.progress.mail) continue;
@@ -337,6 +343,8 @@ export class Game {
    */
   homeClosed(id: HomeId): string[] | null {
     const h = HOMES[id];
+    // Someone has something to show you here: they leave the door open.
+    if (sceneWaitingIn(this, id)) return null;
     const inside = this.townsfolk.on(id);
     if (!inside.length) return [id === 'STORE_LOFT' || id === 'DINER_ROOM' ? 'The door at the top of the stairs is shut. Nobody\'s up there.' : 'You knock. Nobody\'s home.'];
     if (inside.every((n) => n.inBed)) return ['The lights are out. Everybody inside is fast asleep.'];
@@ -353,6 +361,8 @@ export class Game {
     this.particles.clear();
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, 0, true);
     this.banner = { text: MAP_NAMES[id], t: 2.6 };
+    if (id === 'DINER_INT' && friendMult(this) > 1) this.toast('Friday Night Story Hour! Chats and gifts in here count double tonight.');
+    if (id === 'PINE_HOLLOW_TOWN' && porchMusic(this)) this.toast('Fiddle music drifts over from the gazebo in the park.');
     // The first time you're invited into someone's home, they welcome you in.
     if (isHome(id) && !this.progress.flags.has(`visit_${id}`) && this.townsfolk.awakeIn(id)) {
       this.progress.flags.add(`visit_${id}`);
@@ -409,6 +419,7 @@ export class Game {
     if (this.look.outfit === 'shimmer_suit') k *= 2;
     if (this.progress.buffs.lucky === this.clock.day) k *= 2;
     if (this.progress.flags.has('agnes_brooch')) k *= 1.5;
+    k *= foresightMult(this);
     return k;
   }
 
@@ -514,7 +525,7 @@ export class Game {
     for (const m of reached) {
       for (const w of m.wear ?? []) this.wardrobe.add(w);
       pages.push(`Agnes: "${m.count} specimens! The Society awards you: ${m.title}." ${m.desc}${m.wear ? ' (Wear it from your cabin Wardrobe.)' : ''}`);
-      if (m.flag === 'grant') pages.push('The Town Restoration Grant is approved! Work crews repair the Train Station and pull the boards off the Coal Mine.');
+      if (m.flag === 'grant') pages.push('The County Restoration Grant is approved! From now on the County matches every coin the town puts in: Restoration Ledger projects cost half. Work crews start on the old rail car.');
     }
     sfx.fanfare();
     this.openOverlay(new Dialog(pages));
@@ -587,7 +598,11 @@ export class Game {
     else if (p.donations >= 12) pages = d % 3 === 0 ? RADIO_STATIC[d % RADIO_STATIC.length] : RADIO_EARLY[d % RADIO_EARLY.length];
     else pages = RADIO_EARLY[d % RADIO_EARLY.length];
     sfx.radioStatic();
-    this.openOverlay(new Dialog(['You key the porch radio. The dial glows amber.', ...pages]));
+    // With Elias's brass key you can answer him in Morse, the way he and Agnes used to.
+    const key = this.keepsake('radio_key') && !p.flags.has('finale')
+      ? ['You clip Elias\'s brass key onto the set and tap out a slow GOOD NIGHT. A pause. Then, faint and steady from up the ridge: GN ... 73.']
+      : [];
+    this.openOverlay(new Dialog(['You key the porch radio. The dial glows amber.', ...pages, ...key]));
   }
 
   /** Today's Bulletin Board request (deterministic per day). */
@@ -717,7 +732,7 @@ export class Game {
   }
 
   /** Rate-limited toast for repeated bumps. */
-  private notice(text: string): void {
+  notice(text: string): void {
     if (this.msgCd > 0) return;
     this.msgCd = 1.2;
     this.toast(text);
@@ -742,6 +757,13 @@ export class Game {
   pendingPayout(): number {
     return this.shipped.reduce((a, s) => a + (ITEMS[s.id]?.price ?? 0) * s.n, 0);
   }
+
+  /** Run once every dialog is closed (e.g. walk somewhere after a scene). */
+  afterOverlays(fn: () => void): void { this.afterQ.push(fn); }
+  private afterQ: Array<() => void> = [];
+
+  /** Holding one of Elias's keepsakes (bag or crate). */
+  keepsake(id: string): boolean { return haveCount(this, id) > 0; }
 
   /** Fade out → run → fade in. */
   transition(cb: () => void): void {
@@ -786,13 +808,15 @@ export class Game {
     if (top) {
       if (this.fadeDir === 0) top.update(this, dt);
       this.overlays = this.overlays.filter((o) => !o.closed);
+    } else if (this.fadeDir === 0 && this.afterQ.length) {
+      this.afterQ.shift()!();
     } else if (this.fadeDir === 0) {
       this.handleHotbarInput();
       if (this.clock.tick(dt)) this.passOut();
       this.townsfolk.update(this, dt);
       this.sightings.update(this, dt);
       this.campaignT -= dt;
-      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); needsWatch.tick(this); }
+      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
       this.wildlife.update(this, dt);
       this.updateAmbience(dt);
@@ -870,7 +894,7 @@ export class Game {
     if (m.def.indoor) return 'interior';
     const tags = timeTags(this.clock.minutes);
     const night = tags.includes('NIGHT') || tags.includes('WITCHING');
-    if (m.id === 'PINE_HOLLOW_TOWN') return this.isFestival() ? 'festival' : night ? 'night' : 'town';
+    if (m.id === 'PINE_HOLLOW_TOWN') return this.isFestival() || porchMusic(this) ? 'festival' : night ? 'night' : 'town';
     if (night) return 'night';
     if (m.id === 'CABIN_YARD') return 'cabin';
     if (m.id === 'CRANBERRY_BOG_AND_SPRINGS') return 'bog';
@@ -974,7 +998,7 @@ export class Game {
     const nx = p.tx + dx, ny = p.ty + dy;
     const portal = this.cur.portalAt(nx, ny);
     const locked = portal && portal.requires === 'archive' && !this.progress.has('archive');
-    if (portal && portal.to === 'COAL_MINE' && this.progress.has('grant') && this.msgCd <= 0) {
+    if (portal && portal.to === 'COAL_MINE' && funded(this, 'mine') && this.msgCd <= 0) {
       this.msgCd = 1.5;
       p.chain = false;
       this.progress.flags.add('mine');
@@ -992,7 +1016,7 @@ export class Game {
     }
     if (portal && (!BUILT_MAPS.has(portal.to) || locked)) {
       this.notice(locked ? 'The basement door is locked. Agnes: "The Archive opens for researchers with 6 donations, dear."'
-        : this.progress.has('grant') && portal.grantMsg ? portal.grantMsg : portal.closedMsg);
+        : (portal.to === 'COAL_MINE' ? funded(this, 'mine') : this.progress.has('grant')) && portal.grantMsg ? portal.grantMsg : portal.closedMsg);
       if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.4; }
       p.chain = false;
       return;
@@ -1110,6 +1134,7 @@ export class Game {
     if (!repeat && this.tryInteract(tx, ty)) return;
     const st = this.selected;
     if (!st) { if (!repeat) this.notice(touchOn() ? 'Nothing in hand. Tap a hotbar slot to pick it.' : 'Nothing in hand. Pick a hotbar slot with 1-9 or tap it.'); return; }
+    if (!repeat && wardenUse(this, st.id)) return;
     const def = ITEMS[st.id];
     if (def.kind === 'tool' && def.tool) {
       if (this.cur.def.indoor) { if (!repeat) this.notice(`Better not swing the ${def.name} indoors.`); return; }
@@ -1199,6 +1224,20 @@ export class Game {
         ? "Barney's old handcar sits on the station siding under a tarp. He'd need a working telegraph to run the line safely."
         : 'The stop is ready, but the handcar is still parked at the station in town.',
         '(Fast travel: finish Barney\'s Telegraph Repair quest, or become friends with him.)']));
+      return;
+    }
+    const shut = handcarClosed(this);
+    if (shut) { sfx.blip(); this.openOverlay(new Dialog([shut])); return; }
+    const offHours = this.clock.minutes < 6 * 60 || this.clock.minutes >= (funded(this, 'station') ? 24 : 19) * 60;
+    if (offHours) {
+      sfx.open();
+      const crank = this.keepsake('handcar_crank');
+      this.openOverlay(new Dialog([crank
+        ? 'You fit Elias\'s spare crank to the handcar and pump it yourself. The rails sing in the dark.'
+        : 'You blow Barney\'s whistle. Three long notes down the line. Before long a lantern bobs out of the dark: "Somebody rang?" He\'s in his slippers.'], [
+        { label: 'Pick a stop', fn: () => this.openOverlay(new WorldMap(this, id)) },
+        { label: 'Not now', fn: () => undefined },
+      ]));
       return;
     }
     sfx.open();
@@ -1501,6 +1540,7 @@ export class Game {
     }
     const npc = this.npcFacing(tx, ty);
     if (npc) { talkTo(this, npc); return true; }
+    if (visitorAt(this, tx, ty)) return true;
     const track = this.trackAt(tx, ty);
     if (track) { this.inspectTrack(track); return true; }
     const sign = this.sightings.at(tx, ty);
@@ -1553,7 +1593,17 @@ export class Game {
         return true;
       case 'workbench':
         sfx.open();
-        this.openOverlay(new CraftMenu());
+        this.openOverlay(new Dialog(['The Porch Workbench. Your tools hang on nails, and the Town Restoration Ledger is tacked up over the vise.'], [
+          { label: 'Craft', fn: () => this.openOverlay(new CraftMenu()) },
+          { label: 'Restoration Ledger', fn: () => openLedger(this, 'bench') },
+          { label: 'Leave', fn: () => undefined },
+        ]));
+        return true;
+      case 'ledger':
+        openLedger(this, 'museum');
+        return true;
+      case 'gazebo':
+        gazeboRest(this);
         return true;
       case 'ship':
         this.shipSelected();
@@ -1686,6 +1736,9 @@ export class Game {
       case 'mount':
         this.interactMount(m.anchorIdx(i));
         return true;
+      case 'trap':
+        dismantleTrap(this, m.anchorIdx(i));
+        return true;
       case 'board':
         sfx.open();
         this.openOverlay(new BoardMenu());
@@ -1724,7 +1777,7 @@ export class Game {
         return true;
       case 'signal':
         sfx.blip();
-        this.openOverlay(new Dialog([this.progress.has('grant') ? 'The signal lantern burns a steady red, rewired by the Restoration Grant.' : 'The old signal lantern flickers on its own. There are no wires.']));
+        this.openOverlay(new Dialog([funded(this, 'station') ? 'The signal lantern burns a steady red down the line, rewired with the town\'s own money.' : 'The old signal lantern flickers on its own. There are no wires.']));
         return true;
       case 'jukebox':
         sfx.fanfare();
@@ -1798,6 +1851,7 @@ export class Game {
       ]));
       return;
     }
+    if (wardenMount(this, o)) return;
     const hint: Record<number, string> = {
       [O.TOTEM]: `Totems in this region: ${m.countPlaced(O.TOTEM)}/3. In the Old Growth, three totems at dusk call something enormous.`,
       [O.CHIME]: 'The chime hangs still. In the Old Growth it rings for something during the foggy (or snowy) Witching Hour.',
@@ -1894,7 +1948,7 @@ export class Game {
     const [tx, ty] = this.player.facing();
     const kind = this.interactKind(tx, ty);
     const labels: Partial<Record<string, string>> = {
-      forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'CRAFT',
+      forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'WORKBENCH', trap: 'DISMANTLE', gazebo: 'SIT', ledger: 'LEDGER',
       ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', radio: 'RADIO', cat: 'PET', dog: 'PET', gumball: 'GUMBALL 1G', mailbox: 'MAIL', fireplace: 'LOOK',
       bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
       board: 'READ BOARD', case: 'LOOK', kiosk: 'GIFT SHOP', maptable: 'STUDY', railcar: 'LOOK', pedestal: 'DISPLAY',
@@ -2014,6 +2068,8 @@ export class Game {
     this.stamina = passOut ? Math.floor(this.maxStamina * 0.6) : this.maxStamina;
     this.lowStaminaWarned = false;
     this.stats.daysPlayed++;
+    const kids = rescueOvernight(this);
+    if (kids) lines.push(kids);
     if (this.unreadLetters().length) lines.push('There\'s a letter waiting in your mailbox.');
     if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Park!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');
@@ -2075,5 +2131,5 @@ export class Game {
 
 /** How the game refers to each friend in hints. */
 const FRIEND_SHORT: Record<string, string> = {
-  agnes: 'Agnes', barnaby: 'Barney', mabel: 'Mabel', gideon: 'Gideon', clara: 'Dr. Okafor', pippa: 'Pippa', sam: 'Sam', toby: 'Toby',
+  agnes: 'Agnes', barnaby: 'Barney', mabel: 'Mabel', gideon: 'Gideon', clara: 'Dr. Okafor', pippa: 'Pippa', sam: 'Sam', toby: 'Toby', ruth: 'Ruth',
 };

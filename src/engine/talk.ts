@@ -1,6 +1,7 @@
 /** NPC conversations: greetings, chat & rumors, quest offers / progress / hand-ins, role menus. */
 import type { Game } from './game';
 import type { NpcRT } from './townsfolk';
+import { kidsHiding, rescueKids } from './heartScenes';
 import { Dialog, Choice } from '../ui/menus';
 import { DonateMenu, MerchantMenu, ShopMenu, StoreMenu } from '../ui/shops';
 import { QUESTS, QuestDef } from '../data/quests';
@@ -123,6 +124,9 @@ export function talkTo(game: Game, npc: NpcRT): void {
     game.openOverlay(new Dialog(['Toby: "Ranger! I followed a light out here and my boots got stuck. Thank you!"', 'You help Toby through the shallows. He limps toward town. Quest updated: report to Gideon.']));
     return;
   }
+
+  // The kids, lost at the sawmill past curfew.
+  if ((d.id === 'pippa' || d.id === 'sam') && kidsHiding(game, d.id)) { rescueKids(game); return; }
 
   // Friendship: the first chat each day counts; reaching a heart level plays its scene on top.
   const scenes = dailyChat(game, d.id);

@@ -410,7 +410,7 @@ export class WorldMap implements Overlay {
     // The sealed coal mine, north-east of the Old Growth.
     const mx = rects[0].x + rects[0].w + 12, my = rects[0].y + 2;
     symbol(g, mx, my, 'mine');
-    drawText(g, game.progress.has('grant') ? 'MINE' : 'MINE?', mx + 8, my, P.VOID, P.LANTERN);
+    drawText(g, game.progress.flags.has('mine_open') ? 'MINE' : 'MINE?', mx + 8, my, P.VOID, P.LANTERN);
     const here = outdoorOf(game.cur.id);
     NODES.forEach((n, i) => {
       const r = rects[i];

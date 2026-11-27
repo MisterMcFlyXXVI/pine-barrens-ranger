@@ -2,6 +2,7 @@
 import type { Game } from './game';
 import { FRIENDS, FriendId, MAX_HEARTS, POINTS_PER_HEART, isFriend } from '../data/friends';
 import { ITEMS } from '../data/items';
+import { friendMult } from './restoration';
 
 export interface FriendState { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }
 
@@ -30,7 +31,7 @@ export function taste(id: FriendId, item: string): Taste {
 /** Items that make sense as gifts (not tools or Field Kit gear). */
 export function giftable(item: string): boolean {
   const k = ITEMS[item]?.kind;
-  return !!k && k !== 'tool' && k !== 'gear';
+  return !!k && k !== 'tool' && k !== 'gear' && k !== 'keepsake';
 }
 
 export function giftedToday(game: Game, id: FriendId): boolean { return friendState(game, id).gift === game.clock.day; }
@@ -55,13 +56,16 @@ function addPoints(game: Game, id: FriendId, n: number): string[][] {
   return scenes;
 }
 
+/** Friendship from something you did together (a scene, a rescue). Returns any heart-reward scenes. */
+export function befriend(game: Game, id: FriendId, n: number): string[][] { return addPoints(game, id, n); }
+
 /** First chat of the day: a little friendship. */
 export function dailyChat(game: Game, npcId: string): string[][] {
   if (!isFriend(npcId)) return [];
   const st = friendState(game, npcId);
   if (st.talk === game.clock.day) return [];
   st.talk = game.clock.day;
-  return addPoints(game, npcId, DAILY_CHAT);
+  return addPoints(game, npcId, DAILY_CHAT * friendMult(game));
 }
 
 const REACT: Record<Taste, string[]> = {
@@ -78,7 +82,7 @@ export function giveGift(game: Game, npcId: FriendId, npcName: string, item: str
   st.gift = game.clock.day;
   if (!st.known.includes(item)) st.known.push(item);
   const before = hearts(game, npcId);
-  const scenes = addPoints(game, npcId, GAIN[t]);
+  const scenes = addPoints(game, npcId, GAIN[t] > 0 ? GAIN[t] * friendMult(game) : GAIN[t]);
   const line = REACT[t][game.clock.day % REACT[t].length].replace('{item}', ITEMS[item].name);
   const after = hearts(game, npcId);
   const meter = after > before ? `(Friendship grew: ${after}/${MAX_HEARTS} hearts!)` : t === 'dislike' ? '(They didn\'t care for that.)' : `(Friendship: ${after}/${MAX_HEARTS} hearts)`;

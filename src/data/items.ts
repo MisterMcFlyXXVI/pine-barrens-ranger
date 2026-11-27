@@ -1,7 +1,7 @@
 /** Items, lure crops and economy data. */
 import { CRYPTIDS } from './cryptids';
 
-export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen' | 'food';
+export type ItemKind = 'tool' | 'seed' | 'crop' | 'forage' | 'material' | 'bait' | 'gear' | 'placeable' | 'specimen' | 'food' | 'keepsake';
 export type Buff = 'stealth' | 'calm' | 'haul' | 'lucky';
 export type ToolKind = 'hoe' | 'can' | 'machete' | 'rod' | 'bow' | 'rifle';
 
@@ -88,6 +88,14 @@ const base: ItemDef[] = [
   { id: 'pawpaw', name: 'Pawpaw', kind: 'forage', price: 30, stack: 99, edible: 18, desc: 'The hill-country banana: custardy, sweet, gone in a week. Sells well in town.' },
   { id: 'wild_honeycomb', name: 'Wild Honeycomb', kind: 'forage', price: 40, stack: 99, edible: 18, desc: 'Dripping comb. Lure: Pukwudgie, Sasquatch.' },
   { id: 'plant_fiber', name: 'Plant Fiber', kind: 'material', price: 3, stack: 99, desc: 'Tough grass fiber from cutting tall grass.' },
+  { id: 'timber', name: 'Timber', kind: 'material', price: 12, stack: 99, desc: 'Sawn planks for building. Salvaged from fallen logs, stumps and old lumber, or bought at the General Store.' },
+  { id: 'lucky_clover', name: 'Lucky Clover', kind: 'food', price: 40, stack: 20, edible: 25, buff: 'lucky', desc: 'Four leaves, left by a Jackalope. +25 energy. Lucky: double Rare Variant odds today.' },
+  // ---- Keepsakes from the townsfolk (can't be shipped or gifted) ----
+  { id: 'radio_key', name: "Elias's Brass Radio Key", kind: 'keepsake', price: 0, stack: 1, desc: 'The Morse key from the warden cabin set. Agnes kept it in the Archive. Your porch radio reaches the ridge with it.' },
+  { id: 'conductor_whistle', name: "Barney's Conductor Whistle", kind: 'keepsake', price: 0, stack: 1, desc: 'Brass, worn smooth. Blow it at any repaired handcar stop and Barney comes running, any hour.' },
+  { id: 'lamphouse_key', name: 'Lamp-House Key', kind: 'keepsake', price: 0, stack: 1, desc: 'The key to the old Pine Hollow No. 3 lamp house. Gideon kept it 19 years. (Town Restoration: the Mine.)' },
+  { id: 'binocular_strap', name: "Elias's Binocular Strap", kind: 'keepsake', price: 0, stack: 1, desc: 'Leather, initialed E.V. With it slung round your neck you spot one more cryptid clue at a time.' },
+  { id: 'handcar_crank', name: 'Spare Handcar Crank', kind: 'keepsake', price: 0, stack: 1, desc: 'Elias\'s spare, with a relay note in his hand. Pump the handcar yourself, any hour of the day or night.' },
   { id: 'charred_wood', name: 'Charred Wood', kind: 'material', price: 10, stack: 99, desc: 'Lightning-scorched timber. Lure: Hodag.' },
   { id: 'crushed_quartz', name: 'Crushed Quartz', kind: 'material', price: 30, stack: 99, desc: 'Glittering crystal grit from broken rocks.' },
   { id: 'mineral_salt', name: 'Mineral Salt', kind: 'material', price: 25, stack: 99, desc: 'Coarse salt crust. Lure: Slide-Rock Bolter.' },

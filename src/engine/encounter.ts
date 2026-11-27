@@ -7,6 +7,7 @@
  * the cryptid (specimen + Dex) / Startle 100% ends it → the camcorder powers off.
  * The rules are unchanged from the GBC split-screen original; only the framing is new.
  */
+import { arcBonus } from './bonds';
 import type { Game } from './game';
 import type { Overlay } from '../ui/overlay';
 import { CryptidDef, STANCE_COUNTERS, Stance, Trait, Variant } from '../data/cryptids';
@@ -189,6 +190,8 @@ export class Encounter implements Overlay {
     if (this.setup.approach === 'quiet') this.say('You crept close without a sound. It hasn\'t noticed the camera yet.');
     if (this.setup.approach === 'bumped') this.say('You stumbled right into it! It\'s rattled.');
     if (this.setup.variant !== 'normal') this.say('A Rare Variant! Log it for a separate Dex entry.');
+    const peace = arcBonus(this.game, d.id);
+    if (peace) { this.trust = Math.min(99, this.trust + peace); this.say(`It remembers what you did for it. It isn't afraid of you. (+${peace} Trust)`); }
     if (firstTime) this.say(`New Cryptid-Dex sighting: No.${String(d.num).padStart(2, '0')} ${d.name}.`);
     if (this.has('squonk')) this.say('It is already weeping and half-startled...');
     if (this.has('odor') && !this.gear('scent_mask')) this.say('A wall of stench rolls over you.');
@@ -266,6 +269,10 @@ export class Encounter implements Overlay {
     if (this.def.id === 'mothman' && id === 'dim_lantern' && this.game.progress.tools.lantern >= 2) return win(30, 'The High-Beam Lantern blazes -- the Mothman glides toward the light, transfixed!');
     if (this.has('loudSpook') && LOUD.has(id)) { this.addStartle(30); this.say(`The noise shrieks through the rafters! The ${n} recoils.`); return; }
     if (this.has('lanternMesmer') && id === 'dim_lantern') return win(35, `Mesmerized, the ${n} sways toward the lantern light.`);
+    // Clara calibrated it on the ridge: it finds a calm voice between stations for anyone.
+    if (id === 'static_radio' && this.game.progress.flags.has('radio_calibrated') && !this.has('loudSpook')) {
+      this.addTrust(this.has('radioCalm') || this.has('radioTune') ? 10 : 8); this.addStartle(-6);
+    }
     if (this.has('radioCalm') && id === 'static_radio') return win(30, `Static hums... the ${n} visibly relaxes.`, 15);
     if (this.has('radioTune') && id === 'static_radio') return win(35, 'You tune the dial... a calm voice answers between stations.');
     if (this.has('acoustic') && id === 'mimic_call') return win(35, `The ${n} answers your call with a gentle bellow!`);

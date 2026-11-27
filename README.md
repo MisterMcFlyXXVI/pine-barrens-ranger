@@ -70,7 +70,7 @@ No environment variables or API keys are needed.
   labeled landmarks and trailheads, compass, scale bar and fog over ground you haven't explored yet (fog clears as
   you walk and is saved); VALLEY overview with fog over unexplored regions (info only: travel is by handcar, from a stop).
 - **Townsfolk friendships**: chat daily and give one gift a day (talk while holding an item). Mabel, Gideon, Agnes,
-  Barney, Dr. Okafor, Pippa, Sam and Toby each have 5 hearts, loves/likes/dislikes, and rewards at 2 and 4 hearts
+  Barney, Dr. Okafor, Pippa, Sam, Toby and Ruth each have 5 hearts, loves/likes/dislikes, and rewards at 2 and 4 hearts
   (e.g. Mabel's skillet doubles stove meals, Barney's handcar, Agnes's lucky brooch, discounts). The Journal's
   Townsfolk page shows hearts and the tastes you've discovered.
 
@@ -211,6 +211,48 @@ Handy URL flags for trying things out:
   - **Dawn epilogue**: you wake on the C&O platform as Elias walks out of the mist with a hand-carved Sheepsquatch for
     the museum's centerpiece and gives you the cabin for good.
 - **Post-game**: Elias lives with Agnes, works at the Society, eats Sunday breakfast and sits out Sunday evenings on
-  Agnes's porch with her and Barney, and takes the white one its supper on Thursdays. At 32 donations the Town
-  Restoration Grant repairs the station and opens the Coal Mine gate (a future underground expansion).
+  Agnes's porch with her and Barney, and takes the white one its supper on Thursdays. At 32 donations the County
+  Restoration Grant matches the town: Restoration Ledger projects cost half the coins, and the old rail car is restored.
+
+## Heart scenes, cryptid bonds & the Restoration Ledger
+- **Heart scenes** (`src/data/heartScenes.ts`, `src/engine/heartScenes.ts`): 26 short scenes, 3 or 4 per townsperson,
+  each showing a piece of Elias's story from their side. One plays when you walk into its place at its time with enough
+  friendship (half hearts count: 3.5 = 350 points); the townsperson steps in beside you, then goes back to their day. At
+  most one a day. Their homes open for a scene even before 4 hearts, if they're home. Some give keepsakes:
+  - Agnes (5): **Elias's brass radio key** (tap GOOD NIGHT to the ridge on the porch radio).
+  - Barney (5): **conductor's whistle** (the handcar at any hour).
+  - Gideon (4): **Lamp-House Key** (needed for Ledger P4).
+  - Mabel (4): **Elias's wool coat** (wardrobe).
+  - Clara (4, Radio Ridge in fog or storm): calibrates your Static Radio, which then calms every cryptid a little more.
+  - Pippa (4): **binocular strap** (one more cryptid clue out at a time).
+  - Toby (4): **spare handcar crank** (the handcar at any hour).
+  - The kids' 2.5-heart scene is a small rescue: they sneak out to the sawmill at dusk; follow their boot prints past a
+    Sheepsquatch (walk, don't run) and walk them home. The Journal's Townsfolk page (tap a name) lists each person's
+    memories and, once you're close enough, where and when the next one happens. Ruth is now a friend too.
+- **Homestead visits** (`src/engine/bonds.ts`): once a cryptid is mastered (3 stars), now and then it visits the cabin
+  yard, at most one visitor a day:
+  - **Jackalope**: clover by the garden at dawn; leaves a Lucky Clover.
+  - **Albatwitch**: an apple on the porch rail at dusk; leaves Silver Silk.
+  - **Mothman**: on the shed roof on foggy nights; grants **Foresight**, which names a region where Rare Variants are
+    twice as likely until you sleep (also shown on the Journal's status page).
+  - **Fresno Nightcrawler**: strides the garden at midnight; the crops it steps over grow a day.
+  - **Loveland Frog**: on the rain barrel in the rain; waters every tilled plot.
+- **Warden errands**: each Warden has an optional two-step errand (listed under Act III). Finishing one starts your
+  next encounter with it at +25 Trust:
+  - **Sasquatch**: dismantle Elias's three rusted traps on the Old Growth west trail.
+  - **Wendigo**: listen at your Bone Chime, then offer it Smoked Venison.
+  - **Thunderbird**: plant a Lightning Rod on the ridge, then ground the static with Scrap Copper.
+  - **The Awful**: find Elias's smashed blind on the High Cliffs, then stand your ground there at dawn or in a storm,
+    holding a Brass Bell or Parabolic Dish.
+- **Town Restoration Ledger** (lectern in the Historical Society, or the Porch Workbench's LEDGER choice), funded with
+  materials (bag + crate) and coins. **Timber** comes from stumps, logs and lumber piles, or the Outfitter.
+  - **P1 Diner Neon** (3 Scrap Copper, 1 Glow-Shroom, 150g): the EAT sign lights from dusk; Friday Night Story Hour
+    (6-9 PM): friendship at the diner counts double.
+  - **P2 Station Roof & Signal Lamp** (10 Timber, 5 Iron Nails, 300g): the station is repaired and lit, the signal lamp
+    burns, and the handcar runs until midnight (normally 6 AM to 7 PM). Traveling Merchants come by rail on foggy
+    weekend afternoons.
+  - **P3 Park Gazebo** (12 Timber, 4 Crushed Quartz, 450g): a lantern-lit gazebo on the park's west lawn. Sunday
+    afternoon porch music (1-5 PM); sitting in it once a Sunday restores all your stamina.
+  - **P4 Mine & Lamp House** (after the ending, with Gideon's Lamp-House Key; 5 Iron Nails, 500g): lights the lamp
+    house and opens the No. 3 mine gate (the underground expansion teaser).
 - **Title screen**: New Game (asks before replacing a save), Continue, Export Save (downloads a JSON file), Import Save (choose a JSON file).

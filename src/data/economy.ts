@@ -136,7 +136,7 @@ export interface ShopEntry {
 export const STORE_STOCK: readonly ShopEntry[] = [
   { id: 'seed_clover', cost: 15 }, { id: 'seed_catnip', cost: 25 }, { id: 'seed_moss', cost: 30 }, { id: 'seed_corn', cost: 35 },
   { id: 'seed_pepper', cost: 55 }, { id: 'seed_cranberry', cost: 40 },
-  { id: 'mineral_salt', cost: 45 }, { id: 'iron_nail', cost: 18 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
+  { id: 'mineral_salt', cost: 45 }, { id: 'iron_nail', cost: 18 }, { id: 'timber', cost: 25 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
   { id: 'fishing_rod', cost: 250 }, { id: 'hunting_bow', cost: 700 }, { id: 'arrow', cost: 30, qty: 5 },
   { id: 'deer_rifle', cost: 1400 }, { id: 'rifle_cartridge', cost: 40, qty: 5 },
 ];
@@ -171,6 +171,6 @@ export const MILESTONES: readonly Milestone[] = [
   { count: 20, title: 'Mothman Goggles', desc: 'Permanent thermal vision in fog and darkness.', wear: ['mothman_goggles'] },
   { count: 24, title: 'Pine Hollow Folklore Festival', desc: 'Sunday-night festival: Traveling Merchants & surging Rare Variants.', flag: 'festival' },
   { count: 28, title: 'Wendigo Antler Mantle', desc: 'Apex Presence: predators never force you to retreat.', wear: ['wendigo_mantle', 'antler_crown'] },
-  { count: 32, title: 'Town Restoration Grant', desc: 'Repairs the Train Station and unseals the Coal Mine.', flag: 'grant' },
+  { count: 32, title: 'Town Restoration Grant', desc: 'The County matches the town: Restoration Ledger projects cost half the coins, and the old rail car is restored.', flag: 'grant' },
   { count: 36, title: "Indrid Cold's Shimmer Suit", desc: '2x Rare Variant spawns everywhere; 25% shop discount.', wear: ['shimmer_suit'] },
 ];

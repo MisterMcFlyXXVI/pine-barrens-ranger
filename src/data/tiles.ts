@@ -186,6 +186,11 @@ export const O = {
   RADIO_RIG: 113,
   // ---- Story ----
   PORCH_RADIO: 114,
+  /** Elias's rusted leg-hold traps in the Old Growth (the Sasquatch arc). */
+  OLD_TRAP: 115,
+  // ---- Town Restoration Ledger ----
+  GAZEBO: 116,
+  LEDGER: 117,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -204,7 +209,7 @@ export type Interact =
   | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
-  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger';
 
 export interface Drop {
   item: string;
@@ -233,8 +238,8 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.OAK]: { name: 'Scrub Oak', solid: true },
   [O.BRUSH]: { name: 'Brush', solid: true, tool: 'machete', hp: 1, drops: [{ item: 'plant_fiber', chance: 0.7, min: 1, max: 2 }, { item: 'wild_acorn', chance: 0.12, min: 1, max: 1 }] },
   [O.ROCK]: { name: 'Rock', solid: true, tool: 'hoe', hp: 3, drops: [{ item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }, { item: 'mineral_salt', chance: 0.12, min: 1, max: 1 }] },
-  [O.STUMP]: { name: 'Stump', solid: true, tool: 'machete', hp: 4, drops: [{ item: 'pine_resin', chance: 0.8, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.25, min: 1, max: 1 }] },
-  [O.LOG]: { name: 'Fallen Log', solid: true, tool: 'machete', hp: 5, drops: [{ item: 'charred_wood', chance: 0.5, min: 1, max: 2 }, { item: 'pine_resin', chance: 0.4, min: 1, max: 1 }] },
+  [O.STUMP]: { name: 'Stump', solid: true, tool: 'machete', hp: 4, drops: [{ item: 'timber', chance: 0.5, min: 1, max: 2 }, { item: 'pine_resin', chance: 0.8, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.25, min: 1, max: 1 }] },
+  [O.LOG]: { name: 'Fallen Log', solid: true, tool: 'machete', hp: 5, drops: [{ item: 'timber', chance: 0.5, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.5, min: 1, max: 2 }, { item: 'pine_resin', chance: 0.4, min: 1, max: 1 }] },
   [O.BOULDER]: { name: 'Boulder', solid: true },
   [O.FENCE]: { name: 'Fence', solid: true },
   [O.TALLGRASS]: { name: 'Tall Grass', solid: false, tool: 'machete', hp: 1, drops: [{ item: 'plant_fiber', chance: 0.45, min: 1, max: 1 }] },
@@ -270,7 +275,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.HEMLOCK_TREE]: { name: 'Ancient Hemlock', solid: true },
   [O.HOLLOW_LOG]: { name: 'Hollow Log', solid: true, interact: 'hollow' },
   [O.RUIN_WALL]: { name: 'Sawmill Ruin', solid: true },
-  [O.LUMBER]: { name: 'Rotting Lumber', solid: true, tool: 'machete', hp: 3, drops: [{ item: 'iron_nail', chance: 0.6, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.3, min: 1, max: 1 }] },
+  [O.LUMBER]: { name: 'Rotting Lumber', solid: true, tool: 'machete', hp: 3, drops: [{ item: 'timber', chance: 0.5, min: 1, max: 2 }, { item: 'iron_nail', chance: 0.6, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.3, min: 1, max: 1 }] },
   [O.SAW_BLADE]: { name: 'Rusted Saw Blade', solid: true, interact: 'sawblade' },
   [O.SLAG]: { name: 'Slag Heap', solid: true, tool: 'hoe', hp: 4, drops: [{ item: 'scrap_copper', chance: 0.7, min: 1, max: 2 }, { item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }] },
   [O.DEAD_TREE]: { name: 'Lightning-Struck Snag', solid: true },
@@ -316,6 +321,9 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.MODEL_TRAIN]: { name: 'Model Railroad', solid: true, interact: 'sign', fw: 2 },
   [O.RADIO_RIG]: { name: 'Radio Rig', solid: true, interact: 'sign', fw: 2 },
   [O.PORCH_RADIO]: { name: 'Porch Radio', solid: true, interact: 'radio' },
+  [O.OLD_TRAP]: { name: 'Rusted Trap', solid: true, interact: 'trap' },
+  [O.GAZEBO]: { name: 'Gazebo', solid: true, interact: 'gazebo', fw: 3, fh: 2 },
+  [O.LEDGER]: { name: 'Restoration Ledger', solid: true, interact: 'ledger' },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

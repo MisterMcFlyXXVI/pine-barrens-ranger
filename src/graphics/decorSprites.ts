@@ -411,6 +411,61 @@ function porchRadio(glow: boolean): Canv {
   }, 16, 16, true);
 }
 
+/** The town gazebo (Restoration Ledger P3): 3 tiles wide, pointed roof, lanterns under the eaves. */
+function gazebo(night: boolean): Canv {
+  return art((p) => {
+    // Platform and steps
+    p.rect(1, 40, 46, 6, AMBER); p.hline(1, 46, 40, LANTERN); p.hline(1, 46, 45, RUST);
+    for (let x = 4; x < 46; x += 6) p.vline(x, 41, 44, RUST);
+    p.rect(18, 44, 12, 4, AMBER); p.hline(18, 29, 46, LANTERN);
+    // Posts and railing (open in the middle where the steps come up)
+    for (const x of [3, 15, 32, 44]) { p.rect(x, 18, 2, 22, FOG); p.vline(x + 1, 18, 39, MIST); }
+    for (const [x0, x1] of [[3, 15], [32, 45]] as Array<[number, number]>) {
+      p.hline(x0, x1, 31, FOG); p.hline(x0, x1, 38, FOG);
+      for (let x = x0 + 2; x < x1; x += 3) p.vline(x, 32, 37, MIST);
+    }
+    // Shady interior and a bench
+    p.rect(5, 20, 10, 11, SHADOW); p.rect(17, 20, 15, 20, SHADOW); p.rect(34, 20, 10, 11, SHADOW);
+    p.rect(19, 33, 10, 2, RUST);
+    // Roof: two pitched faces with shingle rows and white trim
+    for (let y = 4; y < 19; y++) {
+      const half = Math.round((y - 3) * 1.55);
+      p.hline(24 - half, 23 + half, y, y % 3 === 0 ? CRAN : RUST);
+    }
+    p.hline(0, 47, 18, FOG); p.hline(1, 46, 19, MIST);
+    for (let x = 2; x < 46; x += 4) p.px(x, 20, FOG);
+    p.vline(24, 0, 4, AMBER); p.px(24, 0, LANTERN); p.px(23, 2, AMBER); p.px(25, 2, AMBER);
+    // Lanterns under the eaves
+    for (const x of [6, 24, 42]) {
+      p.vline(x, 20, 21, SHADOW);
+      p.rect(x - 1, 22, 3, 3, night ? LANTERN : AMBER); p.px(x, 23, night ? FOG : RUST);
+    }
+  }, 48, 48, true);
+}
+
+/** Agnes's Restoration Ledger, open on a lectern. */
+function ledgerStand(): Canv {
+  return art((p) => {
+    p.rect(6, 7, 4, 8, RUST); p.hline(4, 11, 14, RUST); p.vline(7, 8, 13, AMBER);
+    p.rect(2, 3, 12, 5, AMBER);
+    p.rect(3, 2, 5, 5, FOG); p.rect(8, 2, 5, 5, FOG); p.vline(8, 2, 6, MIST);
+    for (const y of [3, 5]) { p.hline(4, 6, y, TWILIGHT); p.hline(9, 11, y, TWILIGHT); }
+    p.px(10, 7, RED); p.px(10, 8, RED); // ribbon marker
+  }, 16, 16, true);
+}
+
+/** A rusted leg-hold trap chained to a root, jaws open. */
+function oldTrap(): Canv {
+  return art((p) => {
+    p.hline(2, 13, 12, SHADOW); // shadow
+    p.rect(4, 9, 8, 3, RUST); p.hline(4, 11, 9, AMBER); p.px(7, 10, SHADOW); p.px(8, 10, SHADOW); // plate
+    for (const x of [3, 5, 7, 9, 11]) { p.px(x, 7, FOG); p.px(x + 1, 8, MIST); } // teeth
+    p.hline(3, 12, 8, RUST); p.px(2, 8, RUST); p.px(13, 8, RUST); // jaws
+    for (let k = 0; k < 4; k++) p.px(12 + (k % 2), 12 - k, MIST); // chain
+    p.rect(13, 13, 3, 2, PINE); p.px(14, 13, MOSS); // root
+  }, 16, 16, true);
+}
+
 /** Festival stalls go up over three days: posts, frame, then canopy and wares. */
 function stall(stage: number, kind: string): Canv {
   const [c1, c2] = kind === 'pie' ? [RED, FOG] : kind === 'cider' ? [AMBER, LANTERN] : kind === 'lantern' ? [TWILIGHT, LANTERN] : [CRAN, FOG];
@@ -524,6 +579,9 @@ export function bakeDecor(): void {
   PROP.modeltrain = [0, 1, 2, 3, 4, 5, 6, 7].map(modelTrain);
   PROP.radiorig = [radioRig(0), radioRig(1)];
   PROP.porchradio = [porchRadio(false), porchRadio(true)];
+  PROP.oldtrap = [oldTrap()];
+  PROP.gazebo = [gazebo(false), gazebo(true)];
+  PROP.ledger = [ledgerStand()];
   for (const k of ['pie', 'cider', 'lantern', 'crafts']) PROP[`stall_${k}`] = [stall(0, k), stall(1, k), stall(2, k)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];
