@@ -1,5 +1,5 @@
 /** Export / import the localStorage save as a JSON file (desktop & mobile friendly). */
-import { SAVE_KEY, SAVE_VERSION, SaveData, clearResume } from '../engine/save';
+import { SAVE_KEY, SaveData, clearResume, isPlayableSave } from '../engine/save';
 
 /**
  * Export the save as a JSON file. Where the browser has a Share sheet that accepts
@@ -43,10 +43,8 @@ function download(raw: string, name: string): void {
 /** Basic shape check so a bad file can never brick the title screen. */
 export function validateSave(text: string): SaveData | null {
   try {
-    const d = JSON.parse(text) as SaveData;
-    if (!d || typeof d !== 'object' || d.v !== SAVE_VERSION) return null;
-    if (typeof d.day !== 'number' || typeof d.minutes !== 'number' || !Array.isArray(d.inv) || typeof d.map !== 'string') return null;
-    return d;
+    const d: unknown = JSON.parse(text);
+    return isPlayableSave(d) ? d : null;
   } catch {
     return null;
   }

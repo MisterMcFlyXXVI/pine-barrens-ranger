@@ -4,7 +4,7 @@ import { drawText, drawTextCentered, wrapText } from '../graphics/font';
 import { hex, P } from '../graphics/palette';
 import { OBJ } from '../graphics/sprites';
 import { sfx } from '../audio/sfx';
-import { loadResume, loadSave, SaveData } from '../engine/save';
+import { damagedSave, loadResume, loadSave, SaveData } from '../engine/save';
 import { exportSave, importSave } from './saveio';
 import { accountEmail } from '../engine/account';
 import { accountModalOpen, openAccount } from './accountModal';
@@ -40,10 +40,17 @@ export class TitleScreen {
     return Array.from({ length: n }, (_, i) => ({ x: Math.floor((game.w - w) / 2), y: y0 + i * 12, w, h: 11 }));
   }
 
-  private say(m: string, secs = 5): void { this.msg = m; this.msgT = secs; }
+  constructor() { this.warnDamaged(); }
+
+  say(m: string, secs = 5): void { this.msg = m; this.msgT = secs; }
 
   /** Re-read the device save (after an account sign-in pulls one down). */
-  reload(): void { this.save = loadSave(); this.resume = loadResume(); this.sel = 0; }
+  reload(): void { this.save = loadSave(); this.resume = loadResume(); this.sel = 0; this.warnDamaged(); }
+
+  /** A save that can't be opened: say so (it's kept; a new game backs it up before saving). */
+  private warnDamaged(): void {
+    if (!this.save && damagedSave()) this.say('Your saved field journal could not be read. It is kept as a backup: try IMPORT SAVE or your ACCOUNT, or start a NEW GAME.', 12);
+  }
 
   update(game: Game): void {
     const inp = game.input;

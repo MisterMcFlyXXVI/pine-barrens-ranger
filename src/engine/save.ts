@@ -81,20 +81,45 @@ export function hasSave(): boolean {
   try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
 }
 
+/**
+ * Does this look like a save the game can open? Every save the game has ever
+ * written has these; anything missing them is damaged (or not a save at all).
+ * Optional fields that older saves lack are filled in by Game.loadGame.
+ */
+export function isPlayableSave(d: unknown): d is SaveData {
+  if (!d || typeof d !== 'object') return false;
+  const s = d as Partial<SaveData>;
+  return s.v === SAVE_VERSION && typeof s.day === 'number' && typeof s.minutes === 'number' && typeof s.map === 'string'
+    && Array.isArray(s.inv) && Array.isArray(s.wardrobe) && !!s.maps && typeof s.maps === 'object'
+    && !!s.look && typeof s.look === 'object' && typeof s.dir === 'string';
+}
+
 export function loadSave(): SaveData | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const d = JSON.parse(raw) as SaveData;
-    if (d.v !== SAVE_VERSION) return null;
-    return d;
+    const d: unknown = JSON.parse(raw);
+    return isPlayableSave(d) ? d : null;
   } catch {
     return null;
   }
 }
 
+/** A save is on this device but can't be opened (kept, never deleted). */
+export function damagedSave(): boolean {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    return !isPlayableSave(JSON.parse(raw));
+  } catch {
+    return true;
+  }
+}
+
 export function writeSave(d: SaveData): boolean {
   try {
+    // Never write over a damaged save without keeping a copy of it.
+    if (damagedSave()) { const old = localStorage.getItem(SAVE_KEY); if (old) localStorage.setItem(`${SAVE_KEY}_damaged`, old); }
     localStorage.setItem(SAVE_KEY, JSON.stringify({ ...d, savedAt: Date.now() }));
     clearResume(); // the real save is now the newest
     return true;
@@ -115,8 +140,8 @@ export function loadResume(): SaveData | null {
   try {
     const raw = localStorage.getItem(RESUME_KEY);
     if (!raw) return null;
-    const d = JSON.parse(raw) as SaveData;
-    if (d.v !== SAVE_VERSION || typeof d.day !== 'number') return null;
+    const d: unknown = JSON.parse(raw);
+    if (!isPlayableSave(d)) return null;
     const main = loadSave();
     if (main && (main.savedAt ?? 0) >= (d.savedAt ?? 0)) return null;
     return d;

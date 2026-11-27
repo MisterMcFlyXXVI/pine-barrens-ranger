@@ -1021,8 +1021,17 @@ export class Game {
     sfx.unlock();
     sfx.confirm();
     this.transition(() => {
-      if (load) this.loadGame(load); else this.newGame();
-      if (load && fromRealSave) this.lastSaveKey = Game.saveKey(this.toSave());
+      if (!load) { this.newGame(); return; }
+      try {
+        this.loadGame(load);
+      } catch (e) {
+        // A damaged save: stay on the title (the save itself is left untouched) rather than crash.
+        console.error('Could not load save', e);
+        this.mode = 'title'; this.overlays.length = 0;
+        this.title.say('That field journal could not be read. It is kept safe: use EXPORT SAVE and send it in, or start a NEW GAME.', 10);
+        return;
+      }
+      if (fromRealSave) this.lastSaveKey = Game.saveKey(this.toSave());
     });
   }
 
