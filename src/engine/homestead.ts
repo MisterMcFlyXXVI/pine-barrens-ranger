@@ -9,7 +9,11 @@ import type { MapRuntime } from './world';
 import type { Canv } from '../graphics/canvas';
 import type { Light } from '../graphics/lighting';
 import { O, T } from '../data/tiles';
-import { DECO_BY_ITEM, DECO_BY_OBJ, HENS, WALL_DECOS } from '../data/homestead';
+import { DECO_BY_ITEM, DECO_BY_OBJ, HENS, WALL_DECOS, POLE_FLAGS, RECORDS, SMOKES } from '../data/homestead';
+import { ITEMS } from '../data/items';
+import { rollWeather, WEATHER_LABEL } from '../data/weather';
+import { candleSeason } from '../data/calendar';
+import { StorageMenu } from '../ui/storage';
 import type { DecoDef } from '../data/homestead';
 import { HS } from '../graphics/homeSprites';
 import { Dialog } from '../ui/menus';
@@ -30,10 +34,17 @@ const lit = (game: Game) => game.clock.phase() !== 'day';
 /** Where a decoration would go if set down facing (tx, ty), or a reason it can't. */
 function spotFor(game: Game, d: DecoDef, tx: number, ty: number): [number, number] | string {
   const m = game.cur;
+  if (d.where === 'eaves') {
+    if (m.id !== YARD) return 'String these along your cabin\'s eaves, out in the yard.';
+    if (game.progress.flags.has('xmas_lights')) return 'Your cabin already has its lights.';
+    const cab = m.def.structures.find((s) => s.kind === 'cabin');
+    const ok = !!cab && tx >= cab.x && tx < cab.x + cab.w && ty >= cab.y && ty < cab.y + cab.h;
+    return ok ? [tx, ty] : 'Face the cabin to hang the lights along the eaves.';
+  }
   if (d.where === 'yard') {
     if (m.id !== YARD) return 'That goes outside, in your cabin yard.';
     const ok = m.inBounds(tx, ty) && m.obj(tx, ty) === O.NONE && !m.blocked(tx, ty) && !m.portalAt(tx, ty) && m.plotIndex(tx, ty) < 0
-      && m.ground(tx, ty) !== T.PATH && !m.forage.has(m.idx(tx, ty));
+      && (d.flat || m.ground(tx, ty) !== T.PATH) && !m.forage.has(m.idx(tx, ty));
     return ok ? [tx, ty] : 'Set it on open ground in the yard (off the path and the garden).';
   }
   if (m.id !== CABIN) return d.where === 'wall' ? 'That hangs on your cabin wall.' : 'That goes inside your cabin.';
@@ -60,18 +71,31 @@ export function placeDeco(game: Game, item: string, tx: number, ty: number): boo
   const spot = spotFor(game, d, tx, ty);
   if (typeof spot === 'string') { sfx.error(); game.notice(spot); return true; }
   const m = game.cur;
+  if (d.where === 'eaves') {
+    game.progress.flags.add('xmas_lights');
+    game.inv.removeAt(game.sel, 1);
+    sfx.chimes();
+    game.toast(candleSeason(seasonIdx(game), game.clock.dayOfSeason) ? 'You string the lights along the eaves. They glow from dusk on.' : 'Lights strung along the eaves. They\'ll come on every year from late fall through Old Christmas.');
+    return true;
+  }
   if (d.max && m.countPlaced(d.obj) >= d.max) { sfx.error(); game.notice(`${d.max} of those is plenty for one homestead.`); return true; }
   m.placeObject(m.idx(spot[0], spot[1]), d.obj);
   game.inv.removeAt(game.sel, 1);
+  if (d.obj === O.BEE_SKEP) game.progress.days[`skep_${m.idx(spot[0], spot[1])}`] = game.clock.day;
   if (d.where === 'yard') { sfx.till(); game.particles.clods(spot[0] * 16 + 8, spot[1] * 16 + 12, [8, 9, 7]); }
   else sfx.knock();
   let msg = `${d.name} set out.`;
   if (d.obj === O.CHICKEN_COOP && !game.progress.flags.has('hens')) msg = 'Chicken coop built! Word gets around town fast: somebody will see you get hens.';
   else if (d.obj === O.LOG_BENCH && besideFire(m, spot[0], spot[1])) msg = 'A bench by the fire. Now that\'s a homestead.';
   else if (d.where === 'wall') msg = `You hang the ${d.name.toLowerCase()} on the wall.`;
-  game.toast(msg);
+  else if (d.obj === O.BEE_SKEP) msg = 'Bee skep set out. Give the bees a few days to settle in.';
+  else if (d.obj === O.PET_BED) msg = game.progress.pet ? `${game.progress.pet.name} sniffs the new bed, turns around three times, and approves.` : 'Pet bed set out. Now you just need a pet.';
+  else if (d.flat && d.where === 'yard') msg = '';
+  if (msg) game.toast(msg);
   return true;
 }
+
+const seasonIdx = (game: Game) => Math.max(0, ['Spring', 'Summer', 'Fall', 'Winter'].indexOf(game.clock.season));
 
 function familyPhoto(game: Game): string {
   switch (game.progress.reason) {
@@ -99,6 +123,8 @@ export function decoInteract(game: Game, tx: number, ty: number): boolean {
   const day = game.clock.day, days = game.progress.days;
   const pick = { label: d.where === 'wall' ? 'Take it down' : 'Pick it up', fn: () => {
     if (!game.inv.canFit(d.item)) { sfx.error(); game.toast('Your bag is full.'); return; }
+    if (d.obj === O.ROOT_CELLAR && game.cellar.slots.some((st) => st)) { sfx.error(); game.notice('Empty the root cellar before you fill it in.'); return; }
+    if (d.obj === O.SMOKEHOUSE && Object.keys(days).some((k) => k.startsWith('smoke:') && days[k] > 0)) { sfx.error(); game.notice('Take out what\'s hanging in the smokehouse first.'); return; }
     m.removeObject(m.idx(x, y)); game.inv.add(d.item, 1); sfx.confirm();
     game.toast(`${d.name} back in your bag.`);
   } };
@@ -125,6 +151,81 @@ export function decoInteract(game: Game, tx: number, ty: number): boolean {
       lines.push(days.eggs === day ? `${HENS.join(', ').replace(/, ([^,]*)$/, ' and $1')} have nothing more for you today. Come back in the morning.` : 'The hens are settling in. Eggs in the morning.');
       break;
     }
+    case O.PORCH_SWING:
+      lines.push(d.look);
+      opts.push({ label: 'Sit a spell', fn: () => {
+        if (days.swing === day) { game.toast('You swing a while. Lovely, but you\'ve had your rest from it today.'); game.clock.minutes = Math.min(DAY_END - 10, game.clock.minutes + 10); return; }
+        days.swing = day; game.stamina = Math.min(game.maxStamina, game.stamina + 20); game.clock.minutes = Math.min(DAY_END - 10, game.clock.minutes + 20);
+        sfx.creak(); game.toast('Back and forth, back and forth. A whip-poor-will, the creak of rope. (+20 energy)');
+      } });
+      break;
+    case O.BEE_SKEP: {
+      const key = `skep_${m.idx(x, y)}`, last = days[key] ?? day;
+      if (game.clock.season === 'Winter') { lines.push('The bees are clustered for winter, a low hum through the straw. No honey till spring.'); break; }
+      if (day - last >= 3) {
+        if (!game.inv.canFit('wild_honeycomb')) { sfx.error(); game.notice('Your bag is full. Make room for the honeycomb.'); return true; }
+        days[key] = day; game.inv.add('wild_honeycomb', 1); sfx.harvest();
+        game.toast('You lift a comb of wild honey from the skep. The bees grumble but let you.');
+        return true;
+      }
+      lines.push(`${d.look} (Honey in ${3 - (day - last)} day${3 - (day - last) === 1 ? '' : 's'}.)`);
+      break;
+    }
+    case O.SMOKEHOUSE: {
+      const ready = Object.keys(days).filter((k) => k.startsWith('smoked:') && days[k] > 0);
+      if (ready.length) {
+        for (const k of ready) {
+          const id = k.slice(7);
+          if (!game.inv.canFit(id)) { sfx.error(); game.notice('Your bag is full. Make room for what\'s in the smokehouse.'); return true; }
+          game.inv.add(id, days[k]); game.toast(`${days[k]} ${ITEMS[id].name} out of the smokehouse.`); delete days[k];
+        }
+        sfx.harvest();
+        return true;
+      }
+      const hanging = Object.keys(days).filter((k) => k.startsWith('smoke:') && days[k] > 0).reduce((n, k) => n + days[k], 0);
+      lines.push(hanging ? `${hanging} thing${hanging === 1 ? '' : 's'} hanging in the smoke. Ready in the morning.` : 'The smokehouse is empty and cold. Hang raw venison or fresh fish in it and they\'ll be smoked by morning.');
+      const raw = Object.keys(SMOKES).filter((id) => game.inv.count(id) > 0);
+      if (raw.length) opts.push({ label: `Hang ${raw.map((id) => `${game.inv.count(id)} ${ITEMS[id].name}`).join(', ')}`.slice(0, 40), fn: () => {
+        let n = 0;
+        for (const id of raw) { const c = game.inv.count(id); game.inv.remove(id, c); days[`smoke:${id}`] = (days[`smoke:${id}`] ?? 0) + c; n += c; }
+        sfx.crackle(); game.toast(`You hang ${n} in the smoke and bank the hickory. Ready in the morning.`);
+      } });
+      break;
+    }
+    case O.ROOT_CELLAR:
+      sfx.door();
+      game.openOverlay(new StorageMenu(true));
+      return true;
+    case O.HAMMOCK:
+      lines.push(d.look);
+      opts.push({ label: 'Nap for an hour', fn: () => {
+        if (game.clock.minutes >= DAY_END - 70) { game.toast('Too late for a nap. Go to bed.'); return; }
+        const fresh = days.hammock !== day;
+        days.hammock = day; game.clock.minutes += 60; if (fresh) game.stamina = Math.min(game.maxStamina, game.stamina + 30);
+        sfx.sleep(); game.toast(fresh ? 'You doze off to the sound of the pines. An hour slips by. (+30 energy)' : 'Another hour slips by in the hammock.');
+      } });
+      break;
+    case O.WEATHER_VANE: {
+      const nd = day + 1, w = rollWeather(nd, Math.floor((nd - 1) / 28) % 4);
+      const wind = ['north', 'west', 'southwest', 'east'][day % 4];
+      lines.push(`The copper rooster swings ${wind}. By the look of the sky and the vane, tomorrow: ${WEATHER_LABEL[w.morning]}${w.evening !== w.morning ? `, ${WEATHER_LABEL[w.evening]} by evening` : ''}.`);
+      break;
+    }
+    case O.FLAGPOLE_HOME: {
+      const cur = days.flag ?? 0;
+      lines.push(`${POLE_FLAGS[cur][0].toUpperCase()}${POLE_FLAGS[cur].slice(1)} is flying. Run up a different flag?`);
+      POLE_FLAGS.forEach((f, k) => { if (k !== cur) opts.push({ label: f.replace(/^the /, '').replace(/^./, (c) => c.toUpperCase()).slice(0, 28), fn: () => { days.flag = k; sfx.chimes(); game.toast(`You run up ${f}.`); } }); });
+      break;
+    }
+    case O.RECORD_PLAYER: {
+      const now = days.record ?? 0;
+      lines.push(now ? `${RECORDS[now - 1][0]} is on the turntable. Change the record?` : 'A stack of records in paper sleeves. Put one on?');
+      RECORDS.forEach(([label], k) => { if (k + 1 !== now) opts.push({ label: label.replace(/"/g, ''), fn: () => { days.record = k + 1; sfx.blip(); game.toast(`You drop the needle on ${label}.`); } }); });
+      if (now) opts.push({ label: 'Lift the needle', fn: () => { days.record = 0; sfx.blip(); } });
+      break;
+    }
+    case O.JACK_O_LANTERN: lines.push(d.look); break;
+    case O.CARVING_MOTHMAN: case O.CARVING_SHEEPSQUATCH: lines.push(d.look); break;
     case O.WALL_PHOTO: lines.push(familyPhoto(game)); break;
     case O.WALL_MAP:
       lines.push(d.look);
@@ -183,7 +284,23 @@ function restByFire(game: Game, x: number, y: number): void {
 }
 
 /** Overnight: hens arrive for a new coop; the morning's eggs. */
-export function homesteadOvernight(game: Game): string | null {
+export function homesteadOvernight(game: Game): string[] {
+  const out: string[] = [];
+  const days = game.progress.days;
+  let smoked = 0;
+  for (const k of Object.keys(days)) {
+    if (!k.startsWith('smoke:') || !(days[k] > 0)) continue;
+    const to = SMOKES[k.slice(6)];
+    if (to) { days[`smoked:${to}`] = (days[`smoked:${to}`] ?? 0) + days[k]; smoked += days[k]; }
+    delete days[k];
+  }
+  if (smoked) out.push(`The smokehouse did its work overnight: ${smoked} thing${smoked === 1 ? '' : 's'} ready to take down.`);
+  const hens = henMorning(game);
+  if (hens) out.push(hens);
+  return out;
+}
+
+function henMorning(game: Game): string | null {
   const coops = game.getMap(YARD).countPlaced(O.CHICKEN_COOP);
   if (!coops) return null;
   if (!game.progress.flags.has('hens')) {
@@ -231,6 +348,20 @@ export function decoSprite(game: Game, o: number, x: number, y: number, time: nu
     case O.ARMCHAIR: return HS.armchair[0];
     case O.FLOOR_LAMP: return HS.floorlamp[night || game.clock.phase() !== 'day' ? 1 : 0];
     case O.POTTED_FERN: return HS.fern[0];
+    case O.PORCH_SWING: return HS.porchswing[Math.floor(time * 0.8 + h) % 2];
+    case O.BEE_SKEP: return HS.skep[!night && game.clock.season !== 'Winter' ? Math.floor(time * 4 + h) % 2 : 0];
+    case O.SMOKEHOUSE: return HS.smokehouse[0];
+    case O.ROOT_CELLAR: return HS.cellar[0];
+    case O.HAMMOCK: return HS.hammock[Math.floor(time * 0.6 + h) % 2];
+    case O.WEATHER_VANE: return HS.vane[game.clock.day % 2];
+    case O.CARVING_MOTHMAN: return HS.carvemoth[0];
+    case O.CARVING_SHEEPSQUATCH: return HS.carvesheep[0];
+    case O.FLAGPOLE_HOME: return HS.flagpole[(game.progress.days.flag ?? 0) * 2 + (Math.floor(time * 2.5 + h) % 2)];
+    case O.JACK_O_LANTERN: return HS.jack[night || game.clock.phase() !== 'day' ? 1 : 0];
+    case O.PATH_STONE: return HS.pathstone[h % 3];
+    case O.RECORD_PLAYER: return HS.record[game.progress.days.record ? Math.floor(time * 3) % 2 : 0];
+    case O.RAG_RUG: return HS.ragrug[0];
+    case O.PET_BED: return HS.petbed[0];
   }
   return null;
 }
@@ -239,6 +370,7 @@ export function decoSprite(game: Game, o: number, x: number, y: number, time: nu
 export function decoLight(game: Game, o: number, x: number, y: number, cx: number, cy: number, night: boolean): Light | null {
   if (o === O.FIRE_PIT && lit(game)) return { x: x * 16 + 8 - cx, y: y * 16 + 6 - cy, r: 58, flicker: true };
   if (o === O.LANTERN_POST && night) return { x: x * 16 + 12 - cx, y: y * 16 - 4 - cy, r: 42, flicker: true };
+  if (o === O.JACK_O_LANTERN && game.clock.phase() !== 'day') return { x: x * 16 + 8 - cx, y: y * 16 + 8 - cy, r: 26, flicker: true };
   if (o === O.FLOOR_LAMP && game.clock.phase() !== 'day') return { x: x * 16 + 8 - cx, y: y * 16 - 4 - cy, r: 36 };
   return null;
 }
@@ -246,9 +378,11 @@ export function decoLight(game: Game, o: number, x: number, y: number, cx: numbe
 /** Smoke curling from lit fire pits (the game's ambience loop calls this). */
 export function fireSmoke(game: Game): Array<[number, number]> {
   const m = game.cur;
-  if (m.id !== YARD || !lit(game)) return [];
+  if (m.id !== YARD) return [];
   const out: Array<[number, number]> = [];
-  for (const [i, o] of m.placed) if (o === O.FIRE_PIT) out.push([(i % m.w) * 16 + 8, Math.floor(i / m.w) * 16 + 4]);
+  if (lit(game)) for (const [i, o] of m.placed) if (o === O.FIRE_PIT) out.push([(i % m.w) * 16 + 8, Math.floor(i / m.w) * 16 + 4]);
+  const smoking = Object.keys(game.progress.days).some((k) => k.startsWith('smoke:') && game.progress.days[k] > 0);
+  if (smoking) for (const [i, o] of m.placed) if (o === O.SMOKEHOUSE) out.push([(i % m.w) * 16 + 8, Math.floor(i / m.w) * 16 - 8]);
   return out;
 }
 
@@ -282,3 +416,40 @@ export function henDrawables(game: Game, time: number, cx: number, cy: number): 
 
 /** Things set out on a map, for refunds when a room is rebuilt. */
 export function decoItemFor(o: number): string | null { return DECO_BY_OBJ[o]?.item ?? null; }
+
+/** The record on the turntable, while you're home (music track id), else null. */
+export function recordTrack(game: Game): string | null {
+  const r = game.progress.days.record ?? 0;
+  if (!r || game.cur.id !== CABIN || !game.cur.countPlaced(O.RECORD_PLAYER)) return null;
+  return RECORDS[r - 1]?.[1] ?? null;
+}
+
+/** Christmas lights along the cabin eaves (late fall through Old Christmas, from dusk). */
+export function eaveLights(game: Game, time: number, cx: number, cy: number): { y: number; fn: (g: CanvasRenderingContext2D) => void } | null {
+  const m = game.cur;
+  if (m.id !== YARD || !game.progress.flags.has('xmas_lights') || !candleSeason(seasonIdx(game), game.clock.dayOfSeason)) return null;
+  const cab = m.def.structures.find((s) => s.kind === 'cabin');
+  if (!cab) return null;
+  const on = game.clock.minutes >= 16 * 60 + 30;
+  const cols = ['#c44545', '#f4e4b8', '#6b82b8', '#8ec488', '#d99b52'];
+  const x0 = cab.x * 16, ey = (cab.y + cab.h) * 16 - 96 + 54;
+  return { y: (cab.y + cab.h) * 16 + 0.5, fn: (g) => {
+    for (let k = 0, x = x0 + 2; x < x0 + cab.w * 16 - 2; x += 5, k++) {
+      const sag = Math.round(Math.sin((x - x0) * 0.35) * 1.2) + 1;
+      g.fillStyle = '#16262e'; g.fillRect(x - cx, ey + sag - cy - 1, 5, 1);
+      const tw = on && (Math.floor(time * 1.5 + k * 0.7) % 7 !== 0);
+      g.fillStyle = tw ? cols[k % cols.length] : '#1f3a3d';
+      g.fillRect(x - cx + 1, ey + sag - cy, 2, 2);
+    }
+  } };
+}
+
+/** Light pools for the eave lights at night. */
+export function eaveLightSources(game: Game, cx: number, cy: number): Light[] {
+  const m = game.cur;
+  if (m.id !== YARD || !game.progress.flags.has('xmas_lights') || !candleSeason(seasonIdx(game), game.clock.dayOfSeason) || game.clock.minutes < 16 * 60 + 30) return [];
+  const cab = m.def.structures.find((s) => s.kind === 'cabin');
+  if (!cab) return [];
+  const ey = (cab.y + cab.h) * 16 - 96 + 56;
+  return [0.2, 0.5, 0.8].map((f) => ({ x: cab.x * 16 + cab.w * 16 * f - cx, y: ey - cy, r: 26, flicker: true }));
+}

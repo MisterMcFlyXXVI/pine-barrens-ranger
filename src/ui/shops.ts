@@ -10,6 +10,8 @@ import { hex, P } from '../graphics/palette';
 import { ICON } from '../graphics/sprites';
 import { sfx } from '../audio/sfx';
 import { ITEMS, CATALOG_SEEDS, CROP_BY_ID } from '../data/items';
+import { stars } from '../engine/dex';
+import { CRYPTID_BY_ID } from '../data/cryptids';
 import { BLUEPRINTS, MERCHANT_GOODS, MILESTONES, RECIPES, ShopEntry, TOOL_LINES, UPGRADES, Recipe } from '../data/economy';
 import { CRYPTIDS } from '../data/cryptids';
 import { inRect, panel, Rect } from './panel';
@@ -272,7 +274,13 @@ export class CraftMenu extends ListMenu {
     if (this.station === 'stove') return RECIPES.filter((r) => r.station === 'stove').map((r) => r.taught ? taughtRow(r) : this.recipeRow(game, r));
     const tab = this.tabName();
     if (tab === 'CRAFT') return RECIPES.filter((r) => !r.blueprint && !r.station && !r.taught && !r.homestead).map((r) => this.recipeRow(game, r));
-    if (tab === 'HOME') return RECIPES.filter((r) => r.homestead).map((r) => this.recipeRow(game, r));
+    if (tab === 'HOME') return RECIPES.filter((r) => r.homestead).map((r) => {
+      if (r.dex && !(game.dex[r.dex] && stars(game.dex[r.dex]) >= 3)) {
+        const who = CRYPTID_BY_ID[r.dex]?.name ?? r.dex;
+        return { icon: r.out, label: `??? ${ITEMS[r.out].name}`, sub: `NEEDS 3-STAR ${who.toUpperCase()}`, right: 'LOCKED', dim: true, desc: `A chainsaw carving. Get a 3-star ${who} entry in your Cryptid-Dex (Gold Photo and specimen) and you'll know it well enough to carve it.` };
+      }
+      return this.recipeRow(game, r);
+    });
     if (tab === 'BLUEPRINTS') {
       return [...RECIPES.filter((r) => r.taught && !r.station).map(taughtRow), ...RECIPES.filter((r) => r.blueprint).map((r) => {
         if (game.progress.blueprints.has(r.blueprint!)) return this.recipeRow(game, r);

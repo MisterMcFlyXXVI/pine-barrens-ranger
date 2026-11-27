@@ -72,7 +72,7 @@ import { WorldMap, handcarUnlocked } from '../ui/worldmap';
 import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
-import { placeDeco, decoInteract, canPlaceDeco, homesteadOvernight, homesteadTick, fireSmoke, decoItemFor } from './homestead';
+import { placeDeco, decoInteract, canPlaceDeco, homesteadOvernight, homesteadTick, fireSmoke, decoItemFor, recordTrack } from './homestead';
 import { WALL_DECOS, DECO_BY_OBJ } from '../data/homestead';
 import { mineTick, mineArrive, mineInteract, placeHemlock, placeTorch, mineBusy, crawlBlocked, mineStep, throwCoal, mineEmptyA, banked } from './mine';
 import { MineMap } from '../ui/mineMap';
@@ -107,6 +107,8 @@ export class Game {
   inv = new Inventory();
   /** Cabin Storage Crate (the workbench can craft from it). */
   storage = Game.newStorage();
+  /** The Root Cellar out in the yard (18 slots). */
+  cellar = Game.newCellar();
   /** Materials list: recipes the player wants to craft. */
   needs: Need[] = [];
   /** Deer roaming the current map (hunting). */
@@ -115,6 +117,7 @@ export class Game {
   private gunshots = new Map<MapId, number>();
 
   static newStorage(): Inventory { const s = new Inventory(); s.resize(36); return s; }
+  static newCellar(): Inventory { const s = new Inventory(); s.resize(18); return s; }
   gold = START_GOLD;
   stamina = MAX_STAMINA;
   readonly maxStamina = MAX_STAMINA;
@@ -200,6 +203,7 @@ export class Game {
     this.inv = new Inventory();
     for (const [id, n] of STARTING_ITEMS) this.inv.add(id, n);
     this.storage = Game.newStorage();
+    this.cellar = Game.newCellar();
     this.needs = [];
     needsWatch.clear();
     this.gold = START_GOLD;
@@ -254,7 +258,9 @@ export class Game {
     this.inv.resize(Math.min(54, d.inv.length));
     d.inv.forEach((s, i) => { if (i < this.inv.slots.length && s && ITEMS[s.id]) this.inv.slots[i] = { id: s.id, n: s.n }; });
     this.storage = Game.newStorage();
+    this.cellar = Game.newCellar();
     (d.storage ?? []).forEach((s, i) => { if (i < this.storage.slots.length && s && ITEMS[s.id]) this.storage.slots[i] = { id: s.id, n: s.n }; });
+    (d.cellar ?? []).forEach((s, i) => { if (i < this.cellar.slots.length && s && ITEMS[s.id]) this.cellar.slots[i] = { id: s.id, n: s.n }; });
     this.needs = (d.needs ?? []).filter((n) => n && typeof n.recipe === 'string' && n.qty > 0).map((n) => ({ recipe: n.recipe, qty: n.qty }));
     needsWatch.clear();
     this.gold = d.gold;
@@ -353,6 +359,7 @@ export class Game {
       water: this.water,
       inv: this.inv.slots.map((s) => (s ? { ...s } : null)),
       storage: this.storage.slots.map((s) => (s ? { ...s } : null)),
+      cellar: this.cellar.slots.map((s) => (s ? { ...s } : null)),
       needs: this.needs.map((n) => ({ ...n })),
       sel: this.sel,
       look: { ...this.look },
@@ -980,6 +987,8 @@ export class Game {
     if (top instanceof StoryPanels || top instanceof FinaleScene) return 'title';
     const m = this.cur;
     if (!m) return 'title';
+    const rec = recordTrack(this);
+    if (rec) return rec as TrackId;
     if (m.def.indoor) return 'interior';
     const tags = timeTags(this.clock.minutes);
     const night = tags.includes('NIGHT') || tags.includes('WITCHING');
@@ -2252,8 +2261,7 @@ export class Game {
     for (const m of this.maps.values()) { m.spawnForage(this.clock.day, this.forageBoosts()); checkSnares(m); }
     const gift = petOvernight(this);
     if (gift) lines.push(gift);
-    const hens = homesteadOvernight(this);
-    if (hens) lines.push(hens);
+    lines.push(...homesteadOvernight(this));
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
     this.cur = this.getMap(BED_SPAWN.map);
     lines.push(this.saveGame() ? 'Field journal saved.' : 'Warning: could not save.');

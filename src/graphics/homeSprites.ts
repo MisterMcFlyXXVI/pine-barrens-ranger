@@ -258,6 +258,160 @@ function hen(f: number): Canv {
   }, 11, 9);
 }
 
+/* ------------------------------ second wave ------------------------------ */
+
+function porchSwing(f: number): Canv {
+  return art((p) => {
+    p.line(1, 22, 6, 1, RUST); p.line(22, 22, 17, 1, RUST); p.line(2, 22, 7, 1, AMBER); p.line(21, 22, 16, 1, AMBER);
+    p.rect(4, 1, 16, 2, AMBER); p.hline(4, 19, 1, LANTERN);
+    const sw = f ? 1 : 0;
+    p.vline(7 + sw, 3, 12, FOG); p.vline(16 + sw, 3, 12, FOG);
+    p.rect(6 + sw, 8, 12, 4, AMBER); for (let x = 7; x < 18; x += 2) p.vline(x + sw, 8, 11, RUST); // back slats
+    p.rect(5 + sw, 12, 14, 2, AMBER); p.hline(5 + sw, 18 + sw, 12, LANTERN); p.hline(5 + sw, 18 + sw, 13, RUST);
+    p.rect(9 + sw, 10, 4, 2, RED); p.px(10 + sw, 10, LANTERN); // a cushion
+  }, 24, 23);
+}
+
+/** f: bees in two places. */
+function beeSkep(f: number): Canv {
+  return art((p) => {
+    p.rect(3, 13, 10, 2, RUST); p.vline(4, 15, 17, RUST); p.vline(11, 15, 17, RUST);
+    for (let y = 3; y < 13; y++) {
+      const w = Math.round(Math.sqrt(Math.max(0, 1 - ((y - 12) / 9.5) ** 2)) * 5.5);
+      p.hline(8 - w, 7 + w, y, y % 2 ? AMBER : LANTERN);
+    }
+    p.px(8, 2, AMBER); p.rect(7, 10, 2, 2, VOID);
+    for (const [x, y] of f ? [[2, 5], [13, 2], [11, 8]] : [[3, 2], [14, 6], [1, 9]]) { p.px(x, y, LANTERN); p.px(x + 1, y, VOID); }
+  }, 16, 18, true);
+}
+
+function smokehouse(): Canv {
+  return art((p) => {
+    p.rect(2, 22, 20, 4, MIST); for (let x = 3; x < 22; x += 4) p.px(x, 23, FOG); p.hline(2, 21, 25, SHADOW); // stone footing
+    p.rect(3, 9, 18, 13, RUST); for (let x = 4; x < 21; x += 3) p.vline(x, 9, 21, CRAN);
+    for (let y = 2; y < 10; y++) { const i = Math.round((9 - y) * 1.2); p.hline(1 + i, 22 - i, y, y % 2 ? SHADOW : PINE); }
+    p.rect(9, 0, 6, 3, PINE); p.hline(9, 14, 0, MOSS); // ridge vent
+    p.rect(9, 13, 6, 9, AMBER); p.vline(12, 13, 21, RUST); p.px(13, 17, VOID); // door
+    p.px(5, 8, MIST); p.px(18, 8, MIST); // smoke at the eaves
+  }, 24, 26);
+}
+
+function rootCellar(): Canv {
+  return art((p) => {
+    p.ellipse(12, 12, 12, 7, FOREST); p.ellipse(12, 11, 10, 5, MOSS); for (const [x, y] of [[6, 7], [15, 6], [19, 10]]) p.px(x, y, FERN); // sod mound
+    p.rect(4, 10, 16, 8, MIST); for (let x = 5; x < 20; x += 3) p.px(x, 11 + (x % 2), FOG); p.hline(4, 19, 17, SHADOW); // stone face
+    p.rect(7, 11, 10, 7, AMBER); p.vline(12, 11, 17, RUST); p.hline(7, 16, 14, RUST); // plank doors
+    p.px(11, 15, VOID); p.px(13, 15, VOID);
+  }, 24, 18);
+}
+
+function hammock(f: number): Canv {
+  return art((p) => {
+    p.rect(1, 2, 2, 14, RUST); p.rect(29, 2, 2, 14, RUST); p.px(1, 2, AMBER); p.px(29, 2, AMBER);
+    const sag = f ? 1 : 0;
+    for (let x = 3; x < 29; x++) {
+      const y = 5 + Math.round(Math.sin(((x - 3) / 26) * Math.PI) * (5 + sag));
+      p.px(x, y, (x % 3) ? FOG : MIST); p.px(x, y + 1, (x + 1) % 3 ? LANTERN : MIST);
+    }
+    p.line(3, 4, 6, 6, FOG); p.line(28, 4, 25, 6, FOG);
+  }, 32, 16);
+}
+
+/** Copper rooster; f = which way the wind has it. */
+function weatherVane(f: number): Canv {
+  return art((p) => {
+    p.vline(8, 6, 27, SHADOW); p.vline(7, 8, 27, MIST);
+    p.hline(3, 13, 12, AMBER); p.px(2, 12, AMBER); p.px(14, 12, AMBER);
+    p.px(8, 10, AMBER); p.px(8, 14, AMBER); // N/S arms
+    const d = f ? -1 : 1;
+    p.rect(6, 3, 5, 3, AMBER); p.px(8 + d * 3, 2, AMBER); p.px(8 + d * 3, 3, RED); p.px(8 - d * 3, 2, RUST); p.px(8 - d * 3, 1, RUST); // rooster
+    p.line(5, 6, 11, 6, RUST);
+    p.rect(5, 26, 6, 2, SHADOW);
+  }, 16, 28);
+}
+
+function carvingMothman(): Canv {
+  return art((p) => {
+    p.rect(4, 25, 10, 2, RUST);
+    p.line(8, 6, 1, 16, RUST); p.line(9, 6, 16, 16, RUST); p.line(1, 16, 5, 20, RUST); p.line(16, 16, 12, 20, RUST); // wings
+    for (let y = 8; y < 19; y++) { const w = y < 12 ? 6 - (12 - y) : 6 - Math.floor((y - 12) / 2); p.hline(8 - Math.max(0, w) + 1, 8 + Math.max(0, w) - 1, y, y % 3 ? AMBER : RUST); }
+    p.rect(6, 18, 5, 7, AMBER); p.vline(8, 19, 24, RUST);
+    p.rect(6, 3, 5, 5, AMBER); p.px(6, 2, RUST); p.px(10, 2, RUST);
+    p.px(7, 5, RED); p.px(9, 5, RED);
+  }, 17, 27);
+}
+
+function carvingSheepsquatch(): Canv {
+  return art((p) => {
+    p.rect(3, 24, 14, 2, RUST);
+    for (let y = 8; y < 24; y++) for (let x = 4; x < 16; x++) if (((x - 10) ** 2) / 36 + ((y - 15) ** 2) / 72 < 1) p.px(x, y, (x + y) % 3 ? LANTERN : AMBER);
+    p.rect(7, 4, 6, 6, AMBER); p.rect(8, 6, 4, 3, RUST); p.px(9, 6, RED); p.px(11, 6, RED);
+    p.line(7, 4, 4, 3, AMBER); p.px(3, 4, AMBER); p.px(3, 5, RUST); p.line(13, 4, 16, 3, AMBER); p.px(17, 4, AMBER); p.px(17, 5, RUST);
+    p.rect(5, 21, 3, 3, AMBER); p.rect(13, 21, 3, 3, AMBER);
+  }, 20, 26);
+}
+
+/** flag: 0 WV, 1 Mothman, 2 club pennant, 3 Old Glory; f = wave. */
+function flagpole(flag: number, f: number): Canv {
+  return art((p) => {
+    p.vline(3, 1, 31, FOG); p.vline(4, 2, 31, MIST); p.px(3, 0, AMBER); p.rect(1, 30, 6, 2, SHADOW);
+    const w = (x: number) => (f ? Math.round(Math.sin(x * 0.7) * 0.8) : Math.round(Math.cos(x * 0.7) * 0.8));
+    for (let x = 0; x < 11; x++) for (let y = 0; y < 7; y++) {
+      if (flag === 2 && y > 6 - Math.floor(x / 2) && y > 0) continue; // pennant tapers
+      if (flag === 2 && y < Math.floor(x / 2)) continue;
+      let c: number = FOG;
+      if (flag === 0) { c = x === 0 || y === 0 || y === 6 || x === 10 ? TWILIGHT : FOG; if (x >= 4 && x <= 6 && y >= 2 && y <= 4) c = (x + y) % 2 ? AMBER : MOSS; }
+      else if (flag === 1) { c = VOID; if (y === 3 && (x === 4 || x === 6)) c = RED; if (y === 2 && (x === 3 || x === 7)) c = SHADOW; }
+      else if (flag === 2) { c = x < 2 ? LANTERN : MOSS; if (x === 5 && y === 3) c = LANTERN; }
+      else { c = y % 2 ? FOG : RED; if (x < 5 && y < 4) c = (x + y) % 2 ? FOG : TWILIGHT; }
+      p.px(5 + x, 2 + y + w(x), c);
+    }
+  }, 16, 32);
+}
+
+function jackOLantern(litOn: boolean): Canv {
+  return art((p) => {
+    p.ellipse(8, 10, 6.5, 5, RUST); p.ellipse(8, 10, 5.5, 4.2, AMBER);
+    p.vline(5, 6, 14, RUST); p.vline(11, 6, 14, RUST); p.vline(8, 6, 14, RUST);
+    p.rect(7, 3, 2, 3, FOREST); p.px(9, 3, MOSS);
+    const c = litOn ? LANTERN : VOID;
+    p.px(5, 9, c); p.px(6, 8, c); p.px(6, 9, c); p.px(10, 9, c); p.px(11, 9, c); p.px(10, 8, c); // eyes
+    p.hline(5, 11, 12, c); p.px(6, 13, c); p.px(10, 13, c); p.px(8, 13, c); p.px(7, 12, AMBER); p.px(9, 12, AMBER); // grin
+  }, 16, 16);
+}
+
+function pathStone(v: number): Canv {
+  return art((p) => {
+    const sets = [[[4, 5, 4, 3], [11, 10, 3.5, 2.5]], [[8, 8, 5, 3.5]], [[5, 10, 3.5, 2.5], [11, 5, 3.5, 2.5], [12, 12, 2, 1.5]]][v];
+    for (const [x, y, rx, ry] of sets) { p.ellipse(x, y + 1, rx, ry, SHADOW); p.ellipse(x, y, rx, ry, MIST); p.ellipse(x - 1, y - 1, rx - 1.5, ry - 1.2, FOG); }
+  }, 16, 16, false);
+}
+
+function recordPlayer(f: number): Canv {
+  return art((p) => {
+    p.rect(1, 8, 14, 8, RUST); p.hline(1, 14, 8, AMBER); p.vline(14, 9, 15, CRAN); // table
+    p.rect(2, 2, 12, 7, CRAN); p.rect(3, 3, 10, 5, SHADOW); // the case
+    p.ellipse(7, 5, 3.5, 2, VOID); p.px(7, 5, f ? RED : LANTERN); p.px(f ? 5 : 9, 4, MIST); // the record, spinning
+    p.line(12, 3, 9, 5, FOG);
+    if (f) { p.px(13, 0, LANTERN); p.px(14, 1, AMBER); } else { p.px(12, 1, AMBER); p.px(13, 0, LANTERN); } // notes
+  }, 16, 16);
+}
+
+function ragRug(): Canv {
+  return art((p) => {
+    const cols = [RED, LANTERN, TWILIGHT, AMBER, MOSS, CRAN];
+    for (let r = 7; r >= 1; r--) p.ellipse(8, 8, r, r * 0.8, cols[r % cols.length]);
+    for (let a = 0; a < 16; a++) { const t = (a / 16) * Math.PI * 2; p.px(Math.round(8 + Math.cos(t) * 6), Math.round(8 + Math.sin(t) * 4.8), FOG); }
+  }, 16, 16, false);
+}
+
+function petBed(): Canv {
+  return art((p) => {
+    p.ellipse(8, 9, 7, 5, CRAN); p.ellipse(8, 9, 6, 4, RED); p.ellipse(8, 10, 4.5, 2.6, LANTERN); p.ellipse(8, 10, 3.5, 1.8, FOG);
+    p.px(4, 7, CRAN); p.px(12, 7, CRAN);
+  }, 16, 16, false);
+}
+
 /* ------------------------------ icons ------------------------------ */
 
 function shrink(c: Canv): Canv {
@@ -268,6 +422,13 @@ function shrink(c: Canv): Canv {
   const w = Math.round(c.width * s), h = Math.round(c.height * s);
   g.drawImage(c, Math.floor((16 - w) / 2), Math.floor((16 - h) / 2), w, h);
   return o;
+}
+
+function xmasIcon(): Canv {
+  return art((p) => {
+    for (let x = 1; x < 15; x++) p.px(x, 5 + Math.round(Math.sin(x * 0.6) * 2), PINE);
+    [[2, RED], [5, LANTERN], [8, MIST], [11, FERN], [14, RED]].forEach(([x, c]) => { const y = 6 + Math.round(Math.sin(x * 0.6) * 2); p.rect(x - 1, y, 2, 3, c); });
+  }, 16, 16);
 }
 
 export function bakeHomestead(): void {
@@ -290,6 +451,20 @@ export function bakeHomestead(): void {
   HS.armchair = [armchair()];
   HS.floorlamp = [floorLamp(false), floorLamp(true)];
   HS.fern = [fern()];
+  HS.porchswing = [porchSwing(0), porchSwing(1)];
+  HS.skep = [beeSkep(0), beeSkep(1)];
+  HS.smokehouse = [smokehouse()];
+  HS.cellar = [rootCellar()];
+  HS.hammock = [hammock(0), hammock(1)];
+  HS.vane = [weatherVane(0), weatherVane(1)];
+  HS.carvemoth = [carvingMothman()];
+  HS.carvesheep = [carvingSheepsquatch()];
+  HS.flagpole = [0, 1, 2, 3].flatMap((k) => [flagpole(k, 0), flagpole(k, 1)]);
+  HS.jack = [jackOLantern(false), jackOLantern(true)];
+  HS.pathstone = [pathStone(0), pathStone(1), pathStone(2)];
+  HS.record = [recordPlayer(0), recordPlayer(1)];
+  HS.ragrug = [ragRug()];
+  HS.petbed = [petBed()];
   const h0 = hen(0), h1 = hen(1);
   const mirror = (c: Canv) => { const { c: o, g } = makeCanvas(c.width, c.height); g.translate(c.width, 0); g.scale(-1, 1); g.drawImage(c, 0, 0); return o; };
   HS.hen = [h0, h1, mirror(h0), mirror(h1)];
@@ -300,7 +475,12 @@ export function bakeHomestead(): void {
     deco_painting: HS.painting[0], deco_family_photo: HS.photo[0], deco_park_map: HS.parkmap[0], deco_sampler: HS.sampler[0],
     deco_quilt: HS.quilt[0], deco_banjo: HS.banjo[0], deco_antlers: HS.antlers[0], deco_clock: HS.cuckoo[2],
     deco_armchair: HS.armchair[0], deco_floor_lamp: HS.floorlamp[1], deco_fern: HS.fern[0],
+    deco_porch_swing: HS.porchswing[0], deco_bee_skep: HS.skep[0], deco_smokehouse: HS.smokehouse[0], deco_root_cellar: HS.cellar[0],
+    deco_hammock: HS.hammock[0], deco_weather_vane: HS.vane[0], deco_carving_mothman: HS.carvemoth[0], deco_carving_sheepsquatch: HS.carvesheep[0],
+    deco_flagpole: HS.flagpole[0], deco_jack_o_lantern: HS.jack[1], deco_path_stone: HS.pathstone[1], deco_record_player: HS.record[0],
+    deco_rag_rug: HS.ragrug[0], deco_pet_bed: HS.petbed[0], deco_xmas_lights: xmasIcon(),
   };
   for (const [id, c] of Object.entries(icons)) ICON[id] = shrink(c);
+  ICON.field_pumpkin = art((p) => { p.ellipse(8, 10, 6.5, 5, RUST); p.ellipse(8, 10, 5.5, 4.2, AMBER); p.vline(5, 6, 14, RUST); p.vline(11, 6, 14, RUST); p.vline(8, 6, 14, RUST); p.rect(7, 3, 2, 3, FOREST); p.px(9, 3, MOSS); p.px(6, 8, LANTERN); });
   ICON.field_stone = art((p) => { p.ellipse(8, 10, 6, 3.5, MIST); p.ellipse(7, 9, 4, 2, FOG); p.px(10, 11, TWILIGHT); p.px(5, 11, TWILIGHT); }, 16, 16);
 }

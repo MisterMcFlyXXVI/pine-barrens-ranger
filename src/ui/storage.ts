@@ -26,10 +26,14 @@ export class StorageMenu implements Overlay {
   private scrolls = [0, 0];
   private mores: Array<More | null> = [];
 
+  /** cellar: the yard's Root Cellar instead of the cabin's Storage Crate. */
+  constructor(private readonly cellar = false) {}
+  private box(game: Game): Inventory { return this.cellar ? game.cellar : game.storage; }
+
   private layout(game: Game): Rect & { grids: Grid[]; cells: Rect[][] } {
     const w = COLS * (S + GAP) - GAP + 10;
     const x = Math.floor((game.w - w) / 2);
-    const invs = [game.storage, game.inv];
+    const invs = [this.box(game), game.inv];
     const totalRows = invs.map((v) => Math.ceil(v.slots.length / COLS));
     // Header 12 + two labels 9 each + info 26 + footer 10; split what's left between the grids.
     const avail = Math.max(2 * (S + GAP) * 2, game.h - 8 - 12 - 18 - 26 - 10);
@@ -43,7 +47,7 @@ export class StorageMenu implements Overlay {
     let gy = y + 12;
     invs.forEach((inv, k) => {
       const top = gy + 9;
-      grids.push({ inv, label: k === 0 ? 'STORAGE CRATE' : 'YOUR BAG', rows: rows[k], scroll: this.scrolls[k], top });
+      grids.push({ inv, label: k === 0 ? (this.cellar ? 'ROOT CELLAR' : 'STORAGE CRATE') : 'YOUR BAG', rows: rows[k], scroll: this.scrolls[k], top });
       const cs: Rect[] = [];
       for (let i = 0; i < rows[k] * COLS; i++) {
         cs.push({ x: x + 5 + (i % COLS) * (S + GAP), y: top + Math.floor(i / COLS) * (S + GAP), w: S, h: S });
@@ -74,7 +78,7 @@ export class StorageMenu implements Overlay {
 
   update(game: Game): void {
     const inp = game.input;
-    const invs = [game.storage, game.inv];
+    const invs = [this.box(game), game.inv];
     let L = this.layout(game);
     const n = invs[this.side].slots.length;
     let moved = false;
@@ -111,7 +115,7 @@ export class StorageMenu implements Overlay {
       if (!hit && !inRect(L, t.x, t.y)) { this.close(game); return; }
     }
     if (act) {
-      const [from, to] = this.side === 0 ? [game.storage, game.inv] : [game.inv, game.storage];
+      const [from, to] = this.side === 0 ? [this.box(game), game.inv] : [game.inv, this.box(game)];
       this.moveStack(game, from, to, this.cursor);
     }
     if (inp.pressed('b')) this.close(game);
@@ -144,11 +148,11 @@ export class StorageMenu implements Overlay {
     });
     const iy = L.y + L.h - 36;
     g.fillStyle = hex(P.PINE); g.fillRect(L.x + 4, iy - 2, L.w - 8, 1);
-    const st = (this.side === 0 ? game.storage : game.inv).slots[this.cursor];
+    const st = (this.side === 0 ? this.box(game) : game.inv).slots[this.cursor];
     if (st) {
       const def = ITEMS[st.id];
       drawText(g, `${def.name}${st.n > 1 ? ` x${st.n}` : ''}`, L.x + 5, iy + 1, P.LANTERN);
-      drawTextRight(g, `BAG ${game.inv.count(st.id)}  CRATE ${game.storage.count(st.id)}`, L.x + L.w - 5, iy + 1, P.AMBER);
+      drawTextRight(g, `BAG ${game.inv.count(st.id)}  ${this.cellar ? 'CELLAR' : 'CRATE'} ${this.box(game).count(st.id)}`, L.x + L.w - 5, iy + 1, P.AMBER);
       this.mores = [drawClipped(g, def.desc, L.x + 5, iy + 9, L.w - 10, 2, 7, P.MIST, def.name, [P.FOREST, P.LANTERN])];
     } else {
       this.mores = [];

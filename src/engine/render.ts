@@ -6,8 +6,8 @@ import { isMineMap } from '../data/mine';
 import { mineDrawables, drawMineOverlay, drawMineHud, drawLampHouseTint, cribWired } from './mineRender';
 import { petFrame, heartIcon } from '../graphics/petSprites';
 import { settings } from './settings';
-import { decoSprite, decoLight, henDrawables } from './homestead';
-import { WALL_DECOS } from '../data/homestead';
+import { decoSprite, decoLight, henDrawables, eaveLights, eaveLightSources } from './homestead';
+import { FLAT_DECOS } from '../data/homestead';
 import { rescueTracks } from './heartScenes';
 import { visitorHere, visitorPos } from './bonds';
 import type { Game } from './game';
@@ -233,7 +233,7 @@ const BLAZE_TREES: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.HEMLO
 
 function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number, night: boolean, rustling: boolean): Canv | null {
   const h = hash2(x, y, 3);
-  if (o >= O.FIRE_PIT && o <= O.POTTED_FERN && homeGame) return decoSprite(homeGame, o, x, y, time, night, season);
+  if (o >= O.FIRE_PIT && o <= O.PET_BED && homeGame) return decoSprite(homeGame, o, x, y, time, night, season);
   switch (o) {
     case O.FOUNTAIN: return OBJ.fountain[Math.floor(time * 3) % 2];
     case O.BOARD: return OBJ.board[0];
@@ -394,7 +394,7 @@ const LITTER_GROUND: ReadonlySet<number> = new Set<number>([T.GRASS, T.FOREST, T
 /** Barn-quilt height on the shed's gable (px from the sprite top). */
 const QUILT_Y = 14;
 
-const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER, O.CREEK_STONE, O.WALL_FRAME, ...WALL_DECOS]);
+const FLAT: ReadonlySet<number> = new Set<number>([O.WINDOW, O.LILYPAD, O.POSTER, O.CREEK_STONE, O.WALL_FRAME, ...FLAT_DECOS]);
 
 const SWING: Record<Dir, Array<[number, number]>> = {
   right: [[-120, 1], [-55, 1], [25, 1]],
@@ -629,7 +629,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
             list.push({ y: (y + 1) * 16 - 0.5, fn: () => { g.globalAlpha = flick; g.drawImage(sil, (x + 1) * 16 - 4 - cx, (y + 1) * 16 - 24 - cy); g.globalAlpha = 1; } });
           }
         }
-        const dl = o >= O.FIRE_PIT && o <= O.POTTED_FERN ? decoLight(game, o, x, y, cx, cy, night) : null;
+        const dl = o >= O.FIRE_PIT && o <= O.PET_BED ? decoLight(game, o, x, y, cx, cy, night) : null;
         if (dl) lights.push(dl);
         if (o === O.FIREPLACE) lights.push({ x: x * 16 + 16 - cx, y: y * 16 + 4 - cy, r: 68, flicker: true });
       }
@@ -875,6 +875,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   }
   mineDrawables(game, g, cx, cy, time, list);
   for (const hd of henDrawables(game, time, cx, cy)) list.push({ y: hd.y, fn: () => hd.fn(g) });
+  const eaves = eaveLights(game, time, cx, cy);
+  if (eaves) { list.push({ y: eaves.y, fn: () => eaves.fn(g) }); lights.push(...eaveLightSources(game, cx, cy)); }
   list.sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
 

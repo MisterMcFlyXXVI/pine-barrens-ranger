@@ -112,6 +112,7 @@ const base: ItemDef[] = [
   { id: 'foraged_egg', name: 'Foraged Egg', kind: 'forage', price: 18, stack: 99, edible: 8, desc: 'A speckled wild egg.' },
   { id: 'sulfur_crust', name: 'Sulfur Crust', kind: 'material', price: 28, stack: 99, desc: 'Yellow crust from the Sulphur Springs.' },
   { id: 'scrap_copper', name: 'Scrap Copper', kind: 'material', price: 25, stack: 99, desc: 'Salvaged copper wire and fittings.' },
+  { id: 'field_pumpkin', name: 'Field Pumpkin', kind: 'material', price: 20, stack: 99, desc: 'A lopsided orange pumpkin from the Haddix patch. Carve it into a jack-o\'-lantern at the Workbench.' },
   { id: 'field_stone', name: 'Fieldstone', kind: 'material', price: 4, stack: 99, desc: 'A flat grey stone, good for building. Break rocks with the hoe.' },
   { id: 'iron_nail', name: 'Iron Nail', kind: 'material', price: 8, stack: 99, desc: 'Square-cut sawmill nail. Lure: Snarly Yow.' },
 

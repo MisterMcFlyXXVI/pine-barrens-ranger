@@ -69,6 +69,8 @@ export interface SaveData {
   progress?: Partial<ProgressSave>;
   /** Cabin Storage Crate contents. */
   storage?: Array<Stack | null>;
+  /** The yard's Root Cellar (homestead decoration). */
+  cellar?: Array<Stack | null>;
   /** Materials list (recipe id + how many wanted). */
   needs?: Array<{ recipe: string; qty: number }>;
   /** When this save was written (ms since epoch). */

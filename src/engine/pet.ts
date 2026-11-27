@@ -17,6 +17,13 @@ import { hash2 } from '../util';
 
 const HOME_SPOT: [number, number] = [30, 20];          // cabin porch steps
 const BED_SPOT: [number, number] = [2, 6];             // by the woodstove inside
+
+/** A Pet Bed you've set out in the cabin (homestead decoration), if any. */
+function petBedSpot(game: Game): [number, number] | null {
+  const c = game.getMap('CABIN_INTERIOR');
+  for (const [i, o] of c.placed) if (o === O.PET_BED) return [i % c.w, Math.floor(i / c.w)];
+  return null;
+}
 const DOORMAT: [number, number] = [27, 20];            // the cat's gift spot
 const SPEED = 70;                                       // px per second
 const PERCHES = new Set<number>([O.FENCE, O.SIGN, O.LAMP, O.MAILBOX, O.WOODPILE]);
@@ -59,7 +66,8 @@ export class Companion {
       if (this.mode !== 'sleep') {
         // Say goodnight rather than vanishing.
         if (this.mode === 'follow' && this.map === m.id && !m.def.indoor) game.toast(`${pet.name} ${pet.kind === 'raven' ? 'flaps off' : 'trots off'} home to the woodstove. Bedtime.`);
-        this.mode = 'sleep'; this.place('CABIN_INTERIOR', BED_SPOT[0], BED_SPOT[1]);
+        const bed = petBedSpot(game) ?? BED_SPOT;
+        this.mode = 'sleep'; this.place('CABIN_INTERIOR', bed[0], bed[1]);
       }
       return;
     }
