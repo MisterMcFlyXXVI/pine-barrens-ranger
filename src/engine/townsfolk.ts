@@ -129,11 +129,12 @@ export class Townsfolk {
     const id = npc.def.id;
     const held = this.held.get(id);
     if (held) return { ...held.stop, dir: npc.dir };
+    // Lost at the sawmill comes first (they snuck out; they're not at any gathering).
+    const hiding = kidsHiding(game, id);
+    if (hiding) return { map: 'OLD_GROWTH_AND_SAWMILL', x: hiding[0], y: hiding[1], dir: 'down', wander: 0 };
     // A town gathering: everybody comes.
     const ev = eventStop(game, id);
     if (ev) return ev;
-    const hiding = kidsHiding(game, id);
-    if (hiding) return { map: 'OLD_GROWTH_AND_SAWMILL', x: hiding[0], y: hiding[1], dir: 'down', wander: 0 };
     if ((id === 'buster' || id === 'toby') && game.progress.stage(id) === 1 && !game.progress.done(id)) {
       const end = game.progress.trailEnd(id);
       if (end) return { map: id === 'buster' ? 'PINE_TRAIL_AND_ORCHARD' : 'CRANBERRY_BOG_AND_SPRINGS', x: end[0], y: end[1], dir: 'down', wander: 0 };

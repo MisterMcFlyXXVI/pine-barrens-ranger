@@ -116,10 +116,10 @@ export function handcarClosed(game: Game): string | null {
   if (game.keepsake('handcar_crank') || game.keepsake('conductor_whistle')) return null;
   const m = game.clock.minutes;
   const late = funded(game, 'station');
-  if (m >= 6 * 60 && m < (late ? 24 : 19) * 60) return null;
+  if (m >= 6 * 60 && m < (late ? 24 : 21) * 60) return null;
   return m < 6 * 60 && m >= 3 * 60 ? 'The line is dark. Barney starts the first run at 6 AM.' : late
     ? 'Barney\'s gone home for the night. The first run is at 6 AM.'
-    : 'Barney\'s gone home for supper. The handcar runs 6 AM to 7 PM. (Fund the Station Roof & Signal Lamp on the Restoration Ledger for late runs.)';
+    : 'Barney\'s gone home to bed. The handcar runs 6 AM to 9 PM. (Fund the Station Roof & Signal Lamp on the Restoration Ledger for runs until midnight.)';
 }
 
 /** Merchants come in by rail on foggy weekend afternoons (P2). */

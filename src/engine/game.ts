@@ -2,6 +2,7 @@
  * Game orchestrator: owns world state, runs the update loop, resolves tool
  * use / interaction, and drives the sleep → grow → ship → save day cycle.
  */
+import { oriTick } from './orientation';
 import { recordPrints, goldCount, backfillAlbum } from './album';
 import { markMilestone } from './barks';
 import { morningNews, eveningEventToday, eventNow, eventStallAt } from './calendar';
@@ -230,6 +231,7 @@ export class Game {
       this.openOverlay(new Dialog([
         'The cabin porch creaks under your boots. Somewhere out in the pines, something answers the creak.',
         `Ranger Vance's half-burned Field Journal waits on the table inside. Clear the garden, grow lure crops, and sleep in the bed to end each day and save. ` + (touchOn() ? 'Tap DEX twice' : 'Press Tab twice') + ' to open your Campaign journal.',
+        'Tucked in the door frame, a note in careful block capitals: "RANGER. GARDEN FIRST: TILL WITH THE HOE, PLANT A SEED, WATER IT. THEN GO SEE GIDEON AT THE STORE IN TOWN. HE\'LL SET YOU UP. -B. FINCH" (Your Orientation errands are in the Journal\'s QUEST LOG.)',
       ]));
       setAct(this, 1);
     })));
@@ -290,6 +292,8 @@ export class Game {
     if (this.progress.has('grant')) this.progress.flags.add('proj_station');
     applyRestoration(this);
     backfillAlbum(this);
+    // Saves already past Act I skip the orientation errands.
+    if (this.progress.act >= 2) this.progress.flags.add('ori_done');
     // Story letters for milestones reached before letters existed: past Act II they're filed away, otherwise delivered now.
     for (const l of LETTERS) {
       if (this.progress.donations < l.donations || l.id in this.progress.mail) continue;
@@ -451,7 +455,9 @@ export class Game {
 
   isFestival(): boolean {
     // Sunday nights once the museum holds 24 specimens, plus the very first festival (the night Agnes's letter arrives).
-    return this.progress.has('festival') && (this.clock.weekday === 'Sun' || this.clock.day === this.progress.firstFest) && this.clock.minutes >= 1080 && !eveningEventToday(this);
+    // Sundays (unless another gathering has the park that evening), and always the very first one.
+    const first = this.clock.day === this.progress.firstFest;
+    return this.progress.has('festival') && (first || (this.clock.weekday === 'Sun' && !eveningEventToday(this))) && this.clock.minutes >= 1080;
   }
 
   /** Outfitter upgrade price (Gideon's 4-heart discount stacks with the Shimmer Suit). */
@@ -482,6 +488,7 @@ export class Game {
     const left = this.inv.add(id, qty);
     if (left) this.storage.add(id, left);
     sfx.coin();
+    if (this.cur.id === 'STORE_INT') this.progress.flags.add('did_buy_store');
     return true;
   }
 
@@ -501,6 +508,7 @@ export class Game {
     const over = this.inv.add(r.out, qty);
     if (over) this.storage.add(r.out, over);
     sfx.harvest();
+    this.progress.flags.add('did_craft');
     const left = craftedNeed(this, r.id);
     const verb = r.station === 'stove' ? 'Cooked' : 'Crafted';
     if (r.station === 'stove') sfx.eat();
@@ -856,7 +864,7 @@ export class Game {
       this.companion.update(this, dt);
       this.sightings.update(this, dt);
       this.campaignT -= dt;
-      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); adoptionTick(this); needsWatch.tick(this); }
+      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); adoptionTick(this); oriTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
       this.wildlife.update(this, dt);
       this.updateAmbience(dt);
@@ -1277,7 +1285,7 @@ export class Game {
     }
     const shut = handcarClosed(this);
     if (shut) { sfx.blip(); this.openOverlay(new Dialog([shut])); return; }
-    const offHours = this.clock.minutes < 6 * 60 || this.clock.minutes >= (funded(this, 'station') ? 24 : 19) * 60;
+    const offHours = this.clock.minutes < 6 * 60 || this.clock.minutes >= (funded(this, 'station') ? 24 : 21) * 60;
     if (offHours) {
       sfx.open();
       const crank = this.keepsake('handcar_crank');
@@ -1309,6 +1317,7 @@ export class Game {
     this.inv.removeAt(this.sel, 1);
     sfx.till();
     this.toast(`Snare set. Check it each morning. (${m.countPlaced(O.SNARE)} here)`);
+    this.progress.flags.add('did_snare');
   }
 
   private checkSnare(i: number, cx: number, cy: number): void {
@@ -1494,6 +1503,7 @@ export class Game {
     this.stamina = Math.min(this.maxStamina, this.stamina + def.edible);
     this.inv.removeAt(this.sel, 1);
     sfx.eat();
+    this.progress.flags.add('did_eat');
     if (def.buff) this.progress.buffs[def.buff] = this.clock.day;
     const buffTxt = def.buff === 'stealth' ? ' STEALTH buff today!' : def.buff === 'calm' ? ' STEADY NERVES buff today!' : def.buff === 'haul' ? ' LONG HAUL buff today!' : def.buff === 'lucky' ? ' LUCKY buff today!' : '';
     this.toast(st.id === 'ghost_pepper' ? 'HOT! HOT! +2 energy... and tears.' : `Ate ${def.name}. +${def.edible} energy.${buffTxt}`);
@@ -1567,7 +1577,9 @@ export class Game {
         this.pageSpots.set(pg.map, list);
       }
     }
-    return (this.pageSpots.get(map) ?? []).filter((p) => !this.progress.pages.has(p.id));
+    // The last three pages (the warden cabin, the man in green, the last entry) turn up once Act III begins,
+    // so the ending isn't lying in the town square on day one.
+    return (this.pageSpots.get(map) ?? []).filter((p) => !this.progress.pages.has(p.id) && (p.id < 7 || this.progress.act >= 3));
   }
 
   /** In someone's home, everything has a story. */
@@ -1795,6 +1807,7 @@ export class Game {
         dismantleTrap(this, m.anchorIdx(i));
         return true;
       case 'board':
+        this.progress.flags.add('did_board');
         sfx.open();
         this.openOverlay(new BoardMenu());
         return true;
@@ -1883,9 +1896,9 @@ export class Game {
 
   private readSurvey(key: string): void {
     const text: Record<string, string> = {
-      totems: 'SURVEY MAP: OLD GROWTH. "Three carved lure totems placed among the hemlocks; visit one at DUSK. The Elder (Sasquatch) comes for honeycomb and apples."',
-      chime: 'SURVEY MAP: OLD GROWTH. "A Bone & Antler Chime hung in the Old Growth rings for the WENDIGO in the WITCHING HOUR, but only in FOG or SNOW. Hold breath when its eyes flare."',
-      rod: 'SURVEY MAP: RADIO RIDGE. "A Copper Lightning Rod on the ridge during a THUNDERSTORM calls down the THUNDERBIRD. It also roams storms on its own."',
+      totems: 'SURVEY MAP: OLD GROWTH. "Three carved lure totems placed among the hemlocks; visit one at DUSK. The Elder (Sasquatch) comes for honeycomb and apples." Pencilled below: Totem = charred wood (old logs and stumps, the burn scar) + wild honeycomb + wild acorn (both forage in the hemlocks and on Pine Trail).',
+      chime: 'SURVEY MAP: OLD GROWTH. "A Bone & Antler Chime hung in the Old Growth rings for the WENDIGO in the WITCHING HOUR, but only in FOG or SNOW. Hold breath when its eyes flare." Pencilled below: Chime = Frost-Rim Antler (Old Growth leaf litter, or Ezri on foggy nights) + Silver Silk (from a logged Fresno Nightcrawler) + pine resin.',
+      rod: 'SURVEY MAP: RADIO RIDGE. "A Copper Lightning Rod on the ridge during a THUNDERSTORM calls down the THUNDERBIRD. It also roams storms on its own." Pencilled below: Rod = 3 scrap copper (slag heaps, sawmill, ridge summit) + 1 iron nail. Storms come in every season, even as thundersnow in winter.',
       weaver: 'SURVEY MAP: CROSSROADS. "The Weaver walks the Crossroads in the foggy WITCHING HOUR, only for researchers with 3-Star Nightcrawler and Will-o-the-Wisp entries. Lunar Dew."',
       awful: 'SURVEY MAP: HIGH CLIFFS. "The Awful perches on Radio Ridge\'s western cliffs at DAWN, or any time during a THUNDERSTORM. Never cower."',
     };
@@ -1964,6 +1977,7 @@ export class Game {
     if (existing) existing.n += st.n; else this.shipped.push({ id: st.id, n: st.n });
     this.inv.slots[this.sel] = null;
     sfx.coin();
+    this.progress.flags.add('did_ship');
     this.toast(`Shipped ${st.n} ${def.name} (+${def.price * st.n}g at dawn)`);
   }
 

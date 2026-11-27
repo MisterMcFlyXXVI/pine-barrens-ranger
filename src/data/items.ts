@@ -68,6 +68,8 @@ const base: ItemDef[] = [
   { id: 'squirrel', name: 'Raw Squirrel', kind: 'material', price: 20, stack: 99, desc: 'Mountain staple. Squirrel and dumplings, anyone?' },
   { id: 'grouse', name: 'Ruffed Grouse', kind: 'material', price: 55, stack: 99, desc: 'The drummer of the hardwoods. A rare catch.' },
   { id: 'brook_trout', name: 'Brook Trout', kind: 'forage', price: 40, stack: 99, desc: "West Virginia's state fish. Cold, clear creeks." },
+  { id: 'winterberry', name: 'Winterberry Sprig', kind: 'forage', price: 30, stack: 99, desc: 'Bright red holly berries on bare winter twigs. Not for eating; the birds love them, and so does Ruth\'s mantel.' },
+  { id: 'chaga', name: 'Chaga Conk', kind: 'forage', price: 55, stack: 99, desc: 'A charcoal-black fungus off an old birch. Mountain folks brew it into a bitter winter tea.' },
   { id: 'jay_feather', name: 'Blue Jay Feather', kind: 'forage', price: 15, stack: 99, desc: 'A barred blue feather. Somebody small and proud left it on your doormat.' },
   { id: 'creek_chub', name: 'Creek Chub', kind: 'forage', price: 12, stack: 99, desc: 'Bony little fish. Better smoked into bait.' },
   { id: 'smallmouth_bass', name: 'Smallmouth Bass', kind: 'forage', price: 45, stack: 99, desc: 'Bronze fighter of the lake and canal.' },

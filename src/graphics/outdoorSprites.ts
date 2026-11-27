@@ -185,6 +185,8 @@ export function bakeOutdoors(): void {
   // ---- Pass B: timber, the lucky clover and townsfolk keepsakes ----
   ICON.timber = icon((p) => { for (const y of [5, 8, 11]) { p.rect(2, y, 12, 3, AMBER); p.hline(2, 13, y, LANTERN); p.px(4, y + 1, RUST); p.px(10, y + 2, RUST); } });
   ICON.lucky_clover = icon((p) => { for (const [x, y] of [[6, 5], [10, 5], [6, 9], [10, 9]]) { p.rect(x - 2, y - 2, 4, 4, MOSS); p.px(x - 1, y - 1, FERN); } p.line(8, 9, 9, 15, FOREST); p.px(8, 7, LANTERN); });
+  ICON.winterberry = icon((p) => { p.line(4, 14, 9, 3, RUST); p.line(7, 9, 12, 5, RUST); for (const [x, y] of [[8, 4], [10, 4], [11, 6], [6, 8], [9, 7], [12, 4]]) { p.px(x, y, RED); p.px(x, y - 1, CRAN); } });
+  ICON.chaga = icon((p) => { p.ellipse(8, 9, 5, 4, VOID); p.ellipse(8, 8, 4, 3, SHADOW); for (const [x, y] of [[6, 7], [9, 9], [10, 6]]) p.px(x, y, AMBER); p.rect(3, 12, 10, 2, FOG); });
   ICON.jay_feather = icon((p) => { p.line(4, 14, 11, 2, SHADOW); for (let k = 0; k < 9; k++) { const x = 5 + Math.round(k * 0.7), y = 12 - Math.round(k * 1.2); p.rect(x, y, 3, 1, k % 2 ? TWILIGHT : MIST); } p.px(10, 3, FOG); });
   ICON.ramp_skillet = plate((p) => { p.ellipse(8, 9, 5, 2.5, AMBER); for (const [x, y] of [[5, 8], [8, 9], [11, 8]]) p.px(x, y, LANTERN); for (const [x, y] of [[6, 9], [9, 8], [10, 10]]) p.px(x, y, MOSS); p.px(7, 7, FERN); });
   ICON.apple_butter = icon((p) => { p.rect(5, 6, 7, 8, FOG); p.rect(6, 8, 5, 5, CRAN); p.hline(6, 10, 8, RUST); p.rect(5, 4, 7, 2, AMBER); p.hline(5, 11, 4, LANTERN); p.px(10, 9, RED); });

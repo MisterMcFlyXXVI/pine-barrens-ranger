@@ -52,7 +52,7 @@ export const FRIENDS: Record<FriendId, FriendDef> = {
   },
   agnes: {
     loves: ['muskie', 'frost_rim_antler', 'silver_silk'],
-    likes: ['pawpaw_bread', 'grouse_apples', 'whitetail_antler', 'black_coffee', 'wild_honeycomb'],
+    likes: ['pawpaw_bread', 'grouse_apples', 'whitetail_antler', 'black_coffee', 'wild_honeycomb', 'chaga'],
     dislikes: ['creek_chub', 'bog_slime', 'squirrel'],
     lovesSpecimens: true,
     rewards: [
@@ -102,7 +102,7 @@ export const FRIENDS: Record<FriendId, FriendDef> = {
     ],
   },
   ruth: {
-    loves: ['foraged_egg', 'wild_honeycomb', 'pawpaw', 'pepperoni_roll'],
+    loves: ['foraged_egg', 'wild_honeycomb', 'pawpaw', 'pepperoni_roll', 'winterberry'],
     likes: ['wild_onion', 'cranberries', 'wild_apple', 'black_coffee', 'soup_beans'],
     dislikes: ['bog_slime', 'sulfur_egg', 'ghost_pepper'],
     rewards: [

@@ -77,7 +77,7 @@ export function objectives(game: Game, act: number): Objective[] {
       return [
         { text: `Reach 32 donations: the County Restoration Grant (${p.donations}/32)`, done: p.donations >= 32 },
         { text: `Fund the Town Restoration Ledger (${PROJECTS.filter((x) => p.flags.has(x.flag)).length}/4 projects)`, done: PROJECTS.every((x) => p.flags.has(x.flag)) },
-        { text: 'Re-light the Lamp House and walk up to the open mine gate', done: p.flags.has('mine') },
+        { text: 'Re-light the Lamp House and walk up to the open mine gate', done: p.flags.has('mine') && p.flags.has('mine_open') },
         { text: `Complete the Cryptid-Dex (${tot.entries}/${CRYPTIDS.length * 2})`, done: tot.entries >= CRYPTIDS.length * 2 },
         { text: `Recover every journal page (${pagesFound(game)}/${JOURNAL_PAGES.length - 1})`, done: pagesFound(game) >= JOURNAL_PAGES.length - 1 },
       ];

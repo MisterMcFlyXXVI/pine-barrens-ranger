@@ -1,4 +1,6 @@
 /** NPC conversations: greetings, chat & rumors, quest offers / progress / hand-ins, role menus. */
+import { O } from '../data/tiles';
+import { oriTalk } from './orientation';
 import { isBirthday, birthdayLine } from './calendar';
 import { barkFor } from './barks';
 import type { Game } from './game';
@@ -38,6 +40,11 @@ function readyToComplete(game: Game, q: QuestDef): boolean {
     case 'wampa_survey': return dex.wampahoofus.logged && dex.wampahoofus.cast;
     case 'howler_audio': return stars(dex.ozark_howler) >= 2;
     case 'indrid_photo': return dex.indrid_cold.photo;
+    case 'ramp_run': return inv.count('wild_onion') >= 5;
+    case 'gideon_slag': return inv.count('scrap_copper') >= 6 && inv.count('crushed_quartz') >= 3;
+    case 'wisp_tape': return dex.wisp.logged;
+    case 'antler_hunt': return inv.count('frost_rim_antler') >= 1;
+    case 'storm_rod': return game.getMap('RADIO_RIDGE_AND_CROSSROADS').countPlaced(O.ROD) > 0;
     default: return false;
   }
 }
@@ -52,6 +59,11 @@ const OFFER: Record<string, string[]> = {
   albatwitch: ['"Something keeps stealing my orchard apples at dusk. Little hairy thing, quick as a cat."', '"Agnes calls it an Albatwitch. Log the little thief and I\'ll make it worth your while."'],
   wampa_survey: ['"The Society\'s Wampahoofus records are a scandal. Two sketches and a hoofprint that might be a cow."', '"Log one up on Radio Ridge and bring me a Plaster Cast of its tracks. Science, dear!"'],
   howler_audio: ['"My listeners keep calling about the howling on the ridge. I need AUDIO, Ranger. Real recordings."', '"Earn the Ozark Howler\'s behavior entry. A Static Radio or Parabolic Dish will cut through that roar."'],
+  ramp_run: ['"Honey, the Ramp Feed\'s coming and my frying arm is out of practice. Bring me five bunches of ramps?"', '"They come up wild in the shade: your cabin nook, Pine Trail, the edges of the Glades. Smell for them."'],
+  gideon_slag: ['"Toby\'s home and eating me out of house and forge. I need stock. Six scrap copper, three crushed quartz."', '"The old mine slag heaps are full of it. Sawmill rafters too. Bring it and I\'ll make you something worth having."'],
+  wisp_tape: ['"For the night show I need the lights over the Glades. The real ones, not swamp gas. Log a Will-o\'-the-Wisp for me."', '"Clear or foggy nights. Don\'t follow them off the boardwalk. Ruth\'s rule, and a good one."'],
+  antler_hunt: ['"Elias wrote about antlers rimed with frost that never melts. The Wendigo\'s chime needs one. I\'ve never seen one with my own eyes."', '"They turn up in the Old Growth leaf litter, he says. Find one and show me, dear? I\'ll trade you silk for the chime."'],
+  storm_rod: ['"Elias rigged that tower to pull lightning down on purpose. Ridge has been storming wrong ever since. A proper Lightning Rod would bleed it off."', '"Three copper and a nail at your workbench. Plant it on the ridge, and you\'ll have the big bird\'s attention next storm, too."'],
   indrid_photo: ['"One last thing. The man in green at the Crossroads. Indrid Cold. Witching Hour, clear or foggy nights."', '"Get me a Gold Photo. Nobody has ever gotten one. Nobody has ever wanted to."'],
 };
 
@@ -65,6 +77,11 @@ const DONE_TEXT: Record<string, string> = {
   albatwitch: '"So THAT\'S my thief. Cute little bandit. Here, take some cider. Don\'t let it near the apples."',
   wampa_survey: '"A proper cast! Look at the asymmetry! The Society thanks you, Ranger. Here, quartz from the archive."',
   howler_audio: '"Listen to that roar on the playback! The station phones will melt tonight. Take these batteries."',
+  ramp_run: '"Oh, these are beauties. Now get out of my kitchen before you smell like them too. Too late. Here, bread."',
+  gideon_slag: '"Good haul. Here: a Brass Bell. I cast it myself. Ring it like you mean it."',
+  wisp_tape: '"Look at it on the monitor. That\'s not marsh gas. That\'s a lantern with nobody holding it. Tonight\'s show is going to be something."',
+  antler_hunt: '"Oh my. It\'s cold. Truly cold, in July. Keep it for the chime, dear, and take this silk. Elias would be... well. He\'d be glad."',
+  storm_rod: '"Felt the static drop from down here. My knees stopped aching. That\'s science. Here, copper for the next one."',
   indrid_photo: '"...It\'s him. That grin. I\'ll frame it in the studio. Thank you. I think."',
 };
 
@@ -73,6 +90,8 @@ function completeQuest(game: Game, q: QuestDef): string[] {
   switch (q.id) {
     case 'telegraph': game.inv.remove('scrap_copper', 5); game.inv.remove('battery_pack', 1); break;
     case 'mabel_harvest': game.inv.remove('sweet_corn', 5); game.inv.remove('cranberries', 10); break;
+    case 'ramp_run': game.inv.remove('wild_onion', 5); break;
+    case 'gideon_slag': game.inv.remove('scrap_copper', 6); game.inv.remove('crushed_quartz', 3); break;
     case 'toby': {
       const lv = p.tools.machete;
       if (lv < UPGRADES.machete.length - 1) { p.tools.machete = lv + 1; }
@@ -137,6 +156,10 @@ export function talkTo(game: Game, npc: NpcRT): void {
   // The kids, lost at the sawmill past curfew.
   if ((d.id === 'pippa' || d.id === 'sam') && kidsHiding(game, d.id)) { rescueKids(game); return; }
 
+  // Ranger Orientation: the giver of your current errand hands it over.
+  const ori = oriTalk(game, d.id);
+  if (ori) { dailyChat(game, d.id); game.openOverlay(new Dialog(ori)); return; }
+
   // Friendship: the first chat each day counts; reaching a heart level plays its scene on top.
   const scenes = dailyChat(game, d.id);
   const showScenes = () => { for (const s of [...scenes].reverse()) { sfx.trustChime(); game.openOverlay(new Dialog(s)); } };
@@ -151,6 +174,7 @@ export function talkTo(game: Game, npc: NpcRT): void {
       continue;
     }
     if (q.after && !p.done(q.after)) continue;
+    if (q.minAct && p.act < q.minAct) continue;
     // Don't stack offers while another quest from this giver is active.
     if (QUESTS.some((o) => giverMatches(o, d.id) && p.active(o.id))) continue;
     const pages = [...(OFFER[q.id] ?? [`${d.name} needs your help.`])];

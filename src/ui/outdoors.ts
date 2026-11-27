@@ -83,6 +83,7 @@ export class FishingGame implements Overlay {
             const name = ITEMS[this.fish.id].name;
             if (!game.inv.canFit(this.fish.id)) { sfx.error(); this.end(`A ${name}! But your bag is full, so you let it go.`); return; }
             game.inv.add(this.fish.id, 1);
+            game.progress.flags.add('did_fish');
             sfx.harvest();
             game.stats.foraged++;
             this.end(this.fish.id === 'muskie' ? `A MUSKIE! The fish of ten thousand casts!` : `Caught a ${name}!`);

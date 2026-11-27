@@ -36,7 +36,7 @@ const WARDEN: Lines = {
   _: 'They\'re saying the {cryptid} let you near it. The woods feel different. Quieter, in a good way.',
   agnes: 'The {cryptid}. Elias spent years trying to get close to it, and you did it by being kind. I don\'t know whether to laugh or cry, dear.',
   gideon: '{cryptid}, settled. I can sleep without the forge lit, maybe.',
-  barnaby: 'The {cryptid}, at peace with us. Elias would want to know. ...I\'ll tell him on the radio.',
+  barnaby: 'The {cryptid}, at peace with us. Elias always said they only wanted manners. He\'ll want to hear it from you.',
   ruth: 'Ruth heard you made peace with the {cryptid}. My Walter always said the old ones just wanted manners.',
   clara: 'The static on the ridge dropped twelve decibels the night you logged the {cryptid}. I\'m not saying that\'s connected. I\'m saying it\'s data.',
 };

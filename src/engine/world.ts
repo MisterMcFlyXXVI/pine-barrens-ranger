@@ -11,6 +11,9 @@ export interface PlotState {
   days: number;
 }
 
+/** Winter-only finds in the wilds. */
+const WINTER_FORAGE: readonly string[] = ['winterberry', 'winterberry', 'chaga', 'frost_rim_antler'];
+
 export class MapRuntime {
   readonly def: MapDef;
   readonly objects: Uint8Array;
@@ -154,7 +157,10 @@ export class MapRuntime {
       const spots = grp.spots.filter((i) => this.objects[i] === O.NONE && !this.forage.has(i));
       for (let k = 0; k < grp.count && spots.length; k++) {
         const j = Math.floor(rnd() * spots.length);
-        this.forage.set(spots[j], grp.table[Math.floor(rnd() * grp.table.length)]);
+        // Winter in the wilds: a share of finds are winter-only (winterberry, chaga, frost-rim antler).
+        const winter = Math.floor((day - 1) / 28) % 4 === 3 && this.def.wild && this.id !== 'CABIN_YARD';
+        const table = winter && rnd() < 0.3 ? WINTER_FORAGE : grp.table;
+        this.forage.set(spots[j], table[Math.floor(rnd() * table.length)]);
         spots.splice(j, 1);
       }
     }

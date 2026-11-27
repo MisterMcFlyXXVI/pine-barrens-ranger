@@ -1,4 +1,5 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
+import { oriSummary } from '../engine/orientation';
 import { PhotoAlbum } from './album';
 import { goldCount } from '../engine/album';
 import { SettingsMenu } from './settingsMenu';
@@ -535,6 +536,8 @@ export class JournalMenu implements Overlay {
       wrapText('Lure crops draw specific cryptids. Keep a stock of each before venturing past the trails.', w - 12).forEach((l) => line(l, P.CRAN));
     } else if (page === 1) {
       const pr = game.progress;
+      const ori = oriSummary(game);
+      if (ori) { wrapText(ori, w - 12).forEach((l) => line(l, P.FOREST)); ly += 2; }
       const active = QUESTS.filter((q) => pr.active(q.id));
       const done = QUESTS.filter((q) => pr.done(q.id));
       if (!active.length) line('No active quests. Talk to the townsfolk!', P.CRAN);

@@ -56,7 +56,11 @@ export class Companion {
     const mins = game.clock.minutes;
     // Bedtime: curled up by the woodstove.
     if (mins >= 22 * 60 || mins < 6 * 60) {
-      if (this.mode !== 'sleep') { this.mode = 'sleep'; this.place('CABIN_INTERIOR', BED_SPOT[0], BED_SPOT[1]); }
+      if (this.mode !== 'sleep') {
+        // Say goodnight rather than vanishing.
+        if (this.mode === 'follow' && this.map === m.id && !m.def.indoor) game.toast(`${pet.name} ${pet.kind === 'raven' ? 'flaps off' : 'trots off'} home to the woodstove. Bedtime.`);
+        this.mode = 'sleep'; this.place('CABIN_INTERIOR', BED_SPOT[0], BED_SPOT[1]);
+      }
       return;
     }
     const followable = !m.def.indoor && (m.id === 'CABIN_YARD' || m.id === 'PINE_HOLLOW_TOWN' || (def.hikes && m.def.wild));

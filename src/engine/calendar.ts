@@ -47,6 +47,10 @@ export function eventStop(game: Game, id: string): Stop | null {
   const g = GATHER.find(([n]) => n === id);
   if (!g) return null;
   if (id === 'vance' && !game.progress.flags.has('finale')) return null;
+  // Toby only joins town life once he's home from the bog.
+  if (id === 'toby' && !(game.progress.done('toby') || game.progress.stage('toby') === 2)) return null;
+  // Gideon minds the Outfitter till noon on Stir-Off day, so you can still shop.
+  if (id === 'gideon' && e.id === 'apple_butter' && game.clock.minutes < 12 * 60) return null;
   const [sx, sy] = eventSpot(game, e);
   const x = sx + g[1], y = sy + g[2];
   return { map: 'PINE_HOLLOW_TOWN', x, y, dir: g[2] > 0 ? 'up' : g[1] > 0 ? 'left' : 'right', wander: 0, tag: 'event' };

@@ -235,6 +235,18 @@ Handy URL flags for trying things out:
 - **Why they're all here**: the Quiet Zone. Everywhere else the sky is full of signal; Pine Holler is one of the last
   quiet places, so the stories come here to sleep (Dr. Okafor's theory).
 
+## Getting started: Ranger Orientation
+- Ten first-week errands teach the game and walk you around town. Barney's note starts you in the garden; then
+  Gideon (buy at his counter, craft a pair of snares, set one), Mabel (eat to restore energy, ship something for coin),
+  Agnes (read the Bulletin Board, raise your camcorder at a cryptid clue, donate your first specimen) and Barney (his
+  old fishing rod: catch a fish). Talk to each person to take their errand on; each pays a small reward. Current
+  step: Journal, QUEST LOG.
+- More letters arrive between the big milestones (Clara at 3 donations, the Junior Cryptid Club at 9, Gideon at 15,
+  Ruth at 21) with gifts and field tips, and there are new side quests: Ruth's Ramp Run, Gideon's Slag Heap Salvage,
+  Clara's Night Show, and in Act III Agnes's Frost on the Antler and Barney's Grounding the Ridge.
+- Weather never locks you out: winter brings cold rain and thundersnow, and a storm always comes within about ten
+  days in any season (the Thunderbird, The Awful and rain cryptids stay reachable). Winter wilds have their own finds.
+
 ## A living world
 - **Townsfolk notice things**: before their usual hello they'll bring up your first Mothman, a rare variant, a Warden
   at peace, a restoration they woke up to, last night's storm or fog, you wearing Elias's coat (Mabel and Agnes),
@@ -288,7 +300,7 @@ Handy URL flags for trying things out:
   - **P1 Diner Neon** (3 Scrap Copper, 1 Glow-Shroom, 150g): the EAT sign lights from dusk; Friday Night Story Hour
     (6-9 PM): friendship at the diner counts double.
   - **P2 Station Roof & Signal Lamp** (10 Timber, 5 Iron Nails, 300g): the station is repaired and lit, the signal lamp
-    burns, and the handcar runs until midnight (normally 6 AM to 7 PM). Traveling Merchants come by rail on foggy
+    burns, and the handcar runs until midnight (normally 6 AM to 9 PM). Traveling Merchants come by rail on foggy
     weekend afternoons.
   - **P3 Park Gazebo** (12 Timber, 4 Crushed Quartz, 450g): a lantern-lit gazebo on the park's west lawn. Sunday
     afternoon porch music (1-5 PM); sitting in it once a Sunday restores all your stamina.

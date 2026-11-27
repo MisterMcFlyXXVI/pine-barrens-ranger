@@ -29,6 +29,8 @@ export interface HeartScene {
   /** Short label for the Journal. */
   title: string;
   lines: string[];
+  /** Played instead once Elias is home (after the finale), where the original would talk as if he's still missing. */
+  post?: string[];
   give?: [string, number];
   flag?: string;
   wear?: string;
@@ -53,6 +55,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   /* ---------------- Agnes Vance ---------------- */
   {
     id: 'agnes1', hint: 'Museum, afternoons', who: 'agnes', hearts: 1, map: 'MUSEUM_INT', when: AFTERNOON, title: 'The badge in the drawer',
+    post: [
+      "Agnes beckons you behind the front desk and opens a drawer she keeps locked.",
+      "Inside, on green felt: a brass C&O badge. TRACK FOREMAN -- E. VANCE -- 34 YEARS.",
+      "AGNES: \"I was going to put it in a case. I could never decide which wing a brother goes in.\" She smiles. \"He's home now. Sunday, at breakfast, in front of the whole diner, I'm pinning it on him myself. He'll hate it. Come watch.\"",
+    ],
     lines: [
       'Agnes beckons you behind the front desk and opens a drawer she keeps locked.',
       'Inside, on green felt: a brass C&O badge. TRACK FOREMAN -- E. VANCE -- 34 YEARS.',
@@ -62,10 +69,15 @@ export const HEART_SCENES: readonly HeartScene[] = [
   },
   {
     id: 'agnes2', hint: 'Her cottage, 8-10 PM', who: 'agnes', hearts: 2, map: 'HOUSE_VANCE', when: (t) => between(t, h(20), h(22)), title: 'The letters on her desk',
+    post: [
+      "Agnes's writing desk is stacked with envelopes, three autumns' worth, every one addressed \"To Elias, wherever he's gotten to.\" None of them stamped.",
+      "AGNES: \"I gave him the whole stack his first night home. He read every one at the kitchen table till the lamp ran dry.\"",
+      "AGNES: \"Now he writes back. One a week. We live in the same house, dear. It's ridiculous.\" She straightens the stack. \"I love it.\"",
+    ],
     lines: [
-      'Agnes\'s writing desk is stacked with envelopes. Every one is addressed to "Elias Vance, Fire-Warden Cabin, Radio Ridge." None of them are stamped.',
-      'AGNES: "One a week. Three autumns. I write them, and then I can\'t bear to walk them up the ridge in case he isn\'t there to read them."',
-      'AGNES: "Or in case he is, and doesn\'t."',
+      'Agnes\'s writing desk is stacked with envelopes. Every one is addressed "To Elias, wherever he\'s gotten to." None of them are stamped.',
+      'AGNES: "One a week. Three autumns. Folks say the Barrens took him. I say he\'s stubborn. So I write, and there\'s nowhere to send them."',
+      'AGNES: "Clara thinks she hears him on the radio some nights. I\'m afraid to believe her. If I believe her and I\'m wrong..." She doesn\'t finish.',
       'She straightens the stack. "Don\'t tell Mabel. She\'d march them up there herself."',
     ],
   },
@@ -75,11 +87,17 @@ export const HEART_SCENES: readonly HeartScene[] = [
       'Agnes is standing at the Miners\' Memorial, a hand on the cold bronze. She doesn\'t look round.',
       'AGNES: "Daniel. Danny. Our little brother. He went down No. 3 the morning of the collapse, March of \'78. They brought up fourteen men. They never brought up Danny."',
       'AGNES: "Elias was out walking track that morning. He\'s never forgiven himself for being somewhere else. I think that\'s why he needed so badly to save something. The town. Anything."',
-      'She touches a name on the plaque: D. VANCE. "Somebody keeps putting ramps here. I think it\'s Ruth. I\'ve never asked."',
+      'She touches a name on the newer bronze strip below the 1927 names: D. VANCE, 1978. "Somebody keeps putting ramps here. I think it\'s Ruth. I\'ve never asked."',
     ],
   },
   {
     id: 'agnes4', hint: 'Archive Basement, night', who: 'agnes', hearts: 5, map: 'MUSEUM_BASEMENT', when: NIGHT, give: ['radio_key', 1], title: 'The brass radio key',
+    post: [
+      "Agnes is in the Archive by lamplight, a box open on the map table. She holds up a small brass Morse key.",
+      "AGNES: \"From the warden cabin's old set. Elias left it with me the night before the storm. He said, 'If I don't come back, give it to somebody who'll keep listening.'\"",
+      "AGNES: \"He came back. And he says it's yours all the same.\" She closes your fingers around it. \"It was always going to be you, {name}.\"",
+      "(You received Elias's Brass Radio Key.)",
+    ],
     lines: [
       'Agnes is in the Archive by lamplight, a box open on the map table. She holds up a small brass Morse key.',
       'AGNES: "From the warden cabin\'s old set. Elias brought it down the night before the storm and left it with me. He said, \'If I don\'t come back, give it to somebody who\'ll keep listening.\'"',
@@ -101,12 +119,17 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'In the dark of the old freight shed behind the station, Barney thumbs open a mildewed ledger by lantern light.',
       'BARNEY: "The growling crate. Everybody thinks I made it up. October 1978. Look -- consigned from the No. 3 mine office, routed QUIET ZONE, RADIO RIDGE SIDING. Contents: \'live specimen.\'"',
-      'BARNEY: "The mine sent something up to the ridge on my train, the year after the collapse. Elias read this same page the week before he went up there for good. Went white as a sheet."',
+      'BARNEY: "The mine sent something up to the ridge on my train, the fall after the collapse. Elias read this same page the week before he went up there for good. Went white as a sheet."',
       'He shuts the ledger. "I don\'t know what was in that crate. I know it was scratching."',
     ],
   },
   {
     id: 'barney3', hint: 'Your pond, Sunday afternoon', who: 'barnaby', hearts: 3.5, map: 'CABIN_YARD', near: [36, 43, 6], when: (t) => t.weekday === 'Sun' && AFTERNOON(t), title: 'The lantern on the firebreak',
+    post: [
+      "Barney reels in, doesn't cast again, and sets the rod across his knees.",
+      "BARNEY: \"Got a confession, and your pond's as good a priest as any. The night of the storm, I saw a lantern cross the firebreak up on the ridge. Going up. Fast. I could've gone after him. I was scared of what I'd find.\"",
+      "BARNEY: \"Told him so, finally, last Sunday on the porch.\" He watches the bobber a long while. \"Took me three years to say sorry. Took him three seconds to say it didn't matter.\"",
+    ],
     lines: [
       'Barney reels in, doesn\'t cast again, and sets the rod across his knees.',
       'BARNEY: "I\'ve got a confession, and your pond\'s as good a priest as any. The night of the storm, I saw a lantern cross the firebreak up on the ridge. Going up. Fast."',
@@ -129,7 +152,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Gideon tips a crucible at the open-air anvil. In the scrap pile beside him: three rusted leg-hold traps, jaws twisted.',
       'GIDEON: "Elias asked me to forge these. Said it was for bears. I knew it wasn\'t bears. I made them anyway."',
-      'GIDEON: "He brought them back after the storm, with blood on one of them that wasn\'t his. Asked me to melt them down. I never did. Couldn\'t decide if it was mine to do." He feeds a trap into the fire. "Decided."',
+      'GIDEON: "The morning after the storm, there they were on my anvil. Chained together, blood on one that wasn\'t his, and a note in his hand: MELT THEM. He must\'ve come down in the dark before he went up for good. I never did melt them. Couldn\'t decide if it was mine to do." He feeds a trap into the fire. "Decided."',
     ],
   },
   {
@@ -145,14 +168,19 @@ export const HEART_SCENES: readonly HeartScene[] = [
     id: 'gideon3', hint: 'His house, 9-10 PM', who: 'gideon', hearts: 4, map: 'HOUSE_MILLER', when: (t) => between(t, h(21), h(22)), give: ['lamphouse_key', 1], title: 'The first carving',
     lines: [
       'Gideon pulls a sack off something in the corner: a half-carved block of white oak. Ram horns, a shaggy shoulder. Then nothing but wood.',
-      'GIDEON: "Elias started this in my shop the winter after the storm. A Sheepsquatch. Said he\'d carve it till his hands stopped shaking. They didn\'t stop. He left it here and went up the ridge."',
-      'GIDEON: "And this, {name}." A heavy iron key. "The lamp house at No. 3. I\'ve kept it nineteen years. When the town\'s ready to open that hill back up, you\'re the one I\'d trust to turn it."',
+      'GIDEON: "Elias started this in my shop the winter before the storm. A Sheepsquatch. Said he\'d carve it till his hands stopped shaking. They didn\'t stop. Then the storm came, and he never came back for it."',
+      'GIDEON: "And this, {name}." A heavy iron key. "The lamp house at No. 3. I\'ve kept it since \'78. When the town\'s ready to open that hill back up, you\'re the one I\'d trust to turn it."',
       '(You received the Lamp-House Key.)',
     ],
   },
   /* ---------------- Ruth Haddix ---------------- */
   {
     id: 'ruth1', hint: 'Her porch, morning', who: 'ruth', hearts: 1, map: 'PINE_HOLLOW_TOWN', near: [35, 57, 4], when: MORNING, title: 'The Tuesday tin',
+    post: [
+      "There's a dented lunch tin on Ruth's porch rail. She sees you looking.",
+      "RUTH: \"Every Tuesday for three years, somebody left two pepperoni rolls in that tin, wrapped in wax paper. Folded the way the C&O men folded them. And every Tuesday I filled it back up.\"",
+      "RUTH: \"I always knew whose hands folded that paper, honey. Now he brings them to the door himself and stays for coffee. I kept the tin anyway.\"",
+    ],
     lines: [
       'There\'s a dented lunch tin on Ruth\'s porch rail. She sees you looking.',
       'RUTH: "Every Tuesday for three years, somebody leaves two pepperoni rolls in that tin, wrapped in wax paper. Folded the way the C&O men folded them."',
@@ -170,6 +198,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   },
   {
     id: 'ruth3', hint: 'Town Park, dusk', who: 'ruth', hearts: 4, map: 'PINE_HOLLOW_TOWN', near: [38, 30, 6], when: DUSK, title: 'Music across the hollow',
+    post: [
+      "Ruth settles onto a bench in the Town Park and listens. Faint, from the direction of Agnes's porch, a harmonica.",
+      "RUTH: \"Sound carries in a hollow. Walter used to say that's why folks here sing so much -- so the dead can hear us.\"",
+      "RUTH: \"Three years that harmonica played from the ridge, honey. Danny's songs. Now it plays from Agnes's porch.\" She pats your hand. \"The dead can hear it just the same. So can we.\"",
+    ],
     lines: [
       'Ruth settles onto a bench in the Town Park and listens. Faint, from somewhere up the ridge, a harmonica.',
       'RUTH: "Sound carries in a hollow. You can hear a man whistling three ridges over if the air\'s still. Walter used to say that\'s why folks here sing so much -- so the dead can hear us."',
@@ -195,6 +228,12 @@ export const HEART_SCENES: readonly HeartScene[] = [
   },
   {
     id: 'mabel3', hint: 'Her house, 9-10 PM', who: 'mabel', hearts: 4, map: 'HOUSE_MILLER', when: (t) => between(t, h(21), h(22)), wear: 'elias_coat', title: 'The wool coat',
+    post: [
+      "Mabel lifts a heavy wool coat off a hook by the stove. Both elbows are patched in different plaids.",
+      "MABEL: \"Elias's ranger coat. He left it on my porch the night of the storm. I offered it back when he came home and he wouldn't take it.\"",
+      "MABEL: \"'A ranger coat belongs on the ranger,' he says.\" She holds it up against your shoulders. \"There. You'll do, {name}.\"",
+      "(Elias's Wool Coat is in your cabin wardrobe.)",
+    ],
     lines: [
       'Mabel lifts a heavy wool coat off a hook by the stove. Both elbows are patched in different plaids.',
       'MABEL: "Elias\'s ranger coat. He left it on my porch the night of the storm. Ran out without it. I\'ve patched it twice and washed it more than that."',
@@ -205,6 +244,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   /* ---------------- Dr. Clara Okafor ---------------- */
   {
     id: 'clara1', hint: 'Museum, Monday morning', who: 'clara', hearts: 1, map: 'MUSEUM_INT', when: (t) => t.weekday === 'Mon' && between(t, h(9), h(12)), title: 'The modulation charts',
+    post: [
+      "Dr. Okafor has long strips of chart paper spread across two benches, covered in a jittery ink line.",
+      "CLARA: \"Want my theory? Everywhere else, the sky is static snow: towers, cell signals, satellites. This valley sits in a radio shadow of limestone and hemlock. One of the last quiet places left. I think the stories come here the way animals come to the last clean spring. To sleep.\"",
+      "CLARA: \"Three years of Quiet Zone logs. Every night, something on Radio Ridge keyed up for four minutes at 2 AM. A railroad hand on the key.\" She taps the last strip, where the line goes flat. \"It stopped the night you talked him down. Best flatline I've ever recorded.\"",
+    ],
     lines: [
       'Dr. Okafor has long strips of chart paper spread across two benches, covered in a jittery ink line.',
       'CLARA: "Want my theory? Everywhere else, the sky is static snow: towers, cell signals, satellites. This valley sits in a radio shadow of limestone and hemlock. One of the last quiet places left. I think the stories come here the way animals come to the last clean spring. To sleep."',
@@ -214,6 +258,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   },
   {
     id: 'clara2', hint: 'Her room over the diner, a rainy night', who: 'clara', hearts: 2, map: 'DINER_ROOM', when: (t) => t.wet && between(t, h(20), h(23)), title: 'The 2 AM recording',
+    post: [
+      "Clara threads a reel onto the tape machine and turns the volume down low.",
+      "A man's voice, tired and patient: \"...warden cabin weather, two A.M. Wind northwest, ten. Fog in the low hollows. Garden at the fire-watch cabin... cleared. Somebody's been working it.\"",
+      "CLARA: \"From his last month up there. He mentioned your garden then, too.\" She grins. \"He's agreed to read the weather live on WKPB, Tuesday nights. From my studio. With a cup of coffee and no wind in the mic.\"",
+    ],
     lines: [
       'Clara threads a reel onto the tape machine and turns the volume down low, as if it might wake someone.',
       'A man\'s voice, tired and patient: "...warden cabin weather, two A.M. Wind northwest, ten. Fog in the low hollows. Bog springs humming. Fire danger low. Garden at the fire-watch cabin... cleared. Somebody\'s been working it."',
@@ -232,6 +281,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   /* ---------------- Pippa Calloway & Sam Haddix ---------------- */
   {
     id: 'kids1', hint: 'Your cabin, Saturday morning', who: 'kids', hearts: 1, map: 'CABIN_YARD', when: (t) => t.weekday === 'Sat' && !t.wet && between(t, h(9), h(12)), title: 'The crayon patrol map',
+    post: [
+      "Pippa and Sam spread a huge crayon map across your porch boards, weighing the corners with rocks.",
+      "PIPPA: \"Official Junior Cryptid Club patrol map! Red X's are sightings. Blue X's are 'maybe.' Green X's are Sam being scared of a stump.\"",
+      "SAM: \"It moved.\" He points at a little house on the ridge, crossed out in red. \"That was the haunted cabin. There used to be a light every night. Now Mr. Vance lives at Mrs. Vance's and the light's gone.\" PIPPA: \"We demoted it to a Blue X.\"",
+    ],
     lines: [
       'Pippa and Sam spread a huge crayon map across your porch boards, weighing the corners with rocks.',
       'PIPPA: "Official Junior Cryptid Club patrol map! Red X\'s are sightings. Blue X\'s are \'maybe.\' Green X\'s are Sam being scared of a stump."',
@@ -258,6 +312,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   /* ---------------- Toby ---------------- */
   {
     id: 'toby1', hint: 'General Store, morning', who: 'toby', hearts: 1, map: 'STORE_INT', when: (t) => between(t, h(8), h(11)), title: 'Copper wire up the ridge',
+    post: [
+      "Toby is coiling copper wire behind the counter, a lot of it.",
+      "TOBY: \"Somebody used to order copper wire every month. I'd haul it to a stump below Radio Ridge and the next day there'd be exact change in an envelope that smelled like woodsmoke.\"",
+      "TOBY: \"Turns out it was Mr. Vance keeping his transmitter alive. Now he picks it up himself and tips me a pepperoni roll. Best customer we've got.\"",
+    ],
     lines: [
       'Toby is coiling copper wire behind the counter, a lot of it.',
       'TOBY: "Somebody orders copper wire every month. Gideon packs it and I haul it to the trailhead below Radio Ridge and leave it on a stump. Next day the stump\'s got an envelope with exact change."',
@@ -266,6 +325,11 @@ export const HEART_SCENES: readonly HeartScene[] = [
   },
   {
     id: 'toby2', hint: 'His loft, 9-10 PM', who: 'toby', hearts: 2, map: 'STORE_LOFT', when: (t) => between(t, h(21), h(22)), title: 'The map in the rafters',
+    post: [
+      "Toby points up. Pinned to the rafters over his cot is an old forestry service map, curled at the edges.",
+      "TOBY: \"FIRE-WARDEN CABIN, ABANDONED 1961. Not on any trail map. I used to look at it before I fell asleep and like knowing somebody was up there keeping watch.\"",
+      "TOBY: \"He's back in town now. I kept the map up anyway. Feels like the cabin's still keeping watch. Just for nobody in particular.\"",
+    ],
     lines: [
       'Toby points up. Pinned to the rafters over his cot is an old forestry service map, curled at the edges.',
       'TOBY: "Found it in a crate of Gideon\'s. See this little square? FIRE-WARDEN CABIN, ABANDONED 1961. It\'s not on any of the trail maps. That\'s where the copper wire goes."',

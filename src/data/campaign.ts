@@ -208,11 +208,27 @@ export interface Letter { id: string; donations: number; pages: string[]; gift?:
 
 export const LETTERS: readonly Letter[] = [
   {
+    id: 'clara3', donations: 3, gift: ['mineral_salt', 3],
+    pages: [
+      'A letter on WKPB station paper, the call letters stamped in red:',
+      '"Ranger! Dr. Clara Okafor, WKPB, the voice of the hollers. Agnes tells me you\'ve logged three already. My listeners are beside themselves."',
+      '"Field tip from the studio: the Glades are busiest at dusk and after dark, the ridge in the rain, and fog brings out everything. Mineral salt enclosed: half the valley will walk a mile for it. -C.O."',
+    ],
+  },
+  {
     id: 'agnes6', donations: 6,
     pages: [
       'A letter from Agnes, on Historical Society stationery:',
       '"Six specimens! Dear, I have decided you are a proper researcher, and proper researchers get keys. The Archive Basement is open to you."',
       '"The old county survey maps are down there, and some of Elias\'s notes in the margins. He drew the four Wardens\' ranges like a trackman draws switches. I can\'t bear to read them. Perhaps you can. -A.V."',
+    ],
+  },
+  {
+    id: 'kids9', donations: 9, gift: ['wild_clover', 5],
+    pages: [
+      'A crayon envelope, sealed with a sticker of a jackalope. Inside, the Junior Cryptid Club Newsletter, Issue 1:',
+      '"CLUB RULES: 1. No running near cryptids (they get scared). 2. Bait goes FIRST. 3. Snacks are for members. HOT TIPS: Hoop Snakes like SUNNY days. Albatwitches are in the APPLE TREES at DUSK. Sam saw a Wampahoofus but it was a cow."',
+      '"You are now an HONORARY MEMBER. Your dues are clover. We have enclosed clover so you can pay your dues. -Pippa (President) and Sam (Also President)"',
     ],
   },
   {
@@ -224,12 +240,28 @@ export const LETTERS: readonly Letter[] = [
     ],
   },
   {
+    id: 'gideon15', donations: 15, gift: ['scrap_copper', 4],
+    pages: [
+      'A short note in a heavy hand, folded around a bundle of copper wire:',
+      '"Ranger. You\'re going deeper in now. The sawmill rafters and the mine slag both give copper; a Lightning Rod wants three and a nail. Frost-Rim Antlers turn up in the Old Growth leaf litter, and Ezri sells them dear on foggy nights."',
+      '"Copper enclosed. Don\'t thank me. Come by the anvil some afternoon. -G.T."',
+    ],
+  },
+  {
     id: 'mabel18', donations: 18, gift: ['pepperoni_roll', 1],
     pages: [
       'A grease-spotted letter from Mabel, wrapped around something warm:',
       '"Hon! Agnes says we are THIS close to a Folklore Festival, first one since Elias went up the ridge. The whole town\'s hanging garlands in the park and Gideon\'s building the stalls. Come see!"',
       '"Here\'s a pepperoni roll for the walk. Don\'t you dare share it with a cryptid. -Mabel"',
       '(You got a Pepperoni Roll.)',
+    ],
+  },
+  {
+    id: 'ruth21', donations: 21, gift: ['pawpaw_bread', 2],
+    pages: [
+      'A letter in old-fashioned looping cursive, smelling faintly of cinnamon:',
+      '"Dear Ranger, Sam reads me your Dex out loud at supper. Twenty-one! Walter would have walked you to every one of those creatures himself, and told you lies about the other twenty."',
+      '"Pawpaw bread for your pack. My mother\'s recipe. Eat it when you\'re out somewhere quiet and want to feel watched over. -Ruth Haddix"',
     ],
   },
   {
@@ -267,12 +299,12 @@ export const INSPECTOR_FESTIVAL: readonly string[] = [
 export const DECODE_SCENE: readonly string[] = [
   'By the bonfire, Agnes unfolds a water-stained survey map. Dr. Clara Okafor leans over it with a flashlight, headphones around her neck.',
   'CLARA: "These aren\'t contour lines, they\'re frequencies. Elias charted the four Wardens: the Elder in the Old Growth, the Wendigo of the witching fog, the Thunderbird of the ridge storms, The Awful on the high cliffs."',
-  'AGNES: "And this. Clara traced that voice on your porch radio. It\'s coming from the old fire-warden cabin on Radio Ridge. It\'s him. He\'s alive, and he will not come down."',
+  'AGNES: "And this. Clara traced that voice on your porch radio. It\'s coming from the old fire-warden cabin on Radio Ridge. It\'s him. Half this town has wondered for three years, and none of us dared climb up and knock. Now we know. He\'s alive, and he will not come down."',
   'AGNES: "His notes say the Wardens drove him off. He won\'t believe he\'s forgiven until someone they trust tells him so. {name}... please. Earn their trust. Then talk my brother home."',
 ];
 
 export const ACT4_CALL: readonly string[] = [
-  'Your Static Radio crackles. Dr. Clara Okafor, breathless: "Ranger! All four Wardens are logged, and the warden cabin transmitter just switched itself on."',
+  'Every radio in the valley crackles at once, the porch set included. Dr. Clara Okafor, breathless: "Ranger! All four Wardens are logged, and the warden cabin transmitter just switched itself on."',
   'CLARA: "The Crossroads on Radio Ridge. Witching Hour, midnight to 2 AM. Select the Static Radio and use it there. His pages: bog hum, ridge whistle, the silence between."',
 ];
 
@@ -327,6 +359,7 @@ export function finaleBeats(reason: Reason | null): FinaleBeat[] {
 export const MINE_TEASE: readonly string[] = [
   'The iron gate swings open on its own, groaning. Cold air breathes out of the dark, smelling of coal dust and wet stone.',
   'Far below, a lantern flickers where no one should be. Something down there knocks on the rails, three times, slow and patient.',
-  'Painted on the first timber in fresh white letters: "THE WARDENS SLEEP. WE DO NOT."',
-  'THE UNDERGROUND: a new horror campaign beneath Pine Hollow. Coming in a future expansion.',
+  'Chalked on the first timber, in a careful railroad hand: "WHAT WENT UP THE RIDGE ON THE \'78 TRAIN CAME BACK DOWN HERE. -E.V."',
+  'Whatever was in Barney\'s growling crate, it\'s down there still, and it\'s been listening to the town above it for a long time.',
+  'BELOW PINE HOLLOW: a new chapter beneath No. 3. Coming in a future expansion.',
 ];

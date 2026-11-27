@@ -53,7 +53,7 @@ export const EVENTS: readonly TownEvent[] = [
       ],
       give: ['ramp_skillet', 2],
     },
-    stock: [{ id: 'ramp_skillet', cost: 70 }, { id: 'wild_onion', cost: 25 }, { id: 'soup_beans', cost: 110 }],
+    stock: [{ id: 'ramp_skillet', cost: 70 }, { id: 'wild_onion', cost: 25 }, { id: 'soup_beans', cost: 110 }, { id: 'seed_clover', cost: 15 }, { id: 'seed_corn', cost: 35 }],
     talk: {
       mabel: ['Ramps, bacon grease, taters. If you can\'t smell us from the ridge, we\'re doing it wrong.', 'Ruth\'s been frying ramps since before I was born. I just hold the platter.'],
       ruth: ['Walter used to dig the ramps. Now Gideon does, and he digs them too deep. Don\'t tell him.', 'You\'ll stink for a week, honey. That\'s how you know it was a good Feed.'],
@@ -79,7 +79,7 @@ export const EVENTS: readonly TownEvent[] = [
       ],
       give: ['apple_butter', 2],
     },
-    stock: [{ id: 'apple_butter', cost: 60 }, { id: 'apple_cider', cost: 60 }, { id: 'wild_apple', cost: 20 }],
+    stock: [{ id: 'apple_butter', cost: 60 }, { id: 'apple_cider', cost: 60 }, { id: 'wild_apple', cost: 20 }, { id: 'seed_cranberry', cost: 40 }, { id: 'seed_pepper', cost: 55 }],
     talk: {
       gideon: ['Copper kettle\'s older than me. My grandmother\'s. Don\'t knock the paddle on the rim.'],
       ruth: ['You stir in figure eights, and you don\'t stop till dark. That\'s the whole recipe. That and forty pounds of apples.'],

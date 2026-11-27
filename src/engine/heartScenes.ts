@@ -12,6 +12,7 @@ import { layTrail } from './progress';
 import { friendState, befriend } from './friends';
 import { POINTS_PER_HEART } from '../data/friends';
 import { CRYPTID_BY_ID } from '../data/cryptids';
+import { eventStop, eveningEventToday } from './calendar';
 import { ITEMS } from '../data/items';
 import { Dialog } from '../ui/menus';
 import { sfx } from '../audio/sfx';
@@ -52,7 +53,9 @@ export function heartTick(game: Game): void {
   if (p.days.scene === game.clock.day) return;
   const m = game.cur.id, pl = game.player;
   const t = sceneTime(game);
-  const s = HEART_SCENES.find((s) => s.map === m && ready(game, s) && s.when(t)
+  // Nobody gets pulled out of a town gathering, and the kids don't sneak off on a gathering night.
+  const busy = (s: HeartScene) => SCENE_CAST[s.who].some((id) => eventStop(game, id)) || (s.special === 'rescue' && eveningEventToday(game));
+  const s = HEART_SCENES.find((s) => s.map === m && ready(game, s) && s.when(t) && !busy(s)
     && (!s.near || Math.hypot(pl.tx - s.near[0], pl.ty - s.near[1]) <= s.near[2]));
   if (s) play(game, s);
 }
@@ -124,7 +127,9 @@ function play(game: Game, s: HeartScene): void {
   }
   if (s.flag) p.flags.add(s.flag);
   if (s.wear) game.wardrobe.add(s.wear);
-  game.openOverlay(new Dialog([header(s), ...s.lines]));
+  // Once Elias is home, scenes that would talk as if he's missing use their after-version.
+  const lines = s.post && p.flags.has('finale') ? s.post : s.lines;
+  game.openOverlay(new Dialog([header(s), ...lines]));
 }
 
 /* ---------------- The kids at the sawmill ---------------- */
