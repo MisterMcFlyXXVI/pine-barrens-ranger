@@ -25,7 +25,15 @@ type Row = 'name' | 'build' | 'skin' | 'style' | 'hair' | 'facial' | 'outfit' | 
 
 const ROW_H = 11;
 
+/** Creators with a name field on the page (so a field never outlives its screen). */
+const LIVE = new Set<CharacterCreator>();
+
 export class CharacterCreator implements Overlay {
+  /** Remove the name field of any creator that's no longer on screen (e.g. the menus were cleared). */
+  static sweep(overlays: readonly Overlay[]): void {
+    for (const c of LIVE) if (c.closed || !overlays.includes(c)) c.closeField();
+  }
+
   closed = false;
   private row = 0;
   private rows: Row[];
@@ -71,6 +79,7 @@ export class CharacterCreator implements Overlay {
     });
     document.body.appendChild(f);
     this.field = f;
+    LIVE.add(this);
   }
 
   private placeField(x: number, y: number, w: number): void {
@@ -85,7 +94,7 @@ export class CharacterCreator implements Overlay {
     f.style.fontSize = `${Math.max(12, Math.round(7 * s))}px`;
   }
 
-  private closeField(): void { this.field?.remove(); this.field = null; }
+  private closeField(): void { this.field?.remove(); this.field = null; LIVE.delete(this); }
 
   /* ---------------- input ---------------- */
 

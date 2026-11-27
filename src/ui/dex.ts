@@ -13,6 +13,7 @@ import { drawStar } from '../engine/encounter';
 import { panel, inRect, Rect } from './panel';
 import { JournalMenu } from './menus';
 import { touchOn } from '../util';
+import { LORE } from '../data/lore';
 
 const VARIANTS: Variant[] = ['normal', 'albino', 'static'];
 const SHORT_MAP: Record<string, string> = {
@@ -38,7 +39,12 @@ export class DexMenu implements Overlay {
   closed = false;
   private idx = 0;
   private scroll = 0;
-  private mode: 'list' | 'detail' = 'list';
+  private mode: 'list' | 'detail' | 'lore' = 'list';
+  /** Page of the lore view (long entries page with A). */
+  private lorePage = 0;
+  private lorePages = 1;
+  /** The LORE button on the detail page (for taps). */
+  private loreBtn: Rect | null = null;
   private variant = 0;
 
   private box(game: Game): Rect {
@@ -70,11 +76,22 @@ export class DexMenu implements Overlay {
       }
       if (open) { this.mode = 'detail'; this.variant = 0; sfx.confirm(); }
       if (inp.pressed('b')) { this.closed = true; sfx.cancel(); }
+    } else if (this.mode === 'lore') {
+      if (inp.repeat('up')) { this.idx = (this.idx + n - 1) % n; this.lorePage = 0; sfx.blip(); }
+      if (inp.repeat('down')) { this.idx = (this.idx + 1) % n; this.lorePage = 0; sfx.blip(); }
+      if (inp.pressed('a') || inp.taps.length || inp.repeat('right')) {
+        if (this.lorePage + 1 < this.lorePages) { this.lorePage++; sfx.blip(); } else { this.mode = 'detail'; sfx.cancel(); }
+      }
+      if (inp.repeat('left') && this.lorePage > 0) { this.lorePage--; sfx.blip(); }
+      if (inp.pressed('b')) { this.mode = 'detail'; sfx.cancel(); }
     } else {
+      const openLore = () => { this.mode = 'lore'; this.lorePage = 0; sfx.open(); };
       if (inp.repeat('up')) { this.idx = (this.idx + n - 1) % n; this.variant = 0; sfx.blip(); }
       if (inp.repeat('down')) { this.idx = (this.idx + 1) % n; this.variant = 0; sfx.blip(); }
       if (inp.repeat('left')) { this.variant = (this.variant + 2) % 3; sfx.blip(); }
-      if (inp.repeat('right') || inp.pressed('a') || inp.taps.length) { this.variant = (this.variant + 1) % 3; sfx.blip(); }
+      if (inp.pressed('a') && game.dex[CRYPTIDS[this.idx].id].seen) openLore();
+      else if (inp.taps.some((t) => this.loreBtn && inRect(this.loreBtn, t.x, t.y))) openLore();
+      else if (inp.repeat('right') || inp.taps.length) { this.variant = (this.variant + 1) % 3; sfx.blip(); }
       if (inp.pressed('b')) { this.mode = 'list'; sfx.cancel(); }
     }
     const rows = this.rows(game);
@@ -87,6 +104,7 @@ export class DexMenu implements Overlay {
     panel(g, B.x, B.y, B.w, B.h, 'paper');
     const tot = dexTotals(game.dex);
     if (this.mode === 'list') this.drawList(game, g, B, tot);
+    else if (this.mode === 'lore') this.drawLore(game, g, B);
     else this.drawDetail(game, g, B);
   }
 
@@ -171,6 +189,45 @@ export class DexMenu implements Overlay {
       if (e.logged) para('SPECIMEN: ', c.drop.name, P.FOREST);
       para('ENCOUNTERS: ', String(e.encounters), P.AMBER);
     }
-    drawText(g, 'L/R: VARIANT  U/D: NEXT  B: LIST', B.x + 5, B.y + B.h - 9, P.RUST);
+    // LORE button (A), once you've seen it.
+    this.loreBtn = null;
+    if (e.seen) {
+      const bw = 30, bx = B.x + B.w - bw - 5, by = B.y + B.h - 12;
+      this.loreBtn = { x: bx, y: by - 1, w: bw, h: 10 };
+      g.fillStyle = hex(P.RUST); g.fillRect(bx, by - 1, bw, 10);
+      drawTextCentered(g, 'LORE', bx + bw / 2, by + 1, P.LANTERN);
+    }
+    drawText(g, e.seen ? 'A: LORE  L/R: VARIANT  U/D: NEXT' : 'L/R: VARIANT  U/D: NEXT  B: LIST', B.x + 5, B.y + B.h - 9, P.RUST);
+  }
+
+  /** The legend (2 stars) and what Pine Holler says about it (3 stars), paged if long. */
+  private drawLore(game: Game, g: CanvasRenderingContext2D, B: Rect): void {
+    const c = CRYPTIDS[this.idx];
+    const e = game.dex[c.id];
+    const st = stars(e);
+    const lore = LORE[c.id];
+    drawText(g, `NO.${String(c.num).padStart(2, '0')} ${e.seen ? c.name.toUpperCase() : '?????'}: LORE`, B.x + 5, B.y + 5, P.CRAN);
+    for (let k = 0; k < 3; k++) drawStar(g, B.x + B.w - 26 + k * 7, B.y + 5, k < st, P.RED, P.AMBER);
+    const w = B.w - 12;
+    const lines: Array<[string, number]> = [];
+    const section = (title: string, text: string, color: number) => {
+      if (lines.length) lines.push(['', P.RUST]);
+      lines.push([title, P.CRAN]);
+      for (const l of wrapText(text, w)) lines.push([l, color]);
+    };
+    if (!e.seen) section('UNKNOWN', 'You haven\'t seen it yet.', P.RUST);
+    else {
+      section('FIELD SKETCH', c.look, P.SHADOW);
+      section('THE LEGEND', st >= 2 && lore ? lore.legend : 'Earn a 2-Star entry (favorite bait, a stance counter, or a Plaster Cast) to piece together the legend.', st >= 2 ? P.SHADOW : P.RUST);
+      let local = lore?.local ?? '';
+      if (c.id === 'sheepsquatch' && game.progress.flags.has('carving')) local = local.replace(/Its case in the museum waits for the carving he never finished\./, 'Since he came home, his finished carving stands in its museum case.');
+      section('IN PINE HOLLER', st >= 3 && lore ? local : 'Earn a Gold entry (photo + specimen) to hear what the town says about it.', st >= 3 ? P.FOREST : P.RUST);
+    }
+    const per = Math.max(4, Math.floor((B.h - 30) / 7));
+    this.lorePages = Math.max(1, Math.ceil(lines.length / per));
+    this.lorePage = Math.min(this.lorePage, this.lorePages - 1);
+    lines.slice(this.lorePage * per, (this.lorePage + 1) * per).forEach(([l, col], k) => drawText(g, l, B.x + 6, B.y + 16 + k * 7, col));
+    const more = this.lorePage + 1 < this.lorePages;
+    drawText(g, more ? `A: MORE (${this.lorePage + 1}/${this.lorePages})  U/D: NEXT  B: BACK` : `A/B: BACK  U/D: NEXT${this.lorePages > 1 ? `  (${this.lorePage + 1}/${this.lorePages})` : ''}`, B.x + 5, B.y + B.h - 9, P.RUST);
   }
 }

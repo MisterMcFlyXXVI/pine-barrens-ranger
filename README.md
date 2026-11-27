@@ -228,6 +228,13 @@ Handy URL flags for trying things out:
 - **The cabin mirror**: the wardrobe now offers "Look in the mirror" to change your look any time. Saves from before the
   creator open it once on load.
 
+## Cryptid lore
+- Every Dex entry has a **LORE** page (A on the detail page, or tap LORE): a field sketch, **the legend** behind it
+  (unlocked at 2 stars: where and when the real-world story comes from) and **In Pine Holler** (3 stars: how it lives in
+  the valley and what the townsfolk say). Donated specimens' museum cases show Agnes's placard.
+- **Why they're all here**: the Quiet Zone. Everywhere else the sky is full of signal; Pine Holler is one of the last
+  quiet places, so the stories come here to sleep (Dr. Okafor's theory).
+
 ## Heart scenes, cryptid bonds & the Restoration Ledger
 - **Heart scenes** (`src/data/heartScenes.ts`, `src/engine/heartScenes.ts`): 26 short scenes, 3 or 4 per townsperson,
   each showing a piece of Elias's story from their side. One plays when you walk into its place at its time with enough

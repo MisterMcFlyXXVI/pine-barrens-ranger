@@ -196,6 +196,9 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 ### Character creator
 - `src/data/appearance.ts` (`Appearance`, palette-pair SKINS/HAIRS, `bodyFor` -> player `Body` incl. `facial`/`build`, `fillName`/`nameOrRanger`) and `src/ui/creator.ts` (`CharacterCreator` modes `new` | `returning` | `mirror`; the name is an HTML input laid over the canvas). `Game.setAppearance` sets the sprite (`setPlayerBody`) and name; saved as optional `appearance`. `Dialog`, `StoryPanels` and the finale fill `{name}` (falls back to "Ranger"). Keep player text gender-neutral: no pronouns or gendered words for the player.
 
+### Cryptid lore
+- `src/data/lore.ts`: `LORE[id]` = `legend` (real-world source, shown at 2 stars) + `local` (Pine Holler's version, 3 stars), from the owner's research notes, fact-checked: keep legends honest (say when a source is thin or a hoax) and name the Indigenous nations whose stories the Wampus Cat, Pukwudgie, Sasquatch, Thunderbird and Wendigo come from. Dex detail page: A / LORE button -> paged lore view. Donated museum cases show Agnes's placard (the legend). Premise: the Quiet Zone is one of the last quiet places, so the stories come here to sleep (Clara's first heart scene and chatter).
+
 ### Dialogue portraits & voices
 - `src/ui/speaker.ts`: a page starting "NAME:" (or a heart-scene "<3 ... NAME:" title) gets that speaker's portrait (cropped from their 24x24 sprite; Indrid from his cryptid sprite) with a name plate, its label stripped (titles keep theirs), and their own typing voice (`VOICES`: wave, pitch above ~98 Hz, lilt; `sfx.voice`). Unlabelled pages are narration (plain blip, no portrait). Add new speakers to `ALIASES`/`VOICES`.
 

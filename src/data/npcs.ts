@@ -274,6 +274,7 @@ export const NPCS: readonly NpcDef[] = [
     chat: [
       'I broadcast from the tower every night. You\'d be amazed who calls in at 3 AM.',
       'Folklore is data that nobody bothered to graph. I\'m graphing it.',
+      'Every cryptid in this valley is from somewhere louder. Wyoming, Ohio, the Pine Barrens. They come here for the quiet. So do people, I think.',
       'A Parabolic Dish would let us record their calls cleanly. Pike sells the plans on foggy nights.',
       'The man in the green suit at the Crossroads asked me for the time. I checked. My watch had stopped.',
       'My doctorate is in ethnography. My hobby is getting chased by things with too many teeth.',

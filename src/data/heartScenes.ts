@@ -207,7 +207,8 @@ export const HEART_SCENES: readonly HeartScene[] = [
     id: 'clara1', hint: 'Museum, Monday morning', who: 'clara', hearts: 1, map: 'MUSEUM_INT', when: (t) => t.weekday === 'Mon' && between(t, h(9), h(12)), title: 'The modulation charts',
     lines: [
       'Dr. Okafor has long strips of chart paper spread across two benches, covered in a jittery ink line.',
-      'CLARA: "Quiet Zone signal logs. Nothing should broadcast in here. But every night since the storm, something on Radio Ridge keys up for exactly four minutes at 2 AM. Low power. Old equipment."',
+      'CLARA: "Want my theory? Everywhere else, the sky is static snow: towers, cell signals, satellites. This valley sits in a radio shadow of limestone and hemlock. One of the last quiet places left. I think the stories come here the way animals come to the last clean spring. To sleep."',
+      'CLARA: "Which is why these keep me up. Quiet Zone signal logs. Nothing should broadcast in here. But every night since the storm, something on Radio Ridge keys up for exactly four minutes at 2 AM. Low power. Old equipment."',
       'CLARA: "The modulation is an amateur hand. A careful one. Somebody who learned Morse on a railroad." She taps the chart. "I think Agnes\'s brother is the most faithful radio host in West Virginia, Ranger. He just doesn\'t have a listener."',
     ],
   },

@@ -2,6 +2,7 @@
  * Game orchestrator: owns world state, runs the update loop, resolves tool
  * use / interaction, and drives the sleep → grow → ship → save day cycle.
  */
+import { LORE } from '../data/lore';
 import { DEFAULT_LOOK, bodyFor, setPlayerName, nameOrRanger } from '../data/appearance';
 import type { Appearance } from '../data/appearance';
 import { setPlayerBody } from '../graphics/playerSprite';
@@ -822,6 +823,7 @@ export class Game {
     for (const t of this.toasts) t.t -= dt;
     this.toasts = this.toasts.filter((t) => t.t > 0);
 
+    CharacterCreator.sweep(this.overlays);
     const top = this.overlays[this.overlays.length - 1];
     if (top) {
       if (this.fadeDir === 0) top.update(this, dt);
@@ -1775,9 +1777,12 @@ export class Game {
         sfx.blip();
         if (!c) return true;
         const num = `No.${String(c.num).padStart(2, '0')}`;
-        this.openOverlay(new Dialog([this.progress.donated.has(c.id)
-          ? `${num} ${c.name}. Specimen: ${c.drop.name}. "Donated by the Ranger." ${c.look}`
-          : `An empty case labeled ${num} ${this.dex[c.id].seen ? c.name : '?????'}. Agnes is waiting for a specimen.`]));
+        const lore = LORE[c.id];
+        this.openOverlay(new Dialog(this.progress.donated.has(c.id) ? [
+          `${num} ${c.name}. Specimen: ${c.drop.name}. "Donated by {name}, Fire-Watch Ranger."`,
+          ...(lore ? [`Agnes's placard, in her careful copperplate: "${lore.legend}"`] : [c.look]),
+        ] : [
+          `An empty case labeled ${num} ${this.dex[c.id].seen ? c.name : '?????'}. Agnes is waiting for a specimen.`]));
         return true;
       }
       case 'kiosk':
