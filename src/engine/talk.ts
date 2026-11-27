@@ -13,7 +13,7 @@ import { sfx } from '../audio/sfx';
 import { hash2 } from '../util';
 import { agnesStory } from './campaign';
 import { INSPECTOR_OPEN, INSPECTOR_CHOICES, INSPECTOR_CLOSE, INSPECTOR_FESTIVAL } from '../data/campaign';
-import { dailyChat, giftable, giftedToday, giveGift } from './friends';
+import { dailyChat, giftable, giftedToday, giveGift, hearts } from './friends';
 import { isFriend } from '../data/friends';
 
 /** Quest givers (Sam shares Pippa's club quests). */
@@ -89,6 +89,13 @@ function completeQuest(game: Game, q: QuestDef): string[] {
 }
 
 /** Main entry: the player pressed A facing this NPC. */
+/** How each friend says hello once they know you. */
+const NAME_HELLO: Record<string, string> = {
+  agnes: 'Good afternoon, {name}, dear.', barnaby: 'Well, if it isn\'t {name}!', mabel: '{name}! Sit down, hon, you look starved.',
+  gideon: '{name}.', clara: 'This is WKPB, and that\'s {name} walking in!', pippa: '{name}! Club meeting! Sort of!',
+  sam: 'Hi, {name}.', toby: 'Hey, {name}!', ruth: 'There\'s my {name}.',
+};
+
 export function talkTo(game: Game, npc: NpcRT): void {
   const d = npc.def;
   const p = game.progress;
@@ -160,6 +167,10 @@ export function talkTo(game: Game, npc: NpcRT): void {
   const greet = pool[Math.floor(hash2(game.clock.day, d.name.length + game.talkCount(d.id), 7) * pool.length)];
   const active = QUESTS.find((q) => giverMatches(q, d.id) && p.active(q.id));
   const pages = [`${d.name}: "${greet.replace(/^"|"$/g, '')}"`];
+  // Friends greet you by name now and then.
+  if (isFriend(d.id) && hearts(game, d.id) >= 3 && game.appearance.name && hash2(game.clock.day, d.name.length, 13) < 0.5) {
+    pages.unshift(`${d.name.split(' ')[0].replace(/"/g, '')}: "${NAME_HELLO[d.id] ?? 'Hey there, {name}.'}"`);
+  }
   if (active) pages.push(`(Quest: ${active.steps[Math.max(0, p.stage(active.id) - 1)]})`);
 
   const chat = (): void => {

@@ -2,6 +2,10 @@
  * Game orchestrator: owns world state, runs the update loop, resolves tool
  * use / interaction, and drives the sleep → grow → ship → save day cycle.
  */
+import { DEFAULT_LOOK, bodyFor, setPlayerName, nameOrRanger } from '../data/appearance';
+import type { Appearance } from '../data/appearance';
+import { setPlayerBody } from '../graphics/playerSprite';
+import { CharacterCreator } from '../ui/creator';
 import { Input } from '../input/input';
 import { Camera } from '../graphics/camera';
 import { Particles } from '../graphics/particles';
@@ -102,6 +106,8 @@ export class Game {
   readonly maxWater = MAX_WATER;
   sel = 0;
   look: Look = { outfit: 'ranger_jacket', hat: 'ranger_cap' };
+  /** Name, body, skin, hair, facial hair (character creator). */
+  appearance: Appearance = { ...DEFAULT_LOOK };
   wardrobe = new Set<string>();
   readonly maps = new Map<MapId, MapRuntime>();
   cur!: MapRuntime;
@@ -180,6 +186,7 @@ export class Game {
     this.water = MAX_WATER;
     this.sel = 0;
     this.look = { outfit: 'ranger_jacket', hat: 'ranger_cap' };
+    this.setAppearance(DEFAULT_LOOK);
     this.wardrobe = this.starterWardrobe();
     this.maps.clear();
     this.shipped = [];
@@ -207,13 +214,13 @@ export class Game {
     this.banner.t = 0;
     this.mode = 'play';
     this.overlays = [];
-    playIntro(this, () => {
+    this.openOverlay(new CharacterCreator(this, 'new', () => playIntro(this, () => {
       this.openOverlay(new Dialog([
         'The cabin porch creaks under your boots. Somewhere out in the pines, something answers the creak.',
         `Ranger Vance's half-burned Field Journal waits on the table inside. Clear the garden, grow lure crops, and sleep in the bed to end each day and save. ` + (touchOn() ? 'Tap DEX twice' : 'Press Tab twice') + ' to open your Campaign journal.',
       ]));
       setAct(this, 1);
-    });
+    })));
   }
 
   loadGame(d: SaveData): void {
@@ -233,6 +240,7 @@ export class Game {
     this.water = d.water;
     this.sel = Math.min(HOTBAR_SIZE - 1, Math.max(0, d.sel));
     this.look = { ...d.look };
+    this.setAppearance(d.appearance ?? DEFAULT_LOOK);
     this.wardrobe = new Set([...this.starterWardrobe(), ...d.wardrobe]);
     this.maps.clear();
     for (const [id, ms] of Object.entries(d.maps) as Array<[MapId, MapSave]>) {
@@ -282,6 +290,8 @@ export class Game {
     this.mode = 'play';
     this.overlays = [];
     this.toast('Field journal loaded.');
+    // Saves from before the character creator: introduce yourself once.
+    if (!d.appearance) this.openOverlay(new CharacterCreator(this, 'returning', () => this.toast(`Welcome back, ${nameOrRanger()}.`)));
   }
 
   toSave(): SaveData {
@@ -309,6 +319,7 @@ export class Game {
       needs: this.needs.map((n) => ({ ...n })),
       sel: this.sel,
       look: { ...this.look },
+      appearance: { ...this.appearance },
       wardrobe: [...this.wardrobe],
       map: this.cur.id,
       px: this.player.tx,
@@ -756,6 +767,13 @@ export class Game {
 
   pendingPayout(): number {
     return this.shipped.reduce((a, s) => a + (ITEMS[s.id]?.price ?? 0) * s.n, 0);
+  }
+
+  /** Apply character-creator choices to the player sprite and dialogue. */
+  setAppearance(a: Appearance): void {
+    this.appearance = { ...a };
+    setPlayerBody(bodyFor(this.appearance));
+    setPlayerName(this.appearance.name);
   }
 
   /** Run once every dialog is closed (e.g. walk somewhere after a scene). */
@@ -1589,7 +1607,11 @@ export class Game {
       }
       case 'dresser':
         sfx.open();
-        this.openOverlay(new DresserMenu(this));
+        this.openOverlay(new Dialog(['The old wardrobe. A speckled mirror is screwed to the inside of the door.'], [
+          { label: 'Change clothes', fn: () => this.openOverlay(new DresserMenu(this)) },
+          { label: 'Look in the mirror', fn: () => this.openOverlay(new CharacterCreator(this, 'mirror', () => undefined)) },
+          { label: 'Leave', fn: () => undefined },
+        ]));
         return true;
       case 'workbench':
         sfx.open();

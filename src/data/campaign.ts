@@ -37,7 +37,7 @@ export const REASONS: readonly Reason[] = ['loss', 'burnout', 'belong'];
 /** Barney's question on the drive up, and your three possible answers. */
 export const BARNEY_ASKS: readonly string[] = [
   'Barney drives with one wrist on the wheel. The radio fades to static somewhere past the Quiet Zone sign.',
-  'Barney: "Can I ask you something, Ranger? Folks don\'t take a fire-watch post way up here for the pay. Why\'d you come?"',
+  'Barney: "{name}, right? Agnes read me your letter twice. Can I ask you something, {name}? Folks don\'t take a fire-watch post way up here for the pay. Why\'d you come?"',
 ];
 export const REASON_CHOICE: Record<Reason, string> = {
   loss: 'I needed somewhere quiet after losing someone.',
@@ -74,7 +74,7 @@ export const INTRO_CABIN: readonly string[] = [
 export const EPILOGUE_TEXT: readonly string[] = [
   'Dawn at the old C&O station. Mist sits on the rails like water. Out of it, walking the ties the way only a trackman can, comes Elias Vance: thinner, grayer, a wooden carving cradled in his arms.',
   'He sets it on the platform: a Sheepsquatch, hand-carved from ridge white oak, every curl of fleece cut by hand. "Three winters," he says. "For Agnes\'s case. It\'s the only way I knew to say sorry to it."',
-  'Then he presses a brass key into your hand. "The fire-watch cabin\'s yours. For good. It always needed somebody who listens." Down the platform, Agnes is walking very fast for a woman who never runs.',
+  'Then he presses a brass key into your hand. "The fire-watch cabin\'s yours, {name}. For good. It always needed somebody who listens." Down the platform, Agnes is walking very fast for a woman who never runs.',
   'Barney blows the station whistle, once, for the first time since \'79. And under the north-east foothills, where Danny Vance went down and didn\'t come up, the old coal mine hums a little louder...',
 ];
 
@@ -195,9 +195,9 @@ export const RADIO_ELIAS: Record<Reason, string[]> = {
   belong: ['The faint voice again, clearer: "...they\'ve taken to you down there. I can tell by how many porch lights stay on. Don\'t waste it. Goodnight, fire-watch."'],
 };
 export const RADIO_HOME: readonly string[][] = [
-  ['Elias: "Warden cabin to fire-watch. Old habits. Agnes says goodnight, and that you\'re to bank the stove properly. I taught you nothing, apparently."'],
+  ['Elias: "Warden cabin to fire-watch. Old habits. Agnes says goodnight, {name}, and that you\'re to bank the stove properly. I taught you nothing, apparently."'],
   ['Elias: "Fire-watch, the white one came by the warden cabin tonight. Limp\'s nearly gone. It ate my whole supper. Seemed fair."'],
-  ['Barney: "Finch here. Elias and me are arguing about the 1962 timetable. Settle it for us tomorrow. Goodnight, Ranger."'],
+  ['Barney: "Finch here. Elias and me are arguing about the 1962 timetable. Settle it for us tomorrow. Goodnight, {name}."'],
 ];
 
 /* ------------------------------------------------------------------ */
@@ -236,7 +236,7 @@ export const LETTERS: readonly Letter[] = [
     id: 'agnes24', donations: 24,
     pages: [
       'A letter from Agnes. The envelope smells faintly of woodsmoke:',
-      '"Twenty-four. Twenty-four specimens, and every one of them came to us by trust, not by iron. Elias never managed that. You did."',
+      '"Twenty-four. Twenty-four specimens, and every one of them came to us by trust, not by iron. Elias never managed that. You did, {name}."',
       '"The Pine Hollow Folklore Festival is TONIGHT, six o\'clock, in the Town Park. Bonfire, fiddles, Mabel\'s pepperoni rolls, and two very odd merchants. Come find me by the fire. I have something of my brother\'s that belongs with you now. -A.V."',
     ],
   },
@@ -268,7 +268,7 @@ export const DECODE_SCENE: readonly string[] = [
   'By the bonfire, Agnes unfolds a water-stained survey map. Dr. Clara Okafor leans over it with a flashlight, headphones around her neck.',
   'CLARA: "These aren\'t contour lines, they\'re frequencies. Elias charted the four Wardens: the Elder in the Old Growth, the Wendigo of the witching fog, the Thunderbird of the ridge storms, The Awful on the high cliffs."',
   'AGNES: "And this. Clara traced that voice on your porch radio. It\'s coming from the old fire-warden cabin on Radio Ridge. It\'s him. He\'s alive, and he will not come down."',
-  'AGNES: "His notes say the Wardens drove him off. He won\'t believe he\'s forgiven until someone they trust tells him so. Ranger... please. Earn their trust. Then talk my brother home."',
+  'AGNES: "His notes say the Wardens drove him off. He won\'t believe he\'s forgiven until someone they trust tells him so. {name}... please. Earn their trust. Then talk my brother home."',
 ];
 
 export const ACT4_CALL: readonly string[] = [
@@ -299,7 +299,7 @@ export function finaleBeats(reason: Reason | null): FinaleBeat[] {
   const heart = HEART[reason ?? 'belong'];
   return [
     { text: 'The needle drifts on its own. Fog pours across the Crossroads, and the four roads vanish one by one.' },
-    { speaker: 'indrid', text: 'INDRID COLD: "Good evening, Ranger. He is listening. He has listened every night since the storm. I can carry your voice up to his transmitter, if you can find his frequency."' },
+    { speaker: 'indrid', text: 'INDRID COLD: "Good evening, {name}. He is listening. He has listened every night since the storm. I can carry your voice up to his transmitter, if you can find his frequency."' },
     { text: 'Silk ribbons unspool from the fog. Behind Indrid rises THE WEAVER, taller than the dead tree, the ribbons humming like wire in wind.' },
     { text: 'Tune the dial. Elias\'s last page: "Start where the bog hums..."', tune: { options: ['66.1  BOG HUM', '88.7  STATIC', '104.5  TRAIN'], correct: 0, ok: 'A low hum fills the Crossroads. The ribbons sway toward the ridge.' } },
     { text: '"...climb to the ridge\'s whistle..."', tune: { options: ['13.0  CRICKETS', '77.7  STATIC', '101.3  RIDGE WHISTLE'], correct: 2, ok: 'Up on the ridge, a lit window in the old warden cabin flickers, once, in answer.' } },
@@ -320,7 +320,7 @@ export function finaleBeats(reason: Reason | null): FinaleBeat[] {
       },
     },
     { speaker: 'weaver', text: 'THE WEAVER: "The Wardens remember the storm. They also remember the ranger who came after, with bait instead of iron. They forgive. Come down from the ridge, trackman."' },
-    { speaker: 'vance', text: 'ELIAS: "...Dawn. The C&O station. If the mist lifts, I\'ll be on the platform." The fog parts, and far up the ridge the warden cabin\'s window goes dark.' },
+    { speaker: 'vance', text: 'ELIAS: "...Dawn, {name}. The C&O station. If the mist lifts, I\'ll be on the platform." The fog parts, and far up the ridge the warden cabin\'s window goes dark.' },
   ];
 }
 

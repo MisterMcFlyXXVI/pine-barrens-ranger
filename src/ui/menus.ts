@@ -1,4 +1,5 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
+import { fillName } from '../data/appearance';
 import { foresightText, bondsMade } from '../engine/bonds';
 import { HEART_SCENES } from '../data/heartScenes';
 import type { Game } from '../engine/game';
@@ -50,7 +51,14 @@ export class Dialog implements Overlay {
   private choice = 0;
   private blipAcc = 0;
 
-  constructor(private readonly pages: string[], private readonly choices?: Choice[]) {}
+  private readonly pages: string[];
+  private readonly choices?: Choice[];
+
+  constructor(pages: string[], choices?: Choice[]) {
+    // Dialogue can say {name}: the player's name, or "Ranger" if they never gave one.
+    this.pages = pages.map(fillName);
+    this.choices = choices?.map((c) => ({ ...c, label: fillName(c.label) }));
+  }
 
   update(game: Game, dt: number): void {
     const inp = game.input;

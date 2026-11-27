@@ -214,6 +214,18 @@ Handy URL flags for trying things out:
   Agnes's porch with her and Barney, and takes the white one its supper on Thursdays. At 32 donations the County
   Restoration Grant matches the town: Restoration Ledger projects cost half the coins, and the old rail car is restored.
 
+## Your ranger
+- **Character creator** (`src/ui/creator.ts`, `src/data/appearance.ts`), before the drive up: your name, body
+  (two builds, unlabelled), 4 skin tones, 7 hairstyles, 6 hair colours, facial hair (none, stubble, moustache, beard)
+  and what you arrive in (Ranger Uniform or the new Chore Coat & Jeans; both stay in your wardrobe). The name box is a
+  real text field over the canvas, so phones bring up their own keyboard. Hair that would match your skin is drawn a
+  shade darker so it always reads.
+- **Your name**: Barney asks it on the drive up; friends at 3+ hearts sometimes greet you by it; it comes up in heart
+  scenes, Agnes's 24-specimen letter, the porch radio after the ending, the finale (Indrid Cold and Elias) and the
+  epilogue. Everyone else still calls you "Ranger". Dialogue text can use `{name}`.
+- **The cabin mirror**: the wardrobe now offers "Look in the mirror" to change your look any time. Saves from before the
+  creator open it once on load.
+
 ## Heart scenes, cryptid bonds & the Restoration Ledger
 - **Heart scenes** (`src/data/heartScenes.ts`, `src/engine/heartScenes.ts`): 26 short scenes, 3 or 4 per townsperson,
   each showing a piece of Elias's story from their side. One plays when you walk into its place at its time with enough

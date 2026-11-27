@@ -83,7 +83,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Agnes is in the Archive by lamplight, a box open on the map table. She holds up a small brass Morse key.',
       'AGNES: "From the warden cabin\'s old set. Elias brought it down the night before the storm and left it with me. He said, \'If I don\'t come back, give it to somebody who\'ll keep listening.\'"',
-      'AGNES: "I\'ve been waiting three years to decide who that is." She closes your fingers around it. "It\'s you, dear. It was always going to be you."',
+      'AGNES: "I\'ve been waiting three years to decide who that is." She closes your fingers around it. "It\'s you, {name}. It was always going to be you."',
       '(You received Elias\'s Brass Radio Key. Your porch radio can reach the ridge.)',
     ],
   },
@@ -119,7 +119,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Early morning on the platform. Barney is polishing something brass on his sleeve.',
       'BARNEY: "My conductor\'s whistle. Blew it on the last train out in \'79 and never since." He holds it out. "You blow this at any stop on the line, and I\'ll come. Any hour. Buster too."',
-      'BARNEY: "Don\'t argue. A railroad\'s only a railroad if somebody\'s waiting at the other end."',
+      'BARNEY: "Don\'t argue, {name}. A railroad\'s only a railroad if somebody\'s waiting at the other end."',
       '(You received Barney\'s Conductor Whistle.)',
     ],
   },
@@ -146,7 +146,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Gideon pulls a sack off something in the corner: a half-carved block of white oak. Ram horns, a shaggy shoulder. Then nothing but wood.',
       'GIDEON: "Elias started this in my shop the winter after the storm. A Sheepsquatch. Said he\'d carve it till his hands stopped shaking. They didn\'t stop. He left it here and went up the ridge."',
-      'GIDEON: "And this." A heavy iron key. "The lamp house at No. 3. I\'ve kept it nineteen years. When the town\'s ready to open that hill back up, you\'re the one I\'d trust to turn it."',
+      'GIDEON: "And this, {name}." A heavy iron key. "The lamp house at No. 3. I\'ve kept it nineteen years. When the town\'s ready to open that hill back up, you\'re the one I\'d trust to turn it."',
       '(You received the Lamp-House Key.)',
     ],
   },
@@ -173,7 +173,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Ruth settles onto a bench in the Town Park and listens. Faint, from somewhere up the ridge, a harmonica.',
       'RUTH: "Sound carries in a hollow. You can hear a man whistling three ridges over if the air\'s still. Walter used to say that\'s why folks here sing so much -- so the dead can hear us."',
-      'RUTH: "That harmonica\'s been playing evenings for three years now. Same four songs. Danny\'s songs." She pats your hand. "Somebody up there misses this town something terrible, honey."',
+      'RUTH: "That harmonica\'s been playing evenings for three years now. Same four songs. Danny\'s songs." She pats your hand. "Somebody up there misses this town something terrible, {name}, honey."',
     ],
   },
   /* ---------------- Mabel Miller ---------------- */
@@ -198,7 +198,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Mabel lifts a heavy wool coat off a hook by the stove. Both elbows are patched in different plaids.',
       'MABEL: "Elias\'s ranger coat. He left it on my porch the night of the storm. Ran out without it. I\'ve patched it twice and washed it more than that."',
-      'MABEL: "It\'s been waiting on somebody to fill it out again." She holds it up against your shoulders and sniffs. "There. You\'ll do."',
+      'MABEL: "It\'s been waiting on somebody to fill it out again." She holds it up against your shoulders and sniffs. "There. You\'ll do, {name}."',
       '(Elias\'s Wool Coat is in your cabin wardrobe.)',
     ],
   },
@@ -216,7 +216,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Clara threads a reel onto the tape machine and turns the volume down low, as if it might wake someone.',
       'A man\'s voice, tired and patient: "...warden cabin weather, two A.M. Wind northwest, ten. Fog in the low hollows. Bog springs humming. Fire danger low. Garden at the fire-watch cabin... cleared. Somebody\'s been working it."',
-      'CLARA: "That\'s from last week. He reads the weather every night like somebody\'s depending on it." She stops the tape. "He mentioned your garden, Ranger. He\'s watching."',
+      'CLARA: "That\'s from last week. He reads the weather every night like somebody\'s depending on it." She stops the tape. "He mentioned your garden, {name}. He\'s watching."',
     ],
   },
   {
@@ -276,7 +276,7 @@ export const HEART_SCENES: readonly HeartScene[] = [
     lines: [
       'Toby is poking through the cinder yard under the old water tower and holds something up, triumphant: a handcar crank, oiled and wrapped in oilcloth.',
       'Tied to it, a note in a railroad hand: "SPARE CRANK. RELAY CHECKED TO RIDGE SIDING. IF BARNEY\'S ASLEEP, PUMP IT YOURSELF. -E.V."',
-      'TOBY: "He left it where a trackman would look! You should have it. You\'re out on the line more than anybody."',
+      'TOBY: "He left it where a trackman would look! You should have it, {name}. You\'re out on the line more than anybody."',
       '(You received the Spare Handcar Crank.)',
     ],
   },

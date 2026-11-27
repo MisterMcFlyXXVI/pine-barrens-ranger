@@ -2,6 +2,7 @@
  * Firewatch-style story panels: a skippable 4-panel GBC pixel-art sequence
  * used for the New Game intro and the campaign epilogue, plus the act card.
  */
+import { fillName } from '../data/appearance';
 import type { Game } from '../engine/game';
 import type { Overlay } from './overlay';
 import { hex, P } from '../graphics/palette';
@@ -203,7 +204,7 @@ export class StoryPanels implements Overlay {
   update(game: Game, dt: number): void {
     this.t += dt;
     const inp = game.input;
-    const text = this.texts[this.idx];
+    const text = fillName(this.texts[this.idx]);
     if (this.skippable && inp.pressed('b')) { sfx.cancel(); this.finish(); return; }
     if (this.shown < text.length) {
       this.shown = Math.min(text.length, this.shown + dt * 45);
@@ -222,7 +223,7 @@ export class StoryPanels implements Overlay {
   draw(game: Game, g: CanvasRenderingContext2D): void {
     const W = game.w, H = game.h;
     fill(g, P.VOID, 0, 0, W, H);
-    const lines = wrapText(this.texts[this.idx], Math.min(W - 16, 260) - 10);
+    const lines = wrapText(fillName(this.texts[this.idx]), Math.min(W - 16, 260) - 10);
     const boxH = Math.max(4, lines.length) * 8 + 10;
     const fw = Math.min(W - 16, 260), fh = Math.max(60, Math.min(H - boxH - 30, 150));
     const fx = Math.floor((W - fw) / 2), fy = Math.max(6, Math.floor((H - fh - boxH - 14) / 2));
@@ -241,7 +242,7 @@ export class StoryPanels implements Overlay {
     // pager dots + hints
     for (let i = 0; i < this.texts.length; i++) fill(g, i === this.idx ? P.LANTERN : P.PINE, W / 2 - this.texts.length * 4 + i * 8, by + boxH + 4, 4, 2);
     if (this.skippable) drawText(g, 'B: SKIP', 4, H - 8, P.PINE);
-    if (this.shown >= this.texts[this.idx].length && Math.floor(game.time * 3) % 2 === 0) drawText(g, 'A >', W - 16, H - 8, P.LANTERN);
+    if (this.shown >= fillName(this.texts[this.idx]).length && Math.floor(game.time * 3) % 2 === 0) drawText(g, 'A >', W - 16, H - 8, P.LANTERN);
   }
 }
 

@@ -1,4 +1,5 @@
 /** localStorage save / load. Only deltas from the generated maps are stored. */
+import type { Appearance } from '../data/appearance';
 import type { Stack } from './inventory';
 import type { PlotState } from './world';
 import type { MapId } from '../data/maps';
@@ -42,6 +43,8 @@ export interface SaveData {
   inv: Array<Stack | null>;
   sel: number;
   look: Look;
+  /** Character creator choices (older saves have none: the creator opens once). */
+  appearance?: Appearance;
   wardrobe: string[];
   map: MapId;
   px: number;

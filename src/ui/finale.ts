@@ -3,6 +3,7 @@
  * Indrid Cold and The Weaver, solved by tuning the Static Radio to the three
  * frequencies hidden in Ranger Vance's journal. Wrong tunings just crackle.
  */
+import { fillName } from '../data/appearance';
 import type { Game } from '../engine/game';
 import type { Overlay } from './overlay';
 import { finaleBeats } from '../data/campaign';
@@ -37,7 +38,7 @@ export class FinaleScene implements Overlay {
   }
 
   private get text(): string {
-    return this.reply ?? this.beats[this.beat].text;
+    return fillName(this.reply ?? this.beats[this.beat].text);
   }
 
   /** Three choice rows above the text box (taller rows for conversation answers). */

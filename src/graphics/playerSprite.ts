@@ -15,7 +15,9 @@ export interface Look {
 /** 'walk' = idle/walk cycle, 'act' = arms forward for tool use. */
 export type Pose = 'walk' | 'act';
 
-export type HairStyle = 'short' | 'long' | 'bun' | 'pigtails' | 'bald' | 'beard';
+export type HairStyle = 'short' | 'long' | 'bun' | 'pigtails' | 'bald' | 'beard' | 'curly' | 'ponytail';
+export type Facial = 'none' | 'stubble' | 'moustache' | 'beard';
+export type Build = 'a' | 'b';
 
 /** Skin / hair / trouser palette — lets townsfolk reuse the player renderer. */
 export interface Body {
@@ -28,6 +30,10 @@ export interface Body {
   pantsSh: number;
   boot: number;
   hairStyle: HairStyle;
+  /** Facial hair, drawn in the hair colour (player only). */
+  facial?: Facial;
+  /** 'b' is a little narrower at the waist. */
+  build?: Build;
 }
 
 export const PLAYER_BODY: Body = {
@@ -41,12 +47,18 @@ let HAIR: number = P.RUST, HAIR_SH: number = P.CRAN;
 let PANTS: number = P.TWILIGHT, PANTS_SH: number = P.SHADOW;
 let BOOT: number = P.CRAN;
 let STYLE: HairStyle = 'short';
+let FACIAL: Facial = 'none';
+let BUILD: Build = 'a';
 const SOLE = P.SHADOW;
 
 const cache = new Map<string, Canv>();
 
+/** The player's body, from the character creator (its id encodes every choice, for the cache). */
+let playerBody: Body = PLAYER_BODY;
+export function setPlayerBody(b: Body): void { playerBody = b; }
+
 export function playerFrame(look: Look, dir: Dir, frame: number, pose: Pose): Canv {
-  return personFrame(PLAYER_BODY, look, dir, frame, pose);
+  return personFrame(playerBody, look, dir, frame, pose);
 }
 
 export function personFrame(body: Body, look: Look, dir: Dir, frame: number, pose: Pose): Canv {
@@ -72,6 +84,7 @@ export function handPivot(dir: Dir): [number, number] {
 function bake(body: Body, look: Look, dir: Dir, frame: number, pose: Pose): Canv {
   SKIN = body.skin; SKIN_SH = body.skinSh; HAIR = body.hair; HAIR_SH = body.hairSh;
   PANTS = body.pants; PANTS_SH = body.pantsSh; BOOT = body.boot; STYLE = body.hairStyle;
+  FACIAL = body.facial ?? 'none'; BUILD = body.build ?? 'a';
   const { c, g } = makeCanvas(24, 24);
   const p = new Pen(g);
   const o = outfitById(look.outfit);
@@ -140,7 +153,10 @@ function drawFrontBack(p: Pen, o: OutfitDef, h: HatDef, back: boolean, frame: nu
   // Torso (outfit layer)
   const torsoBottom = o.style === 'slicker' ? 18 : 16;
   for (let y = 11; y <= torsoBottom; y++) {
-    for (let x = 8; x <= 15; x++) p.px(x, y + (y <= 16 ? oy : 0), outfitColor(o, x, y, back, 'body', cx));
+    for (let x = 8; x <= 15; x++) {
+      if (BUILD === 'b' && (x === 8 || x === 15) && y >= 13 && y <= 15 && o.style !== 'cloak' && o.style !== 'mantle') continue;
+      p.px(x, y + (y <= 16 ? oy : 0), outfitColor(o, x, y, back, 'body', cx));
+    }
   }
   if (o.style === 'cloak' && back) { p.rect(7, 11 + oy, 10, 10, o.main); p.vline(7, 11 + oy, 20, o.trim); p.vline(16, 11 + oy, 20, o.trim); }
   if (o.style === 'mantle') { p.hline(7, 16, 11 + oy, o.shade); p.hline(6, 17, 12 + oy, o.trim); }
@@ -180,6 +196,7 @@ function drawFrontBack(p: Pen, o: OutfitDef, h: HatDef, back: boolean, frame: nu
     p.px(9, hy + 1, P.AMBER); p.px(10, hy + 1, P.AMBER);
   }
   hairExtras(p, back ? 'up' : 'down', hy);
+  if (!back) facialHair(p, 'down', hy);
   drawHat(p, h, back ? 'up' : 'down', hy);
 }
 
@@ -203,7 +220,10 @@ function drawSide(p: Pen, o: OutfitDef, h: HatDef, frame: number, pose: Pose): v
   // Torso
   const torsoBottom = o.style === 'slicker' ? 18 : 16;
   for (let y = 11; y <= torsoBottom; y++) {
-    for (let x = 9; x <= 14; x++) p.px(x, y + (y <= 16 ? oy : 0), outfitColor(o, x, y, false, 'body', cx));
+    for (let x = 9; x <= 14; x++) {
+      if (BUILD === 'b' && x === 14 && y >= 13 && y <= 15) continue;
+      p.px(x, y + (y <= 16 ? oy : 0), outfitColor(o, x, y, false, 'body', cx));
+    }
   }
   if (o.style === 'mantle') { p.hline(8, 15, 11 + oy, o.shade); p.hline(8, 15, 12 + oy, o.trim); }
 
@@ -229,6 +249,7 @@ function drawSide(p: Pen, o: OutfitDef, h: HatDef, frame: number, pose: Pose): v
   p.px(7, hy + 5, SKIN);
   p.hline(8, 11, hy + 7, SKIN_SH);
   hairExtras(p, 'left', hy);
+  facialHair(p, 'left', hy);
   drawHat(p, h, 'left', hy);
 }
 
@@ -256,6 +277,41 @@ function hairExtras(p: Pen, view: 'down' | 'up' | 'left', hy: number): void {
     case 'beard':
       if (view === 'down') { p.rect(9, hy + 5, 6, 3, HAIR); p.px(11, hy + 6, SKIN_SH); p.px(12, hy + 6, SKIN_SH); }
       else if (side) { p.rect(8, hy + 5, 4, 3, HAIR); }
+      return;
+    case 'curly':
+      // A full, rounded crown of curls.
+      if (side) { p.rect(8, hy - 2, 7, 3, HAIR); p.rect(13, hy + 1, 3, 5, HAIR); p.px(9, hy - 2, HAIR_SH); p.px(12, hy - 1, HAIR_SH); p.px(14, hy + 3, HAIR_SH); }
+      else {
+        p.rect(7, hy - 2, 10, 3, HAIR); p.rect(6, hy, 2, 5, HAIR); p.rect(16, hy, 2, 5, HAIR);
+        for (const x of [8, 11, 14]) p.px(x, hy - 2, HAIR_SH);
+        p.px(6, hy + 2, HAIR_SH); p.px(17, hy + 3, HAIR_SH);
+        if (view === 'up') { p.rect(8, hy + 1, 8, 7, HAIR); p.px(10, hy + 3, HAIR_SH); p.px(13, hy + 5, HAIR_SH); }
+      }
+      return;
+    case 'ponytail':
+      if (side) { p.rect(15, hy + 2, 2, 2, HAIR); p.rect(16, hy + 4, 2, 4, HAIR); p.px(17, hy + 7, HAIR_SH); }
+      else if (view === 'up') { p.rect(11, hy + 6, 2, 5, HAIR); p.px(11, hy + 6, HAIR_SH); p.px(12, hy + 10, HAIR_SH); }
+      else { p.px(16, hy + 3, HAIR); p.px(16, hy + 4, HAIR_SH); }
+      return;
+  }
+}
+
+/** Facial hair layer (front and profile). */
+function facialHair(p: Pen, view: 'down' | 'left', hy: number): void {
+  if (FACIAL === 'none' || STYLE === 'beard') return;
+  const side = view === 'left';
+  switch (FACIAL) {
+    case 'stubble':
+      if (side) { p.px(8, hy + 6, HAIR_SH); p.px(10, hy + 6, HAIR_SH); p.px(9, hy + 7, HAIR_SH); p.px(11, hy + 5, HAIR_SH); }
+      else { for (const [x, y] of [[9, 6], [11, 7], [13, 7], [14, 6], [10, 7], [12, 6]]) p.px(x, hy + y, HAIR_SH); }
+      return;
+    case 'moustache':
+      if (side) { p.hline(7, 9, hy + 5, HAIR); }
+      else { p.hline(10, 13, hy + 5, HAIR); p.px(9, hy + 6, HAIR); p.px(14, hy + 6, HAIR); p.px(10, hy + 5, HAIR_SH); }
+      return;
+    case 'beard':
+      if (side) { p.rect(8, hy + 5, 4, 3, HAIR); p.px(8, hy + 8, HAIR_SH); p.px(11, hy + 5, HAIR_SH); }
+      else { p.rect(9, hy + 5, 6, 3, HAIR); p.hline(10, 13, hy + 8, HAIR_SH); p.hline(11, 12, hy + 6, SKIN_SH); p.px(8, hy + 4, HAIR); p.px(15, hy + 4, HAIR); }
       return;
   }
 }

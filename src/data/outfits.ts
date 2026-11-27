@@ -28,6 +28,7 @@ export interface HatDef {
 
 export const OUTFITS: readonly OutfitDef[] = [
   { id: 'ranger_jacket', name: 'Ranger Jacket', style: 'jacket', main: 3, shade: 2, trim: 8, accent: 6, starter: true, source: 'Standard issue.' },
+  { id: 'chore_coat', name: 'Chore Coat & Jeans', style: 'jacket', main: 8, shade: 9, trim: 1, accent: 7, starter: true, source: 'Your own clothes: duck canvas, brass buttons, a corduroy collar.' },
   { id: 'red_flannel', name: 'Red Flannel', style: 'flannel', main: 11, shade: 10, trim: 0, accent: 7, starter: true, source: 'Comfy and warm.' },
   { id: 'elias_coat', name: "Elias's Wool Coat", style: 'jacket', main: 9, shade: 10, trim: 6, accent: 8, starter: false, source: 'From Mabel, at 4 hearts. Patched at both elbows.' },
   { id: 'frog_slicker', name: 'Loveland Frog Slicker', style: 'slicker', main: 4, shade: 3, trim: 8, accent: 7, starter: false, source: 'Historical Society: 10 donations.' },
