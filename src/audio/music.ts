@@ -10,7 +10,7 @@ export type TrackId = 'title' | 'cabin' | 'town' | 'woods' | 'bog' | 'ridge' | '
 
 interface Note { s: number; m: number; l: number; v?: number }
 interface Voice { wave: OscillatorType; gain: number; notes: Note[]; pluck?: boolean; detune?: number }
-type Drum = 'kick' | 'snare' | 'hat' | 'static' | 'drip';
+type Drum = 'kick' | 'snare' | 'hat' | 'static' | 'drip' | 'heart' | 'cricket' | 'wind' | 'hiss';
 interface Loop { bpm: number; steps: number; voices: Voice[]; drums: Array<{ s: number; k: Drum; v?: number }> }
 
 const MUSIC_KEY = 'pbr_music';
@@ -34,7 +34,7 @@ interface Spec {
   bass: 'boomchick' | 'drone' | 'walk' | 'pulse' | 'none';
   arp: 'roll' | 'up' | 'sparse' | 'none';
   melody: 'busy' | 'lyric' | 'sparse' | 'none';
-  drums: 'reel' | 'march' | 'drive' | 'none' | 'drips' | 'static';
+  drums: 'reel' | 'march' | 'drive' | 'none' | 'drips' | 'static' | 'ambient';
   melodyWave?: OscillatorType; arpWave?: OscillatorType; melodyGain?: number;
 }
 
@@ -65,6 +65,12 @@ function compose(sp: Spec): Loop {
     if (sp.drums === 'drive') for (let k = 0; k < 16; k += 2) drums.push({ s: s0 + k, k: k % 8 === 0 ? 'kick' : k % 8 === 4 ? 'snare' : 'hat', v: k % 4 ? 0.5 : 1 });
     if (sp.drums === 'drips' && r() < 0.7) drums.push({ s: s0 + Math.floor(r() * 16), k: 'drip' });
     if (sp.drums === 'static' && b % 2 === 0) drums.push({ s: s0 + 8, k: 'static' });
+    // Held-breath ambience: a slow heartbeat, tape hiss, crickets and the wind.
+    if (sp.drums === 'ambient') {
+      drums.push({ s: s0, k: 'heart' }, { s: s0 + 3, k: 'heart', v: 0.6 }, { s: s0, k: 'hiss' });
+      if (b % 2 === 1) drums.push({ s: s0 + 6, k: 'wind' });
+      for (let k = 0; k < 3; k++) if (r() < 0.55) drums.push({ s: s0 + Math.floor(r() * 16), k: 'cricket', v: 0.5 + r() * 0.5 });
+    }
   });
   // Melody: an A A' B A phrase over 8 bars, chord tones on strong beats, stepwise in between.
   if (sp.melody !== 'none') {
@@ -118,8 +124,8 @@ const SPECS: Record<TrackId, Spec> = {
   night: { seed: 61, bpm: 60, root: 45, mode: MINOR, prog: [0, 0, 5, 5, 0, 0, 1, 1], bass: 'drone', arp: 'sparse', melody: 'none', drums: 'none', arpWave: 'triangle' },
   // Cozy indoors.
   interior: { seed: 71, bpm: 96, root: 53, mode: MAJOR, prog: [0, 3, 4, 0, 5, 3, 4, 0], bass: 'walk', arp: 'up', melody: 'lyric', drums: 'none', arpWave: 'triangle', melodyWave: 'triangle', melodyGain: 0.2 },
-  // Tense encounter loop.
-  encounter: { seed: 81, bpm: 138, root: 50, mode: MINOR, prog: [0, 0, 5, 5, 3, 3, 4, 4], bass: 'pulse', arp: 'up', melody: 'busy', drums: 'drive', melodyGain: 0.1 },
+  // Encounters: not battle music. Through the camcorder you hold your breath: heartbeat, crickets, wind, tape hiss.
+  encounter: { seed: 81, bpm: 66, root: 50, mode: MINOR, prog: [0, 0, 5, 5, 3, 3, 1, 1], bass: 'none', arp: 'sparse', melody: 'none', drums: 'ambient', arpWave: 'triangle' },
   // Folklore Festival fiddle reel.
   festival: { seed: 91, bpm: 132, root: 62, mode: MIXO, prog: [0, 0, 6, 6, 0, 0, 3, 4], bass: 'boomchick', arp: 'roll', melody: 'busy', drums: 'reel', melodyGain: 0.11 },
 };
@@ -220,6 +226,21 @@ class Music {
 
   private drum(ac: AudioContext, k: Drum, vol: number, t: number): void {
     if (!this.bus) return;
+    if (k === 'heart') {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(104, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.16);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.32 * vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(g).connect(this.bus); o.start(t); o.stop(t + 0.22);
+      return;
+    }
+    if (k === 'cricket') {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(4300, t);
+      g.gain.setValueAtTime(0.0001, t);
+      for (let i = 0; i < 3; i++) { const t0 = t + i * 0.055; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.025 * vol, t0 + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.035); }
+      o.connect(g).connect(this.bus); o.start(t); o.stop(t + 0.2);
+      return;
+    }
     if (k === 'kick' || k === 'drip') {
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = k === 'kick' ? 'sine' : 'triangle';
@@ -233,12 +254,15 @@ class Music {
     if (!this.noise) return;
     const src = ac.createBufferSource(); src.buffer = this.noise;
     const f = ac.createBiquadFilter(), g = ac.createGain();
-    const len = k === 'hat' ? 0.03 : k === 'snare' ? 0.1 : 0.5;
-    f.type = k === 'hat' ? 'highpass' : 'bandpass';
-    f.frequency.setValueAtTime(k === 'hat' ? 7000 : k === 'snare' ? 1800 : 2500, t);
+    const len = k === 'hat' ? 0.03 : k === 'snare' ? 0.1 : k === 'wind' ? 2.6 : k === 'hiss' ? 0.95 : 0.5;
+    f.type = k === 'hat' || k === 'hiss' ? 'highpass' : k === 'wind' ? 'lowpass' : 'bandpass';
+    f.frequency.setValueAtTime(k === 'hat' ? 7000 : k === 'hiss' ? 6000 : k === 'wind' ? 380 : k === 'snare' ? 1800 : 2500, t);
     if (k === 'static') f.frequency.exponentialRampToValueAtTime(600, t + len);
-    const peak = (k === 'hat' ? 0.06 : k === 'snare' ? 0.12 : 0.05) * vol;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    if (k === 'wind') f.frequency.exponentialRampToValueAtTime(820, t + len * 0.5);
+    const peak = (k === 'hat' ? 0.06 : k === 'snare' ? 0.12 : k === 'wind' ? 0.07 : k === 'hiss' ? 0.012 : 0.05) * vol;
+    const attack = k === 'wind' ? len * 0.45 : k === 'hiss' ? 0.2 : 0.004;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    if (k === 'wind' || k === 'hiss') src.loop = true;
     src.connect(f).connect(g).connect(this.bus); src.start(t, Math.random() * 0.5); src.stop(t + len + 0.02);
   }
 }

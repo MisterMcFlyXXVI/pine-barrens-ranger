@@ -11,6 +11,7 @@ import { stars } from './dex';
 import { sfx } from '../audio/sfx';
 import { hash2 } from '../util';
 import { agnesStory } from './campaign';
+import { INSPECTOR_OPEN, INSPECTOR_CHOICES, INSPECTOR_CLOSE, INSPECTOR_FESTIVAL } from '../data/campaign';
 import { dailyChat, giftable, giftedToday, giveGift } from './friends';
 import { isFriend } from '../data/friends';
 
@@ -114,6 +115,7 @@ export function talkTo(game: Game, npc: NpcRT): void {
     game.openOverlay(new Dialog([d.greet[Math.floor(hash2(game.clock.day, 3, 1) * d.greet.length)]]));
     return;
   }
+  if (d.id === 'inspector') { inspectorTalk(game); return; }
   if (d.id === 'toby' && p.stage('toby') === 1) {
     if (!game.hasWaders()) { game.openOverlay(new Dialog(['Toby: "Help! I\'m stuck on this island!" (You need Bog Waders to reach him.)'])); return; }
     p.setStage('toby', 2);
@@ -201,4 +203,27 @@ export function talkTo(game: Game, npc: NpcRT): void {
   choices.push({ label: 'Chat', fn: chat }, { label: 'Bye', fn: () => undefined });
   game.openOverlay(new Dialog(pages, choices));
   showScenes();
+}
+
+/** Harlan Pruitt, County Office of Consolidation: the town's future rides on what you tell him. */
+function inspectorTalk(game: Game): void {
+  const p = game.progress;
+  if (!p.flags.has('inspector_done')) {
+    game.openOverlay(new Dialog([...INSPECTOR_OPEN], INSPECTOR_CHOICES(p.reason).map((c) => ({
+      label: c.label,
+      fn: () => {
+        p.flags.add('inspector_done');
+        sfx.confirm();
+        game.openOverlay(new Dialog([...c.reply, ...INSPECTOR_CLOSE]));
+      },
+    }))));
+    return;
+  }
+  if (game.isFestival() && !p.flags.has('funded')) {
+    p.flags.add('funded');
+    sfx.trustChime();
+    game.openOverlay(new Dialog([...INSPECTOR_FESTIVAL, '(Pine Hollow keeps its branch line, its school bus and its post office.)']));
+    return;
+  }
+  game.openOverlay(new Dialog(['Pruitt: "Don\'t mind me. Just counting things."']));
 }

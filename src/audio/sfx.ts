@@ -116,6 +116,16 @@ class Sfx {
     }
   }
 
+  /** A creature's call, by temperament (kept soft: heard at a distance, or through the camcorder mic). */
+  creature(kind: string): void {
+    if (kind === 'predator') { this.noise(0.55, 0.05, 'lowpass', 320, 140, 2); this.tone('square', 72, 54, 0.5, 0.025); }
+    else if (kind === 'skittish') { this.tone('triangle', 1800, 2500, 0.06, 0.03); this.tone('triangle', 1900, 2600, 0.06, 0.03, 0.12); }
+    else if (kind === 'spectral') { this.tone('triangle', 560, 880, 0.35, 0.03); this.tone('triangle', 880, 520, 0.4, 0.025, 0.35); }
+    else if (kind === 'territorial') { this.noise(0.22, 0.06, 'bandpass', 520, 380, 3); this.noise(0.22, 0.06, 'bandpass', 480, 340, 3, 0.32); }
+    else { this.tone('triangle', 330, 300, 0.25, 0.035); this.tone('triangle', 330, 290, 0.3, 0.03, 0.4); }
+  }
+  /** Radio static, swelling and fading. */
+  radioStatic(): void { this.noise(0.6, 0.05, 'bandpass', 3000, 900, 1); this.tone('square', 660, 640, 0.05, 0.02, 0.5); }
   /** Knock knock. */
   knock(): void { this.noise(0.05, 0.12, 'lowpass', 400, 200, 3); this.noise(0.05, 0.12, 'lowpass', 400, 200, 3, 0.16); }
   /** A frog hopping into the water. */

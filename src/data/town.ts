@@ -3,7 +3,7 @@
  *
  * Connections:
  *   TOWN west-upper ↔ PINE_TRAIL south-east road     TOWN west-main ↔ CABIN_YARD east road
- *   Diner / Store / Museum doors ↔ interiors         Museum stairs ↔ Archive Basement (8 donations)
+ *   Diner / Store / Museum doors ↔ interiors         Museum stairs ↔ Archive Basement (6 donations)
  *   Rail car  → EXPANSION_RAIL_PORTAL (stub)         NE foothills mine → MINE_ENTRANCE_PORTAL (stub)
  */
 import { T, O } from './tiles';
@@ -36,6 +36,11 @@ export const FESTIVAL_SPOTS = {
   pike: [43, 33] as [number, number],
   bonfire: [38, 32] as [number, number],
 };
+
+/** Festival stalls in the Town Park lawns (built over three days after Mabel's letter): x, y, kind. */
+export const FESTIVAL_STALLS: ReadonlyArray<[number, number, 'pie' | 'lantern' | 'cider' | 'crafts']> = [
+  [31, 32, 'pie'], [30, 29, 'lantern'], [46, 30, 'cider'], [45, 33, 'crafts'],
+];
 
 export function buildTown(): MapDef {
   const W = 84, H = 72;

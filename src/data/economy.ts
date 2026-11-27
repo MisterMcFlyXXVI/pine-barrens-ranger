@@ -164,7 +164,7 @@ export interface Milestone {
 
 export const MILESTONES: readonly Milestone[] = [
   { count: 5, title: 'Jackalope Antler Cap', desc: '+15% trail speed; skittish meadow Startle lowered.', wear: ['jackalope_cap'] },
-  { count: 8, title: 'Archive Basement', desc: 'Survey maps revealing the exact Mythic summoning rules.', flag: 'archive' },
+  { count: 6, title: 'Archive Basement', desc: 'Old county survey maps (and Elias\'s notes) revealing the exact Mythic summoning rules.', flag: 'archive' },
   { count: 10, title: 'Loveland Frog Slicker', desc: 'Immune to rain/bog slowdowns; +20% water cryptid spawns.', wear: ['frog_slicker'] },
   { count: 15, title: 'Snarly Yow Shadow Cloak', desc: 'Cuts initial Night/Witching Hour Startle by 50%.', wear: ['yow_cloak'] },
   { count: 16, title: 'Museum Gift Shop', desc: 'Moonberry & Glow-Shroom seeds and Cabin Display Pedestals.', flag: 'giftshop' },

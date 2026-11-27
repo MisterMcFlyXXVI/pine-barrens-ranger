@@ -55,7 +55,7 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 ---  
   
 ## 4. Turn-Based Cryptid Encounter System (`src/engine/encounter.ts`)  
-- **Trigger:** Stepping in rustling grass, fog patches, bog reeds, or interacting with overworld cryptid shadows/lure totems triggers a classic GBC horizontal-blinds wipe into a split-screen battle UI.  
+- **Trigger:** Cryptids appear in the wilds as visible clues (`src/engine/sightings.ts`: glowing eyes, rustling cover, water ripples, prints) on the tiles the old rustling-grass rolls favoured; walk up and press A for a quiet approach (-12 Startle), run near them and the shy ones flee / predators charge, step onto one and it starts startled (+12). Summons via lure mounts are unchanged. The encounter is framed as the ranger's **camcorder viewfinder** (REC, tape counter, battery = stamina, zoom reticle, region foreground, weather on the lens; power-on/off transitions) with a quiet ambient score (`encounter` track: heartbeat, crickets, wind, tape hiss) and creature calls.  
 - **Core Meters:**  
   - **Trust (0 -> 100%):** Reach 100% to successfully log the cryptid, earn a Specimen Drop, and unlock a 1-time Museum Specimen.  
   - **Startle (0 -> 100%):** Reach 100% and skittish cryptids bolt (while Predator cryptids force the player to retreat).  
@@ -159,7 +159,7 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
   
 ### Historical Society Donation Milestones (Agnes Vance)  
 - **5 Donations:** **Jackalope Antler Cap** (+15% trail speed, lowers skittish meadow Startle)  
-- **8 Donations:** Unlocks **Archive Basement** (survey maps revealing exact Mythic summon rules)  
+- **6 Donations:** Unlocks **Archive Basement** (survey maps revealing exact Mythic summon rules)  
 - **10 Donations:** **Loveland Frog Slicker** (immune to rain/bog slowdowns; +20% water cryptid spawns)  
 - **15 Donations:** **Snarly Yow Shadow Cloak** (cuts initial Night/Witching Hour Startle by 50%)  
 - **16 Donations:** Unlocks **Museum Gift Shop** (sells Moonberry/Glow-Shroom seeds & Cabin Display Pedestals)  
@@ -186,6 +186,12 @@ Do NOT build tiny 20x20 demo rooms. Build a **true Stardew-scale interconnected 
 - **Handcar stops** (`src/data/handcar.ts`): one per outdoor region, auto-placed beside a trail near the entrance; repair each with materials (flag `stop_<MAP_ID>`; Town's station is always open). Fast travel only from a working stop (Barney waits there once service is unlocked by the Telegraph quest or 2 hearts), arriving on the destination platform. No fast travel from anywhere. Each region also traces the old line (`route`) from its stop toward its rail neighbours (`RAIL_LINKS`) and deeper branches; the full route renders as worn track (crossing trails, `trestle` over water and always unwalkable); before repair it's overgrown (existing trees + non-solid tall grass/ferns), and repairing clears `LINE_CLEARABLE` growth off the route (re-applied on load).
 
 ---
+
+### Story: "The Signal on Radio Ridge" (`src/data/campaign.ts`, `src/engine/campaign.ts`)
+- Elias Vance: retired C&O trackman, Agnes's brother, grieving brother Danny (lost in the No. 3 cave-in); trying to prove the folklore to save the town from county closure, he chained an injured Sheepsquatch and drove it up the ridge in a storm; the Wardens turned him back and he hid, ashamed, in the old fire-warden cabin above the Quiet Zone. The finale's frequencies (66.1 / 101.3 / 0.0) live in his pages 3, 7 and 9.
+- Opening: Barney asks why you came (`progress.reason`: `loss` | `burnout` | `belong`), reflected in `rangerLog`, the inspector's third answer and Elias's finale lines. Porch radio (`O.PORCH_RADIO`) check-ins once a night by story stage.
+- Act II: story letters (`LETTERS`, `progress.mail` = arrival day, `read_<id>` flags) at 6/12/18/24 donations; County Inspector `inspector` NPC (flags `inspector_done`, `funded`); festival prep stalls (`FESTIVAL_STALLS`, `Game.prepStage`); first festival the evening the 24 letter is read (`progress.firstFest`); Agnes gives the Ridge Survey Map at the festival bonfire (`ridge_map`, Act III).
+- Finale `finaleBeats(reason)` (tuning + conversation choices), then the dawn epilogue at the station (flags `finale`, `carving`, `cabin_deed`); the carving shows in the museum's Sheepsquatch case.
 
 ### Town life & homes
 - **Homes** (`src/data/homes.ts`): `HOMES` (residents, friends who can invite you at 4 hearts, knock/welcome text), `HOME_SPOTS` (sit/morning/bed per NPC), and the 7 furnished interiors (`HOUSE_*`, `STORE_LOFT`, `DINER_ROOM`; map `home: true`, every object's description in `signs`). Doors use `requires: 'home'`, checked by `Game.homeClosed`.

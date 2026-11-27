@@ -49,10 +49,12 @@ export function objectives(game: Game, act: number): Objective[] {
         { text: 'Explore the Cranberry Glades & Sulphur Springs', done: visited('CRANBERRY_BOG_AND_SPRINGS') },
         { text: 'Explore the Old Growth & Sawmill', done: visited('OLD_GROWTH_AND_SAWMILL') },
         { text: `Find torn journal pages in the wilds (${Math.min(4, pagesFound(game))}/4)`, done: pagesFound(game) >= 4 },
-        { text: `Reach 24 Historical Society donations (${p.donations}/24)`, done: p.donations >= 24 },
-        { text: 'Attend the Folklore Festival (Sunday night, Town Square)', done: p.flags.has('festival') },
+        { text: `6 donations: read Agnes's letter about the Archive (${Math.min(6, p.donations)}/6)`, done: p.flags.has('read_agnes6') },
+        { text: `12 donations: meet the County Inspector at the station (${Math.min(12, p.donations)}/12)`, done: p.flags.has('inspector_done') },
+        { text: `18 donations: read Mabel's letter, see the park get ready (${Math.min(18, p.donations)}/18)`, done: p.flags.has('read_mabel18') },
+        { text: `24 donations: the Folklore Festival in the Town Park (${Math.min(24, p.donations)}/24)`, done: p.flags.has('festival') },
       ];
-      if (list.every((o) => o.done)) list.push({ text: "Talk to Agnes: Clara has news about Elias's map", done: false });
+      if (list.every((o) => o.done)) list.push({ text: 'Find Agnes by the festival bonfire (festival nights, 6 PM)', done: false });
       return list;
     }
     case 3:
@@ -88,7 +90,7 @@ export function campaignTick(game: Game): void {
     const t = game.player;
     if (t.tx >= 30 && t.tx <= 46 && t.ty >= 24 && t.ty <= 35) {
       p.flags.add('festival');
-      game.toast('You join the Folklore Festival! Ask Agnes about Elias soon.');
+      game.toast('You join the Folklore Festival! Agnes is waiting by the bonfire.');
     }
   }
   if (p.act === 1 && objectives(game, 1).every((o) => o.done)) setAct(game, 2);
@@ -105,11 +107,14 @@ export function agnesStory(game: Game): boolean {
   const p = game.progress;
   p.flags.add('agnes');
   if (p.act !== 2) return false;
-  const act2 = objectives(game, 2).filter((o) => !o.text.startsWith('Talk to Agnes'));
+  // The Act II climax happens by the festival bonfire.
+  if (!game.isFestival()) return false;
+  const act2 = objectives(game, 2).filter((o) => !o.text.startsWith('Find Agnes'));
   if (!act2.every((o) => o.done)) return false;
   p.act = 3;
+  p.flags.add('ridge_map');
   sfx.open();
   game.openOverlay(new ActCard(...ACT_TITLES[3]));
-  game.openOverlay(new Dialog([...DECODE_SCENE, 'Elias\'s final survey map is copied into your journal. ACT III: log the four Wardens.']));
+  game.openOverlay(new Dialog([...DECODE_SCENE, 'Agnes presses Elias\'s Ridge Survey Map into your hands. (It\'s copied into your journal.) ACT III: earn the four Wardens\' trust.']));
   return true;
 }

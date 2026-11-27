@@ -27,6 +27,17 @@ No environment variables or API keys are needed.
   have/need for every material (bag + crate), crafts when ready, and removes entries. The Journal has a read-only
   Materials List page, and the game toasts your progress as you collect materials.
 
+## Cryptid encounters
+- **You can see them coming**: cryptids appear as clues in the wilds: glowing eyes low in the brush (dusk, night, fog),
+  cover shaking with something heavy inside it, ripples on still water, or a line of fresh prints. You can hear them
+  too: rustles, splashes and calls. Wisp-Light Oil makes every clue glow.
+- **Stalk them**: walk up and press A (RAISE CAMCORDER) for a calm start. Running nearby spooks the shy ones away (the
+  Jackalope Antler Cap helps); predators and territorial cryptids charge; stepping right onto one startles it.
+- **Through the camcorder**: the encounter is seen through your viewfinder: blinking REC, tape counter, battery (your
+  stamina), a focus reticle that zooms in as Trust grows, pine boughs, cattails or rocks in the foreground, and rain or
+  snow on the lens. The music drops to a held breath: heartbeat, crickets, wind and tape hiss, with the creature calling.
+  The rules are unchanged: 4-slot Field Kit, Trust/Startle, 3-star mastery, Rare Variants, summons.
+
 ## Fishing, trapping, hunting & cooking
 - **Fishing Rod** (General Store, 250g): face a creek, the bog lake or the old canal and press A. Wait for the bite,
   hook it, then reel when the marker is in the green. Creek: Brook Trout, Creek Chub. Lake/canal: Smallmouth Bass,
@@ -175,12 +186,31 @@ Handy URL flags for trying things out:
   - A daily Bulletin Board request, and telegraph sighting reports once you fix Barnaby's telegraph.
 
 ## Phase 4: Campaign "The Signal on Radio Ridge"
-- **Opening intro**: a 4-panel pixel-art story (B skips). It explains the fire-watch ad and how Ranger Elias Vance vanished. New games start on the cabin porch.
-- **Vance's Field Journal**: read it at the cabin table. 9 torn pages are hidden around the valley, and the journal fills in as you find them.
-- **Campaign tracker**: Tab opens the Journal, whose first page is CAMPAIGN. Objectives are checked automatically, and free-roam play is never blocked.
+- **The story**: Elias Vance, Agnes's brother, was a C&O trackman for 34 years. His brother Danny died in the Pine Hollow No. 3
+  cave-in. When the county threatened to close the town, Elias set out to prove its folklore was real. He chained an
+  injured Sheepsquatch with iron traps and drove it up the ridge in a storm, the four Wardens turned him back, and he
+  holed up, ashamed, in the old fire-warden cabin above the Quiet Zone.
+- **Opening drive**: Barney drives you up to Pine Holler and asks why you took the job: you lost someone, your old life
+  burned out, or you stopped belonging anywhere. Your answer is saved and colours your own log, the inspector scene and
+  the finale.
+- **Your log & Elias's journal** (cabin table): your own fire-watch log grows as the story moves; then Elias's
+  half-burned journal and its 9 torn pages, hidden around the valley.
+- **Porch radio**: Elias's old field radio on the cabin porch. At dusk and night it crackles: Agnes and Barney check
+  on your stove at first; later a faint voice from an unknown Quiet Zone frequency (him); after the ending, Elias.
+- **Campaign tracker** (Tab: CAMPAIGN page), checked automatically; free-roam play is never blocked.
   - **Act I – The Fire-Watch**: read the journal, clear the garden, harvest a crop, explore Pine Trail, meet Agnes, log a cryptid.
-  - **Act II – Restoring Pine Hollow**: explore the Cranberry Glades and the Old Growth, find 4 pages, reach 24 donations, attend the Folklore Festival. Then talk to Agnes.
+  - **Act II – Restoring Pine Hollow**: explore the Glades and Old Growth, find 4 pages, and grow the museum. Letters
+    arrive in your mailbox the morning after each milestone: **6** (Agnes opens the Archive Basement), **12** (Barney:
+    County Inspector Harlan Pruitt is at the station, 9 to 5, deciding whether Pine Hollow stays funded), **18** (Mabel,
+    with a pepperoni roll; garlands go up and stalls are built in the Town Park over three days), **24** (the Folklore
+    Festival is TONIGHT). Festival: bonfire, fiddles, campfire pepperoni rolls, merchants, Pruitt's verdict, and Agnes
+    hands you Elias's Ridge Survey Map by the fire.
   - **Act III – The Four Wardens**: log the Sasquatch, the Wendigo, the Thunderbird and The Awful.
-  - **Act IV – The Midnight Broadcast**: use the Static Radio at the Crossroads in the Witching Hour. You tune three frequencies (the journal pages give the answers), then the epilogue plays and free play continues.
-- **Post-game**: Elias Vance lives in town. At 32 donations the Town Restoration Grant repairs the station and opens the Coal Mine gate, which teases a future underground expansion.
+  - **Act IV – The Midnight Broadcast**: the Static Radio at the Crossroads in the Witching Hour. Tune the three
+    frequencies from his pages; Indrid Cold carries your voice to Elias's transmitter, and you talk him home.
+  - **Dawn epilogue**: you wake on the C&O platform as Elias walks out of the mist with a hand-carved Sheepsquatch for
+    the museum's centerpiece and gives you the cabin for good.
+- **Post-game**: Elias lives with Agnes, works at the Society, eats Sunday breakfast and sits out Sunday evenings on
+  Agnes's porch with her and Barney, and takes the white one its supper on Thursdays. At 32 donations the Town
+  Restoration Grant repairs the station and opens the Coal Mine gate (a future underground expansion).
 - **Title screen**: New Game (asks before replacing a save), Continue, Export Save (downloads a JSON file), Import Save (choose a JSON file).

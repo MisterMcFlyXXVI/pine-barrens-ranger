@@ -184,6 +184,8 @@ export const O = {
   WALL_FRAME: 111,
   MODEL_TRAIN: 112,
   RADIO_RIG: 113,
+  // ---- Story ----
+  PORCH_RADIO: 114,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -199,7 +201,7 @@ export const MOUNT_OBJECT: Readonly<Record<string, number>> = {
 
 export type Interact =
   | 'bed' | 'desk' | 'dresser' | 'fireplace' | 'pedestal' | 'workbench' | 'ship' | 'barrel'
-  | 'snare' | 'handcar' | 'rocker' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
+  | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
   | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster';
@@ -313,6 +315,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.WALL_FRAME]: { name: 'Picture', solid: true },
   [O.MODEL_TRAIN]: { name: 'Model Railroad', solid: true, interact: 'sign', fw: 2 },
   [O.RADIO_RIG]: { name: 'Radio Rig', solid: true, interact: 'sign', fw: 2 },
+  [O.PORCH_RADIO]: { name: 'Porch Radio', solid: true, interact: 'radio' },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

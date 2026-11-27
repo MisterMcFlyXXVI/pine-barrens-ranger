@@ -21,7 +21,9 @@ import { CROP_BY_ID, ITEMS, STARTING_ITEMS, ToolKind } from '../data/items';
 import { CRYPTID_BY_ID, CryptidDef, Variant } from '../data/cryptids';
 import { DayWeather, rollWeather, weatherAt, moonPhase, timeTags, Weather, WEATHER_LABEL } from '../data/weather';
 import { Dex, Kit, newDex, loadDex, defaultKit } from './dex';
-import { pickCryptid, rollVariant, encounterChance, eligible, SpawnCtx } from './spawn';
+import { rollVariant, eligible, SpawnCtx } from './spawn';
+import { Sightings } from './sightings';
+import type { Approach } from './sightings';
 import { Encounter } from './encounter';
 import { music, TrackId } from '../audio/music';
 import { StoryPanels } from '../ui/intro';
@@ -31,6 +33,7 @@ import { Progress } from './progress';
 import { Townsfolk, NpcRT } from './townsfolk';
 import { talkTo } from './talk';
 import { HOMES, isHome } from '../data/homes';
+import { FESTIVAL_SPOTS, FESTIVAL_STALLS } from '../data/town';
 import type { HomeId } from '../data/homes';
 import { hearts } from './friends';
 import { CraftMenu, BoardMenu, PedestalMenu, ShopMenu } from '../ui/shops';
@@ -42,7 +45,7 @@ import { campaignTick, setAct } from './campaign';
 import { playIntro, playEpilogue } from '../ui/intro';
 import { VanceJournal } from '../ui/vanceJournal';
 import { FinaleScene } from '../ui/finale';
-import { JOURNAL_PAGES, MINE_TEASE } from '../data/campaign';
+import { JOURNAL_PAGES, MINE_TEASE, LETTERS, RADIO_EARLY, RADIO_STATIC, RADIO_ELIAS, RADIO_HOME } from '../data/campaign';
 import { OUTFITS, HATS } from '../data/outfits';
 import type { Dir } from '../util';
 import { DIR_VEC, randInt } from '../util';
@@ -130,12 +133,15 @@ export class Game {
   /** Mythic summons already answered today ("MAP:cryptid"). */
   summoned = new Set<string>();
   readonly weatherFx = new WeatherFx();
-  private encounterCd = 6;
+  /** Cryptids out in the wilds as visible clues (eyes, rustling, ripples, tracks). */
+  readonly sightings = new Sightings();
   private rainT = 0;
   // ---- Phase 3: town progression & townsfolk ----
   progress = new Progress();
   readonly townsfolk = new Townsfolk();
   private talks = new Map<string, number>();
+  /** The porch radio has crackled to let you know someone's calling (once a night). */
+  private radioHintDay = 0;
   private campaignT = 1;
   private pageSpots: Map<string, Array<{ id: number; x: number; y: number }>> | null = null;
 
@@ -256,6 +262,13 @@ export class Game {
       this.progress.flags.add('carry2');
     }
     this.inv.resize(this.bagCapacity());
+    // Story letters for milestones reached before letters existed: past Act II they're filed away, otherwise delivered now.
+    for (const l of LETTERS) {
+      if (this.progress.donations < l.donations || l.id in this.progress.mail) continue;
+      this.progress.mail[l.id] = this.progress.act >= 3 ? 0 : this.clock.day;
+      if (this.progress.act >= 3) this.progress.flags.add(`read_${l.id}`);
+      if (l.id === 'barney12' && this.progress.act >= 3) this.progress.flags.add('inspector_done');
+    }
     this.summoned.clear();
     this.rollDayWeather();
     const map = BUILT_MAPS.has(d.map) ? d.map : BED_SPAWN.map;
@@ -400,7 +413,8 @@ export class Game {
   }
 
   isFestival(): boolean {
-    return this.progress.has('festival') && this.clock.weekday === 'Sun' && this.clock.minutes >= 1080;
+    // Sunday nights once the museum holds 24 specimens, plus the very first festival (the night Agnes's letter arrives).
+    return this.progress.has('festival') && (this.clock.weekday === 'Sun' || this.clock.day === this.progress.firstFest) && this.clock.minutes >= 1080;
   }
 
   /** Outfitter upgrade price (Gideon's 4-heart discount stacks with the Shimmer Suit). */
@@ -493,6 +507,7 @@ export class Game {
     this.progress.donated.add(cid);
     sfx.trustChime();
     this.toast(`Donated ${c.drop.name}! (${this.progress.donations}/${CRYPTIDS.length})`);
+    this.queueLetters();
     const reached = this.progress.newlyReached();
     if (!reached.length) return;
     const pages: string[] = [];
@@ -503,6 +518,76 @@ export class Game {
     }
     sfx.fanfare();
     this.openOverlay(new Dialog(pages));
+  }
+
+  /** Story letters go out the morning after a donation milestone. */
+  private queueLetters(): void {
+    for (const l of LETTERS) if (this.progress.donations >= l.donations && !(l.id in this.progress.mail)) this.progress.mail[l.id] = this.clock.day + 1;
+  }
+
+  /** Story letters waiting in the cabin mailbox. */
+  unreadLetters(): typeof LETTERS[number][] {
+    const p = this.progress;
+    return LETTERS.filter((l) => (p.mail[l.id] ?? 0) > 0 && p.mail[l.id] <= this.clock.day && !p.flags.has(`read_${l.id}`));
+  }
+
+  hasMail(): boolean { return this.mailRead < 2 || this.unreadLetters().length > 0; }
+
+  /** Festival prep after Mabel's letter: 0 posts, 1 frames, 2 finished stalls (-1 = not started). */
+  prepStage(): number {
+    const p = this.progress;
+    if (!p.flags.has('read_mabel18') && !p.has('festival')) return -1;
+    const start = p.mail.mabel18 ?? 0;
+    if (p.has('festival') || !start) return 2;
+    return Math.max(0, Math.min(2, this.clock.day - start));
+  }
+
+  /** A festival stall stands on this town tile (they block the path once they're up). */
+  stallAt(x: number, y: number): boolean {
+    if (this.cur.id !== 'PINE_HOLLOW_TOWN' || this.prepStage() < 0) return false;
+    if (this.isFestival() && x === FESTIVAL_SPOTS.bonfire[0] && y === FESTIVAL_SPOTS.bonfire[1]) return true;
+    return FESTIVAL_STALLS.some(([sx, sy]) => sx === x && sy === y);
+  }
+
+  private stallNote(x: number, y: number): string {
+    const kind = FESTIVAL_STALLS.find(([sx, sy]) => sx === x && sy === y)?.[2] ?? 'pie';
+    const st = this.prepStage();
+    if (st < 2) return ['Four posts and a pile of lumber. Gideon\'s chalked "PIE" on one of them.', 'The frame\'s up. Toby is hammering with great enthusiasm and moderate accuracy.'][st];
+    return {
+      pie: 'Mabel\'s pie stand: cranberry, apple, buckwheat-honey. A sign says "NO CRYPTIDS (PIPPA THIS MEANS YOU)."',
+      lantern: 'Paper lanterns and hand-painted signs: the Junior Cryptid Club\'s booth. Sam drew every lantern a different cryptid.',
+      cider: 'Barney\'s cider stand, built from old C&O ties. The cider is cold, the price is "whatever you got."',
+      crafts: 'Ruth\'s quilt stall. A Bear\'s Paw quilt hangs in front, and a jar labeled "CHICKEN MONEY."',
+    }[kind] ?? '';
+  }
+
+  /** Festival night: Gideon toasts pepperoni rolls on green sticks over the bonfire. */
+  private bonfireRoll(): void {
+    const p = this.progress;
+    if (p.festRollDay === this.clock.day) { sfx.blip(); this.openOverlay(new Dialog(['Gideon: "One per customer. Mabel\'s counting."'])); return; }
+    if (!this.inv.canFit('pepperoni_roll')) { sfx.error(); this.notice('Your bag is full. Make room for a pepperoni roll.'); return; }
+    p.festRollDay = this.clock.day;
+    this.inv.add('pepperoni_roll', 1);
+    sfx.eat();
+    this.openOverlay(new Dialog(['Gideon hands you a pepperoni roll toasted on a green stick over the bonfire. The cheese has gone crisp at the edges. It is, objectively, the best food in West Virginia.', '(You got a Pepperoni Roll.)']));
+  }
+
+  /** The field radio on the cabin porch: neighbours check in at dusk, and later, a faint voice from the ridge. */
+  private porchRadio(): void {
+    const p = this.progress;
+    const ph = this.clock.phase();
+    sfx.blip();
+    if (ph === 'day') { this.openOverlay(new Dialog(['Elias\'s old field radio, rigged to a car battery. Neighbors check in on it most evenings, from dusk on.'])); return; }
+    if (p.radioDay === this.clock.day) { this.openOverlay(new Dialog(['Just static now, soft as rain. Time to bank the stove and get some sleep.'])); return; }
+    p.radioDay = this.clock.day;
+    const d = this.clock.day;
+    let pages: string[];
+    if (p.flags.has('finale')) pages = RADIO_HOME[d % RADIO_HOME.length];
+    else if (p.act >= 3) pages = d % 2 ? RADIO_ELIAS[p.reason ?? 'belong'] : RADIO_STATIC[d % RADIO_STATIC.length];
+    else if (p.donations >= 12) pages = d % 3 === 0 ? RADIO_STATIC[d % RADIO_STATIC.length] : RADIO_EARLY[d % RADIO_EARLY.length];
+    else pages = RADIO_EARLY[d % RADIO_EARLY.length];
+    sfx.radioStatic();
+    this.openOverlay(new Dialog(['You key the porch radio. The dial glows amber.', ...pages]));
   }
 
   /** Today's Bulletin Board request (deterministic per day). */
@@ -578,7 +663,7 @@ export class Game {
     }
     sfx.alert();
     this.openOverlay(new Dialog(['You switch on the Static Radio. The needle swings on its own, and the dead tree at the Crossroads begins to hum...'], [
-      { label: 'Listen', fn: () => this.openOverlay(new FinaleScene(() => this.finishCampaign())) },
+      { label: 'Listen', fn: () => this.openOverlay(new FinaleScene(this.progress.reason, () => this.finishCampaign())) },
       { label: 'Not yet', fn: () => undefined },
     ]));
     return true;
@@ -594,9 +679,25 @@ export class Game {
       e.behavior = true;
       if (!e.logged) { e.logged = true; const c = CRYPTIDS.find((x) => x.id === id)!; this.inv.add(c.drop.id, 1); }
     }
-    playEpilogue(this, () => {
-      this.toast('CAMPAIGN COMPLETE! The valley remains open. Elias Vance has come home.');
-      this.sleep(false);
+    // Elias carves a Sheepsquatch for the museum's centerpiece and signs the cabin over to you.
+    p.flags.add('carving');
+    p.flags.add('cabin_deed');
+    // The night passes (crops grow, the journal saves), and you wake on the station platform at dawn.
+    sfx.sleep();
+    this.transition(() => {
+      this.overnight(false);
+      this.clock.minutes = 6 * 60;
+      this.enterMap('PINE_HOLLOW_TOWN', 66, 36, 'right');
+      this.banner.t = 0;
+      this.saveGame();
+      sfx.morning();
+      playEpilogue(this, () => {
+        this.openOverlay(new Dialog([
+          'Elias Vance: "Agnes says I\'m sleeping in my old room and I\'m not to argue. Sundays I\'m at the diner with her and Barney. Come find us."',
+          '(The hand-carved Sheepsquatch now stands in the Historical Society\'s centerpiece case, and the fire-watch cabin is yours for good.)',
+        ]));
+        this.toast('CAMPAIGN COMPLETE! The valley stays open. Elias Vance has come home.');
+      });
     });
   }
 
@@ -689,6 +790,7 @@ export class Game {
       this.handleHotbarInput();
       if (this.clock.tick(dt)) this.passOut();
       this.townsfolk.update(this, dt);
+      this.sightings.update(this, dt);
       this.campaignT -= dt;
       if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
@@ -889,13 +991,14 @@ export class Game {
       }
     }
     if (portal && (!BUILT_MAPS.has(portal.to) || locked)) {
-      this.notice(locked ? 'The basement door is locked. Agnes: "The Archive opens for researchers with 8 donations, dear."'
+      this.notice(locked ? 'The basement door is locked. Agnes: "The Archive opens for researchers with 6 donations, dear."'
         : this.progress.has('grant') && portal.grantMsg ? portal.grantMsg : portal.closedMsg);
       if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.4; }
       p.chain = false;
       return;
     }
     if (this.townsfolk.at(this.cur.id, nx, ny)) { p.chain = false; return; }
+    if (this.stallAt(nx, ny)) { if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; } p.chain = false; return; }
     if (this.cur.blocked(nx, ny, this.hasWaders())) {
       if (p.bumpCd <= 0) { sfx.bump(); p.bumpCd = 0.45; }
       if (WADE_GROUND.has(this.cur.ground(nx, ny))) this.notice('The water is deep, cold muck. You need Bog Waders to wade through (Gideon\'s Outfitter in town).');
@@ -906,6 +1009,8 @@ export class Game {
     const run = this.input.held('b');
     p.beginStep(nx, ny, run, this.terrainMult(this.cur.ground(nx, ny)));
     p.chain = true;
+    // Cryptid clues react to how you move: running spooks the shy ones, stepping onto one startles it.
+    this.sightings.onStep(this, nx, ny, run);
     const surf = this.surfaceAt(p.tx - dx, p.ty - dy);
     if (WADE_GROUND.has(this.cur.ground(nx, ny))) { sfx.wade(); this.particles.splash(nx * 16 + 8, ny * 16 + 12); }
     else sfx.step(surf);
@@ -941,7 +1046,6 @@ export class Game {
       this.transition(() => this.enterMap(portal.to, portal.tx, portal.ty, portal.dir));
       return;
     }
-    this.checkEncounter(x, y);
   }
 
   /* ------------------------------------------------------------ */
@@ -972,28 +1076,14 @@ export class Game {
 
   quietToday(): boolean { return this.gunshots.get(this.cur.id) === this.clock.day; }
 
-  private checkEncounter(x: number, y: number): void {
-    const m = this.cur;
-    if (!m.def.wild || this.quietToday()) return;
-    if (this.encounterCd > 0) { this.encounterCd--; return; }
-    const nearDeep = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2]].some(([dx, dy]) => m.ground(x + dx, y + dy) === T.WATER);
-    const chance = encounterChance(m.ground(x, y), m.obj(x, y), this.weatherNow(), nearDeep);
-    if (chance <= 0 || Math.random() >= chance) return;
-    const ctx = this.spawnCtx(x, y);
-    const def = pickCryptid(ctx, Math.random);
-    if (!def) return;
-    const variant = rollVariant(Math.random, this.rareMult(), ctx.pylonHere);
-    this.startEncounter(def, variant, m.ground(x, y) === T.SLOPE, false);
-  }
-
-  startEncounter(def: CryptidDef, variant: Variant, slope: boolean, summoned: boolean): void {
+  startEncounter(def: CryptidDef, variant: Variant, slope: boolean, summoned: boolean, approach?: Approach): void {
     this.player.chain = false;
-    this.openOverlay(new Encounter(this, { def, variant, slope, summoned }));
+    this.openOverlay(new Encounter(this, { def, variant, slope, summoned, approach }));
   }
 
   /** Called by the encounter as it closes. */
   encounterEnded(): void {
-    this.encounterCd = 8;
+    this.sightings.rest();
   }
 
   /** Which mythic (if any) a placed mount can summon right now. */
@@ -1413,8 +1503,12 @@ export class Game {
     if (npc) { talkTo(this, npc); return true; }
     const track = this.trackAt(tx, ty);
     if (track) { this.inspectTrack(track); return true; }
+    const sign = this.sightings.at(tx, ty);
+    if (sign) { this.sightings.engage(this, sign, 'quiet'); return true; }
     const homeNote = this.homeNote(tx, ty);
     if (homeNote) { sfx.blip(); this.openOverlay(new Dialog([homeNote])); return true; }
+    if (this.cur.id === 'PINE_HOLLOW_TOWN' && this.isFestival() && tx === FESTIVAL_SPOTS.bonfire[0] && ty === FESTIVAL_SPOTS.bonfire[1]) { this.bonfireRoll(); return true; }
+    if (this.stallAt(tx, ty)) { sfx.blip(); this.openOverlay(new Dialog([this.stallNote(tx, ty)])); return true; }
     const kind = this.interactKind(tx, ty);
     if (!kind) return false;
     const m = this.cur;
@@ -1470,6 +1564,9 @@ export class Game {
       case 'sign':
         sfx.blip();
         this.openOverlay(new Dialog([m.def.signs.get(m.anchorIdx(i)) ?? 'The sign is too weathered to read.']));
+        return true;
+      case 'radio':
+        this.porchRadio();
         return true;
       case 'cat': {
         sfx.blip();
@@ -1779,6 +1876,16 @@ export class Game {
       ]));
       return;
     }
+    const letter = this.unreadLetters()[0];
+    if (letter) {
+      this.progress.flags.add(`read_${letter.id}`);
+      if (letter.gift) this.inv.add(letter.gift[0], letter.gift[1]);
+      if (letter.id === 'agnes24') this.progress.firstFest = this.clock.day;
+      sfx.confirm();
+      const more = this.unreadLetters().length;
+      this.openOverlay(new Dialog(more ? [...letter.pages, '(There\'s another letter under this one.)'] : [...letter.pages]));
+      return;
+    }
     sfx.blip();
     this.openOverlay(new Dialog(['No new mail today.']));
   }
@@ -1788,7 +1895,7 @@ export class Game {
     const kind = this.interactKind(tx, ty);
     const labels: Partial<Record<string, string>> = {
       forage: 'PICK UP', harvest: 'HARVEST', bed: 'SLEEP', desk: 'SAVE', dresser: 'WARDROBE', workbench: 'CRAFT',
-      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', cat: 'PET', dog: 'PET', gumball: 'GUMBALL 1G', mailbox: 'MAIL', fireplace: 'LOOK',
+      ship: 'SHIP', barrel: 'REFILL', sign: 'READ', rocker: 'SIT', radio: 'RADIO', cat: 'PET', dog: 'PET', gumball: 'GUMBALL 1G', mailbox: 'MAIL', fireplace: 'LOOK',
       bookshelf: 'READ', structure: 'LOOK', apple: 'SHAKE', hollow: 'SEARCH', sawblade: 'LOOK', rodbase: 'LOOK',
       board: 'READ BOARD', case: 'LOOK', kiosk: 'GIFT SHOP', maptable: 'STUDY', railcar: 'LOOK', pedestal: 'DISPLAY',
     };
@@ -1805,6 +1912,9 @@ export class Game {
     const npc = this.npcFacing(tx, ty);
     if (npc) return npc.inBed ? 'SHH...' : `TALK: ${npc.def.name.split(' ')[0].replace(/"/g, '').toUpperCase()}`;
     if (this.homeNote(tx, ty)) return 'LOOK';
+    if (this.sightings.at(tx, ty)) return 'RAISE CAMCORDER';
+    if (this.cur.id === 'PINE_HOLLOW_TOWN' && this.isFestival() && tx === FESTIVAL_SPOTS.bonfire[0] && ty === FESTIVAL_SPOTS.bonfire[1]) return 'PEPPERONI ROLL';
+    if (this.stallAt(tx, ty)) return 'LOOK';
     const tr = this.trackAt(tx, ty);
     if (tr) return tr.kind === 'page' || tr.kind === 'book' ? 'PICK UP' : 'INSPECT TRACKS';
     if (kind === 'mount') {
@@ -1904,7 +2014,8 @@ export class Game {
     this.stamina = passOut ? Math.floor(this.maxStamina * 0.6) : this.maxStamina;
     this.lowStaminaWarned = false;
     this.stats.daysPlayed++;
-    if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Square!');
+    if (this.unreadLetters().length) lines.push('There\'s a letter waiting in your mailbox.');
+    if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Park!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');
     for (const m of this.maps.values()) { m.spawnForage(this.clock.day); checkSnares(m); }
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
@@ -1919,6 +2030,11 @@ export class Game {
 
   private updateAmbience(dt: number): void {
     const m = this.cur;
+    if (m.id === 'CABIN_YARD' && this.clock.phase() !== 'day' && this.progress.radioDay !== this.clock.day && this.radioHintDay !== this.clock.day && !this.overlays.length) {
+      this.radioHintDay = this.clock.day;
+      sfx.radioStatic();
+      this.toast(this.progress.act >= 3 && !this.progress.flags.has('finale') ? 'The porch radio crackles. A faint voice, far up the ridge.' : 'The porch radio crackles. Someone is checking in.');
+    }
     const wNow = this.weatherNow();
     if (!m.def.indoor && (wNow === 'RAIN' || wNow === 'STORM')) {
       this.rainT -= dt;

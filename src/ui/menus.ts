@@ -98,7 +98,7 @@ export class Dialog implements Overlay {
     const cw = Math.max(...(this.choices ?? []).map((c) => textWidth(c.label))) + 16;
     const n = this.choices?.length ?? 0;
     const ch = n * 9 + 6;
-    const x = b.x + b.w - cw, y = b.y - ch - 2;
+    const x = Math.max(2, b.x + b.w - cw), y = b.y - ch - 2;
     return Array.from({ length: n }, (_, i) => ({ x, y: y + 3 + i * 9, w: cw, h: 9 }));
   }
 

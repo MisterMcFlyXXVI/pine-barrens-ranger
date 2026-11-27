@@ -5,6 +5,8 @@ import { getMapDef } from '../data/maps';
 import { SOLID_GROUND, WADE_GROUND, objProps } from '../data/tiles';
 import type { MapId } from '../data/mapgen';
 import { CRYPTIDS } from '../data/cryptids';
+import { REASONS } from '../data/campaign';
+import type { Reason } from '../data/campaign';
 
 export interface QuestState {
   stage: number;
@@ -29,6 +31,12 @@ export interface ProgressSave {
   pages?: number[];
   visited?: string[];
   friends?: Record<string, { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }>;
+  // Narrative polish pass
+  reason?: string;
+  mail?: Record<string, number>;
+  radioDay?: number;
+  festRollDay?: number;
+  firstFest?: number;
 }
 
 export interface Track {
@@ -59,6 +67,16 @@ export class Progress {
   visited = new Set<string>();
   /** Townsfolk friendships (see src/engine/friends.ts). */
   friends: Record<string, { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }> = {};
+  /** Why you took the fire-watch job (chosen on the drive up). */
+  reason: Reason | null = null;
+  /** Story letters: id -> the day they arrive in the cabin mailbox. Read ones get a `read_<id>` flag. */
+  mail: Record<string, number> = {};
+  /** Last night you checked in on the porch radio. */
+  radioDay = 0;
+  /** Last festival night you had a campfire pepperoni roll. */
+  festRollDay = 0;
+  /** The day of the first Folklore Festival (the Act II climax). */
+  firstFest = 0;
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -71,6 +89,7 @@ export class Progress {
       quests: this.quests, donated: [...this.donated], claimed: [...this.claimed], blueprints: [...this.blueprints],
       tools: { ...this.tools }, buffs: { ...this.buffs }, boardDay: this.boardDay, displays: { ...this.displays }, archiveRead: this.archiveRead,
       act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited], friends: JSON.parse(JSON.stringify(this.friends)),
+      reason: this.reason ?? undefined, mail: { ...this.mail }, radioDay: this.radioDay, festRollDay: this.festRollDay, firstFest: this.firstFest,
     };
   }
 
@@ -91,6 +110,13 @@ export class Progress {
     p.pages = new Set([0, ...(d.pages ?? [])]);
     p.visited = new Set(d.visited ?? []);
     p.friends = JSON.parse(JSON.stringify(d.friends ?? {}));
+    p.reason = REASONS.includes(d.reason as Reason) ? d.reason as Reason : null;
+    p.mail = { ...(d.mail ?? {}) };
+    p.radioDay = d.radioDay ?? 0;
+    p.festRollDay = d.festRollDay ?? 0;
+    p.firstFest = d.firstFest ?? 0;
+    // The Archive Basement now opens at 6 donations (was 8): don't announce it twice to older saves.
+    if (p.claimed.has(8)) p.claimed.add(6);
     return p;
   }
 

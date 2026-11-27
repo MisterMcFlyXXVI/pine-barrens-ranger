@@ -6,11 +6,15 @@ import type { Game } from '../engine/game';
 import type { Overlay } from './overlay';
 import { hex, P } from '../graphics/palette';
 import { drawText, drawTextCentered, wrapText } from '../graphics/font';
-import { STRUCT, OBJ } from '../graphics/sprites';
+import { STRUCT } from '../graphics/sprites';
 import { cryptidFrame } from '../graphics/cryptidSprites';
 import { playerFrame, personFrame } from '../graphics/playerSprite';
 import { NPCS_BY_ID } from '../data/npcs';
-import { INTRO_TEXT, EPILOGUE_TEXT } from '../data/campaign';
+import { INTRO_TEXT, INTRO_CABIN, EPILOGUE_TEXT, BARNEY_ASKS, BARNEY_REPLY, REASONS, REASON_CHOICE, REASON_LABEL } from '../data/campaign';
+import type { Reason } from '../data/campaign';
+import { Dialog } from './menus';
+import { recolor } from '../graphics/canvas';
+import type { Canv } from '../graphics/canvas';
 import { sfx } from '../audio/sfx';
 import { panel } from './panel';
 import { hash2 } from '../util';
@@ -117,41 +121,53 @@ const cabinArt: Art = (g, x, y, w, h, t) => {
 
 /* ---------------- epilogue art ---------------- */
 
+/** Dawn at the C&O station: rails running into mist, and Elias walking the ties with the carving. */
 const dawnArt: Art = (g, x, y, w, h, t) => {
   const bands = [P.VIOLET, P.CRAN, P.AMBER, P.LANTERN];
   bands.forEach((c, i) => fill(g, c, x, y + (i * h * 0.5) / 4, w, h * 0.5 / 4 + 1));
-  treeline(g, x, y + h * 0.62, w, P.PINE, 4);
-  fill(g, P.RUST, x, y + h * 0.62, w, h);
-  fill(g, P.AMBER, x + w / 2 - 6, y + h * 0.62, 12, h);
-  fill(g, P.AMBER, x, y + h * 0.8, w, 6);
-  const v = personFrame(NPCS_BY_ID.vance.body, NPCS_BY_ID.vance.look, 'down', Math.floor(t * 4) % 3, 'walk');
-  g.drawImage(v, Math.round(x + w / 2 - 12), Math.round(y + h * 0.5 + Math.min(10, t * 3)));
-  fogBands(g, x, y + h * 0.55, w, t, 3);
+  treeline(g, x, y + h * 0.58, w, P.PINE, 4);
+  fill(g, P.RUST, x, y + h * 0.58, w, h);
+  // platform on the left, rails converging into the mist
+  fill(g, P.AMBER, x, y + h * 0.62, w * 0.28, h);
+  for (let k = 0; k < 6; k++) fill(g, P.RUST, x, y + h * 0.62 + k * 6, w * 0.28, 1);
+  const vx = x + w * 0.6;
+  for (let yy = 0; yy < h * 0.42; yy += 3) { const sp = 4 + yy * 0.5; fill(g, P.SHADOW, vx - sp - 2, y + h * 0.58 + yy, sp * 2 + 4, 1); }
+  for (let yy = 0; yy < h * 0.42; yy++) { const sp = 2 + yy * 0.35; fill(g, P.MIST, vx - sp, y + h * 0.58 + yy, 1, 1); fill(g, P.MIST, vx + sp, y + h * 0.58 + yy, 1, 1); }
+  const walk = Math.min(1, t / 6);
+  const v = personFrame(NPCS_BY_ID.vance.body, NPCS_BY_ID.vance.look, 'down', Math.floor(t * 3) % 3, 'walk');
+  const vy = y + h * 0.5 + walk * h * 0.2, vs = 1 + walk * 0.5;
+  g.drawImage(v, Math.round(vx - 12 * vs), Math.round(vy - 8 * vs), Math.round(24 * vs), Math.round(24 * vs));
+  g.drawImage(carvingSprite(), Math.round(vx - 6 * vs), Math.round(vy + 2 * vs), Math.round(12 * vs), Math.round(12 * vs));
+  fogBands(g, x, y + h * 0.5, w, t, 5);
 };
 
-const weaverArt: Art = (g, x, y, w, h, t) => {
-  fill(g, P.TWILIGHT, x, y, w, h);
-  stars(g, x, y, w, h, t);
-  fogBands(g, x, y + h * 0.4, w, t, 6);
-  const f = Math.floor(t * 2) % 2;
-  g.drawImage(cryptidFrame('weaver', 'normal', f), Math.round(x + w / 2 - 36), Math.round(y + 4), 72, 72);
-  g.drawImage(cryptidFrame('indrid_cold', 'normal', f), Math.round(x + w * 0.15), Math.round(y + h - 50), 48, 48);
+/** The carving itself on the platform boards. */
+const carvingArt: Art = (g, x, y, w, h, t) => {
+  fill(g, P.LANTERN, x, y, w, h * 0.45);
+  fill(g, P.AMBER, x, y + h * 0.45, w, h);
+  for (let k = 0; k < 8; k++) fill(g, P.RUST, x, y + h * 0.45 + k * 8, w, 1);
+  const s = Math.max(2, Math.floor(Math.min(w, h) / 30));
+  g.globalAlpha = 0.3; fill(g, P.RUST, x + w / 2 - 12 * s, y + h * 0.82, 24 * s, 3 * s); g.globalAlpha = 1;
+  g.drawImage(carvingSprite(), Math.round(x + w / 2 - 12 * s), Math.round(y + h * 0.84 - 24 * s), 24 * s, 24 * s);
+  // morning light glints
+  if (Math.floor(t * 2) % 3 === 0) fill(g, P.FOG, x + w / 2 + 4 * s, y + h * 0.84 - 18 * s, 2, 2);
 };
 
-const festivalArt: Art = (g, x, y, w, h, t) => {
-  fill(g, P.SHADOW, x, y, w, h);
-  stars(g, x, y, w, h * 0.4, t);
-  fill(g, P.MIST, x, y + h * 0.55, w, h);
-  for (let xx = 0; xx < w; xx += 16) g.drawImage(OBJ.flowerbed[0], Math.round(x + xx), Math.round(y + h * 0.5 - 8));
-  const fire = Math.floor(t * 6) % 2;
-  g.globalAlpha = 0.25; fill(g, P.AMBER, x + w / 2 - 30, y + h * 0.4, 60, 40); g.globalAlpha = 1;
-  for (let i = 0; i < 14; i++) fill(g, i % 3 ? P.AMBER : fire ? P.LANTERN : P.RED, x + w / 2 - 6 + hash2(i, fire, 4) * 12, y + h * 0.7 - hash2(i, 9, fire) * 14, 2, 2);
-  const people = ['agnes', 'vance', 'mabel', 'gideon', 'clara', 'pippa'] as const;
-  people.forEach((id, i) => {
-    const n = NPCS_BY_ID[id];
-    const px = x + 8 + (i < 3 ? i * 22 : w - 74 + (i - 3) * 22);
-    g.drawImage(personFrame(n.body, n.look, i < 3 ? 'right' : 'left', 0, 'walk'), Math.round(px), Math.round(y + h * 0.55));
-  });
+/** Agnes coming down the platform; Barney at the whistle; the ranger holding a brass key. */
+const reunionArt: Art = (g, x, y, w, h, t) => {
+  const bands = [P.CRAN, P.AMBER, P.LANTERN, P.LANTERN];
+  bands.forEach((c, i) => fill(g, c, x, y + (i * h * 0.5) / 4, w, h * 0.5 / 4 + 1));
+  treeline(g, x, y + h * 0.55, w, P.FOREST, 7);
+  fill(g, P.AMBER, x, y + h * 0.62, w, h);
+  for (let k = 0; k < 6; k++) fill(g, P.RUST, x, y + h * 0.62 + k * 7, w, 1);
+  const base = y + h * 0.62 - 6;
+  const pos: Array<[string, number, 'left' | 'right']> = [['barnaby', 0.12, 'right'], ['vance', 0.58, 'left'], ['agnes', 0.82 - Math.min(0.14, t * 0.03), 'left']];
+  for (const [id, fx, dir] of pos) g.drawImage(personFrame(NPCS_BY_ID[id as 'vance'].body, NPCS_BY_ID[id as 'vance'].look, dir, id === 'agnes' ? Math.floor(t * 6) % 3 : 0, 'walk'), Math.round(x + w * fx - 12), Math.round(base));
+  g.drawImage(playerFrame({ outfit: 'ranger_jacket', hat: 'ranger_cap' }, 'right', 0, 'walk'), Math.round(x + w * 0.36 - 12), Math.round(base));
+  fill(g, P.LANTERN, x + w * 0.36 + 6, base + 13, 3, 2); // the key
+  // whistle steam
+  for (let k = 0; k < 4; k++) { g.globalAlpha = 0.5 - k * 0.1; fill(g, P.FOG, x + w * 0.12 + 4 + k * 3, base - 6 - k * 5 - (t * 6) % 5, 5 + k, 4); }
+  g.globalAlpha = 1;
 };
 
 const mineArt: Art = (g, x, y, w, h, t) => {
@@ -163,7 +179,7 @@ const mineArt: Art = (g, x, y, w, h, t) => {
 };
 
 export const INTRO_ARTS: readonly Art[] = [adArt, fogArt, towerArt, cabinArt];
-export const EPILOGUE_ARTS: readonly Art[] = [dawnArt, weaverArt, festivalArt, mineArt];
+export const EPILOGUE_ARTS: readonly Art[] = [dawnArt, carvingArt, reunionArt, mineArt];
 
 export class StoryPanels implements Overlay {
   closed = false;
@@ -257,8 +273,30 @@ export class ActCard implements Overlay {
   }
 }
 
+/** The drive up: ad, legend and Barney's truck, then his question, then the cabin. */
 export function playIntro(game: Game, onDone: () => void): void {
-  game.openOverlay(new StoryPanels(INTRO_TEXT, INTRO_ARTS, onDone));
+  game.openOverlay(new StoryPanels(INTRO_TEXT, INTRO_ARTS.slice(0, 3), () => askWhy(game, onDone)));
+}
+
+function askWhy(game: Game, onDone: () => void): void {
+  const pick = (r: Reason) => () => {
+    game.progress.reason = r;
+    game.openOverlay(new StoryPanels(INTRO_CABIN, [cabinArt], onDone));
+    game.openOverlay(new Dialog([`You: "${REASON_CHOICE[r]}"`, ...BARNEY_REPLY[r]]));
+  };
+  game.openOverlay(new Dialog([...BARNEY_ASKS], REASONS.map((r) => ({ label: REASON_LABEL[r], fn: pick(r) }))));
+}
+
+let carvingCache: Canv | null = null;
+/** Elias's hand-carved Sheepsquatch: the cryptid's own sprite, in ridge white oak. */
+export function carvingSprite(): Canv {
+  if (!carvingCache) {
+    carvingCache = recolor(cryptidFrame('sheepsquatch', 'normal', 0), [
+      [P.FOG, P.LANTERN], [P.MOON, P.LANTERN], [P.LANTERN, P.AMBER], [P.AMBER, P.RUST], [P.SHADOW, P.RUST], [P.RED, P.CRAN],
+      [P.MIST, P.AMBER], [P.TWILIGHT, P.RUST], [P.VIOLET, P.AMBER], [P.PINE, P.RUST], [P.FOREST, P.RUST], [P.MOSS, P.AMBER], [P.FERN, P.LANTERN],
+    ]);
+  }
+  return carvingCache;
 }
 
 export function playEpilogue(game: Game, onDone: () => void): void {

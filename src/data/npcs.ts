@@ -12,7 +12,7 @@ import { CRYPTIDS, CryptidDef } from './cryptids';
 import { ITEMS } from './items';
 import { HOME_SPOTS } from './homes';
 
-export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ruth' | 'ezri' | 'pike' | 'vance';
+export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ruth' | 'inspector' | 'ezri' | 'pike' | 'vance';
 
 export interface Stop {
   map: MapId;
@@ -35,6 +35,10 @@ export interface ScheduleCtx {
   foggyNight: boolean;
   /** Raining or storming right now. */
   wet: boolean;
+  /** Absolute day number, a story flag check, and the day a story letter arrives (0 = not yet sent). */
+  day: number;
+  flag: (f: string) => boolean;
+  mailDay: (id: string) => number;
   questStage: (id: string) => number;
   questDone: (id: string) => boolean;
   /** Campaign finale complete (Elias Vance has come home). */
@@ -75,6 +79,8 @@ const town = (x: number, y: number, dir: Dir, wander = 0, tag?: string) => at('P
 const diner = (x: number, y: number, dir: Dir, tag = 'diner') => at('DINER_INT', x, y, dir, 0, tag);
 /** Sunday breakfast at the Whistle-Stop, 8 to 11: most of the town turns up. */
 const sundayBreakfast = (c: ScheduleCtx) => c.weekday === 'Sun' && between(c.minutes, H(8), H(11));
+/** Once Elias is home: Sunday evenings he sits out on Agnes's porch with her and Barney. */
+const sundayPorch = (c: ScheduleCtx) => c.campaignDone && c.weekday === 'Sun' && between(c.minutes, H(17), H(19, 30)) && !c.wet;
 
 /** Festival-night gathering spots in the Town Square. */
 const FEST: Record<string, Stop> = {
@@ -116,6 +122,7 @@ export const NPCS: readonly NpcDef[] = [
       if (m < H(8) || (c.weekday === 'Sun' && m < H(12))) return homeAm('agnes');
       if (between(m, H(12), H(12, 45)) && !c.wet) return town(33, 30, 'left', 0, 'bench');
       if (m < H(17)) return at('MUSEUM_INT', 13, 14, 'down', 0, 'work');
+      if (sundayPorch(c)) return town(12, 48, 'right', 0, 'porch');
       if (m < H(20)) return diner(14, 8, 'right');
       if (m < H(22)) return homeSit('agnes');
       return asleep('agnes');
@@ -144,8 +151,9 @@ export const NPCS: readonly NpcDef[] = [
       const m = c.minutes;
       if (c.festival && m >= H(18)) return FEST.barnaby;
       if (m < H(6, 30)) return asleep('barnaby');
-      if (sundayBreakfast(c)) return diner(5, 8, 'up', 'sunday');
+      if (sundayBreakfast(c)) return c.campaignDone ? diner(13, 8, 'right', 'sunday') : diner(5, 8, 'up', 'sunday');
       if (m < H(7)) return homeAm('barnaby');
+      if (sundayPorch(c)) return town(16, 48, 'left', 0, 'porch');
       // Sunday afternoons he fishes your pond (with Gideon), weather permitting.
       if (c.weekday === 'Sun' && between(m, H(13), H(17)) && !c.wet) return at('CABIN_YARD', 34, 43, 'down', 0, 'fishing');
       if (m < H(18)) return c.wet && between(m, H(9), H(17)) ? diner(5, 8, 'up', 'rain') : town(67, 35, 'down', 1, 'station');
@@ -403,6 +411,23 @@ export const NPCS: readonly NpcDef[] = [
     },
   },
   {
+    id: 'inspector', name: 'Harlan Pruitt', title: 'County Inspector', kind: 'person',
+    body: body('inspector', P.LANTERN, P.AMBER, P.SHADOW, P.VOID, P.SHADOW, 'short'),
+    look: { outfit: 'npc_county', hat: 'npc_county_cap' },
+    where: (c) => {
+      const m = c.minutes;
+      if (c.flag('funded')) return null;
+      // He comes back to see the festival for himself.
+      if (c.flag('inspector_done')) return c.festival && m >= H(18) ? town(45, 31, 'left', 0, 'festival') : null;
+      const arrives = c.mailDay('barney12');
+      if (!arrives || c.day < arrives) return null;
+      return between(m, H(9), H(17)) ? town(65, 35, 'right', 0, 'station') : null;
+    },
+    greet: ['Pruitt. County.', 'Don\'t mind me. Just counting things.'],
+    chat: ['Every town I visit tells me it\'s special. Most of them are right. That\'s the hard part of this job.'],
+    rumor: 'Pruitt flips a page: "Somebody filed a report about the {c}, {time}, out by {place}. Says it likes {lure}. I don\'t file those."',
+  },
+  {
     id: 'vance', name: 'Ranger Elias Vance', title: 'Former Fire-Watch Ranger', kind: 'person',
     body: body('vance', P.LANTERN, P.AMBER, P.MIST, P.TWILIGHT, P.TWILIGHT, 'beard'),
     look: { outfit: 'ranger_jacket', hat: 'ranger_cap' },
@@ -411,25 +436,32 @@ export const NPCS: readonly NpcDef[] = [
       const m = c.minutes;
       if (c.festival && m >= H(18)) return town(38, 31, 'down');
       if (m < H(7)) return asleep('vance');
-      if (sundayBreakfast(c)) return diner(13, 9, 'right', 'sunday');
+      if (sundayBreakfast(c)) return diner(14, 9, 'right', 'sunday');
       if (m < H(8)) return homeAm('vance');
-      if (m < H(17)) return at('MUSEUM_INT', 9, 16, 'right', 1);
+      if (sundayPorch(c)) return town(13, 48, 'right', 0, 'porch');
+      if (m < H(17)) return at('MUSEUM_INT', 9, 16, 'right', 1, 'work');
       if (m < H(20)) return diner(13, 9, 'right');
-      if (c.wet) return m < H(23) ? homeSit('vance') : asleep('vance');
-      return at('RADIO_RIDGE_AND_CROSSROADS', 20, 10, 'left', 1);
+      // Thursday evenings he walks up to the warden cabin to leave the white one its supper.
+      if (c.weekday === 'Thu' && !c.wet && m < H(23)) return at('RADIO_RIDGE_AND_CROSSROADS', 20, 10, 'left', 1, 'ridge');
+      if (m < H(22)) return homeSit('vance');
+      return asleep('vance');
     },
     lines: {
-      home: ['My sister kept my room exactly as I left it. Down to the dust, I think.', 'Percival still doesn\'t trust me. Three years is a long time to a cat.'],
+      home: ['Agnes kept my room exactly as I left it. Down to the dust, I think.', 'Percival still doesn\'t trust me. Three years is a long time to a cat.'],
+      porch: ['Sunday evenings on the porch. Barney brings the coffee. Agnes brings the arguments.', 'Danny used to sit right where you\'re standing. He\'d have liked you.'],
+      ridge: ['Thursdays I bring the white one its supper. It still won\'t let me close. That\'s fair. It lets YOU close, I hear.'],
+      sunday: ['Mabel gave me the biggest stack of pancakes she\'s ever made, then told me she\'d kill me if I ever left again.'],
     },
-    greet: ['Ranger. You kept the garden. Good.', 'Three years in the fog. I still dream in static.', 'Agnes won\'t let me out of her sight. Can\'t blame her.'],
+    greet: ['Ranger. You kept the garden. Good.', 'Thirty-four years on the railroad and three in a warden cabin. I\'m still learning how to come home.', 'Agnes won\'t let me out of her sight. Can\'t blame her.'],
     chat: [
-      'The Weaver isn\'t cruel. It\'s a caretaker. It needed someone to listen while the Wardens were restless.',
-      'You logged all four Wardens. Do you understand what that means? They trust you. The valley picked you.',
-      'Something under the foothills was waking up. The Wardens kept it down. Now that they rest easy... the mine hums. Keep your lantern lit.',
+      'I put a living thing in irons to win an argument with a ledger. You found the other way. Don\'t ever let anyone tell you it was the slow way.',
+      'Danny went down No. 3 the morning of the cave-in and I was out walking track. I\'ve been out walking ever since, one way or another.',
+      'The Wardens don\'t forget. But they let you try again, if you come with bait instead of iron. Most folks don\'t.',
       'I owe Clara a dozen interviews. I\'ve done two. She records everything. Even my snoring.',
-      'My old journal? Keep it. You\'ve earned the pages more than I have.',
+      'The mine hums louder now. Gideon hears it too. Keep your lantern lit.',
+      'My journal? Keep it. You\'ve earned the pages more than I have.',
     ],
-    rumor: 'Elias taps his radio: "From inside the fog I watched the {c}, {time}, near {place}. It always came for {lure}."',
+    rumor: 'Elias taps his old trackman\'s watch: "From the warden cabin I watched the {c}, {time}, near {place}. It always came for {lure}."',
   },
   {
     id: 'ezri', name: 'Old Ezri Vance-Kerr', title: 'Traveling Apothecary', kind: 'person',

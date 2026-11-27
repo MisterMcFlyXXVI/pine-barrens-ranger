@@ -398,6 +398,36 @@ function radioRig(f: number): Canv {
   }, 32, 16, true);
 }
 
+/* ------------------------------ story ------------------------------ */
+
+/** Elias's field radio on the porch, rigged to a car battery; the dial glows when someone's calling. */
+function porchRadio(glow: boolean): Canv {
+  return art((p) => {
+    p.rect(2, 9, 12, 6, RUST); p.hline(2, 13, 9, AMBER); // crate
+    p.rect(3, 3, 10, 6, SHADOW); p.rect(4, 4, 5, 3, glow ? LANTERN : TWILIGHT); p.px(5, 5, glow ? AMBER : MIST);
+    p.px(11, 4, glow ? RED : CRAN); p.px(11, 6, MIST);
+    p.vline(12, 0, 3, MIST); p.px(12, 0, glow ? LANTERN : FOG); // antenna
+    p.rect(9, 11, 4, 3, VOID); p.px(10, 11, RED); // battery
+  }, 16, 16, true);
+}
+
+/** Festival stalls go up over three days: posts, frame, then canopy and wares. */
+function stall(stage: number, kind: string): Canv {
+  const [c1, c2] = kind === 'pie' ? [RED, FOG] : kind === 'cider' ? [AMBER, LANTERN] : kind === 'lantern' ? [TWILIGHT, LANTERN] : [CRAN, FOG];
+  return art((p) => {
+    p.vline(2, 8, 31, RUST); p.vline(13, 8, 31, RUST);
+    if (stage === 0) { p.rect(4, 27, 8, 4, AMBER); p.hline(4, 11, 27, LANTERN); return; } // lumber pile
+    p.rect(1, 20, 14, 4, AMBER); p.hline(1, 14, 20, LANTERN); p.rect(2, 24, 12, 7, RUST); // counter
+    if (stage === 1) { p.hline(1, 14, 8, RUST); return; }
+    for (let x = 0; x < 16; x++) for (let y = 4; y < 10; y++) p.px(x, y, (x >> 1) % 2 ? c1 : c2); // striped canopy
+    for (let x = 0; x < 16; x += 2) p.px(x, 10, (x >> 1) % 2 ? c1 : c2);
+    if (kind === 'pie') for (const x of [3, 7, 11]) { p.rect(x, 18, 3, 2, AMBER); p.px(x + 1, 18, CRAN); }
+    if (kind === 'cider') for (const x of [3, 6, 9, 12]) { p.rect(x, 17, 2, 3, AMBER); p.px(x, 17, LANTERN); }
+    if (kind === 'lantern') for (const x of [3, 7, 11]) { p.rect(x, 12, 3, 3, [RED, LANTERN, VIOLET][x % 3]); p.px(x + 1, 11, SHADOW); }
+    if (kind === 'crafts') { p.rect(3, 12, 10, 7, LANTERN); for (let k = 0; k < 4; k++) p.px(4 + k * 2, 13 + k, RED); }
+  }, 16, 32, true);
+}
+
 /* ------------------------------ decals ------------------------------ */
 
 function puddle(seed: number): Canv {
@@ -493,6 +523,8 @@ export function bakeDecor(): void {
   for (const k of ['photo', 'clock', 'sampler', 'map', 'rods', 'drawing', 'poster', 'quilt', 'window']) PROP[`frame_${k}`] = [wallFrame(k)];
   PROP.modeltrain = [0, 1, 2, 3, 4, 5, 6, 7].map(modelTrain);
   PROP.radiorig = [radioRig(0), radioRig(1)];
+  PROP.porchradio = [porchRadio(false), porchRadio(true)];
+  for (const k of ['pie', 'cider', 'lantern', 'crafts']) PROP[`stall_${k}`] = [stall(0, k), stall(1, k), stall(2, k)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];
   DECAL.snowLight = [snowLight(7), snowLight(19), snowLight(41)];

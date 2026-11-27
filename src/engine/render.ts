@@ -7,7 +7,8 @@ import { Pen } from '../graphics/canvas';
 import { playerFrame, handPivot, personFrame } from '../graphics/playerSprite';
 import { cryptidFrame } from '../graphics/cryptidSprites';
 import { CRYPTIDS } from '../data/cryptids';
-import { TOWN_SQUARE, FESTIVAL_SPOTS } from '../data/town';
+import { TOWN_SQUARE, FESTIVAL_SPOTS, FESTIVAL_STALLS } from '../data/town';
+import { carvingSprite } from '../ui/intro';
 import type { Light } from '../graphics/lighting';
 import { hex, P } from '../graphics/palette';
 import { O, T, objProps } from '../data/tiles';
@@ -141,6 +142,8 @@ const flags = { grant: false, gift: false };
 let stopFixed = false;
 /** Set each frame: 0 Spring, 1 Summer, 2 Fall, 3 Winter (outdoors only for seasonal looks). */
 let season = 0;
+/** Set each frame: someone is calling on the porch radio tonight. */
+let radioCalling = false;
 
 /** Things that wear a cap of snow in winter. */
 const SNOWCAP: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.ROCK, O.BOULDER, O.STUMP, O.LOG, O.HEMLOCK_TREE, O.RED_SPRUCE, O.DEAD_TREE,
@@ -306,6 +309,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.WALL_FRAME: return (PROP[`frame_${m.def.meta?.get(m.idx(x, y)) ?? 'photo'}`] ?? PROP.frame_photo)[0];
     case O.MODEL_TRAIN: return PROP.modeltrain[Math.floor(time * 3) % 8];
     case O.RADIO_RIG: return PROP.radiorig[Math.floor(time * 2 + h) % 2];
+    case O.PORCH_RADIO: return PROP.porchradio[radioCalling && Math.floor(time * 2) % 2 === 0 ? 1 : 0];
     case O.TOTEM: return OBJ.totem[0];
     case O.ROD: return OBJ.rod[Math.floor(time * 3) % 2];
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
@@ -395,6 +399,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const rainy = (w: string) => w === 'RAIN' || w === 'STORM';
   const wet = !m.def.indoor && !winter && (rainy(wNow) || (rainy(game.dayWeather.morning) && game.clock.minutes >= 720));
   const blaze = BLAZE[m.id];
+  radioCalling = m.id === 'CABIN_YARD' && game.clock.phase() !== 'day' && game.progress.radioDay !== game.clock.day;
   const cam = game.cam;
   const cx = cam.ix, cy = cam.iy;
   const time = game.time;
@@ -449,6 +454,9 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       }
     }
   }
+
+  // ---- Cryptid clues on the ground: prints and ripples ----
+  drawSignsGround(game, g, cx, cy, time);
 
   // ---- Facing-tile cursor (when holding a tool or seed) ----
   const p = game.player;
@@ -511,7 +519,8 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
           let ex = 0, ey = 0, es = 16;
           if (o === O.CASE) {
             const cid = m.def.meta?.get(i);
-            if (cid && game.progress.donated.has(cid)) { extra = cryptidFrame(cid, 'normal', Math.floor(time * 2 + x) % 2); ex = dx + 2; ey = dy + 4; es = 12; }
+            if (cid === 'sheepsquatch' && game.progress.flags.has('carving')) { extra = carvingSprite(); ex = dx + 2; ey = dy + 4; es = 12; }
+            else if (cid && game.progress.donated.has(cid)) { extra = cryptidFrame(cid, 'normal', Math.floor(time * 2 + x) % 2); ex = dx + 2; ey = dy + 4; es = 12; }
           } else if (o === O.TABLE && m.id === 'CABIN_INTERIOR') {
             extra = MISC.vanceBook; ex = dx + 2; ey = dy - 1; es = 12;
           } else if (o === O.PEDESTAL) {
@@ -647,6 +656,21 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       },
     });
   }
+  // Festival stalls in the park (going up over three days after Mabel's letter), lit with lanterns on festival nights.
+  const prep = m.id === 'PINE_HOLLOW_TOWN' ? game.prepStage() : -1;
+  if (prep >= 0) {
+    for (const [sx, sy, kind] of FESTIVAL_STALLS) {
+      const img = PROP[`stall_${kind}`][prep];
+      list.push({ y: (sy + 1) * 16, fn: () => g.drawImage(img, sx * 16 - cx, (sy + 1) * 16 - 32 - cy) });
+      if (festival) lights.push({ x: sx * 16 + 8 - cx, y: sy * 16 - 10 - cy, r: 22, flicker: true });
+    }
+  }
+  // A letter waiting: an envelope bobs over the cabin mailbox.
+  if (m.id === 'CABIN_YARD' && game.hasMail()) {
+    const bob = Math.round(Math.sin(time * 3) * 1.5);
+    const ex2 = 34 * 16 + 4 - cx, ey2 = 22 * 16 - 20 + bob - cy;
+    list.push({ y: 23 * 16 + 1, fn: () => { g.fillStyle = hex(P.VOID); g.fillRect(ex2 - 1, ey2 - 1, 10, 8); g.fillStyle = hex(P.FOG); g.fillRect(ex2, ey2, 8, 6); g.fillStyle = hex(P.RUST); g.fillRect(ex2 + 1, ey2 + 1, 1, 1); g.fillRect(ex2 + 2, ey2 + 2, 4, 1); g.fillRect(ex2 + 6, ey2 + 1, 1, 1); } });
+  }
   if (festival) {
     const [bx, by] = FESTIVAL_SPOTS.bonfire;
     const fire = Math.floor(time * 6) % 2 ? MISC.bonfire1 : MISC.bonfire0;
@@ -708,13 +732,19 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     },
   });
 
+  for (const sg of game.sightings.signs) {
+    if (sg.kind !== 'rustle' && sg.kind !== 'tracks') continue;
+    const k = sg.live ? 1 : Math.max(0, sg.fade);
+    const bx = sg.x * 16 - cx, by = sg.y * 16 - cy;
+    list.push({ y: (sg.y + 1) * 16 + 0.3, fn: () => drawRustle(g, bx, by, time + sg.seed, k) });
+  }
   list.sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
 
   const view: View = { x0, x1, y0, y1, cx, cy, season, time };
   drawAmbient(game, g, view);
   game.particles.draw(g, cx, cy);
-  if (festival) {
+  if (festival || prep >= 0) {
     const S = TOWN_SQUARE;
     for (const yy of [S.y, S.y + S.h - 1]) for (let xx = S.x; xx < S.x + S.w; xx++) g.drawImage(MISC.bunting, xx * 16 - cx, yy * 16 - 14 - cy);
   }
@@ -732,6 +762,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   }
   game.lighting.render(g, game.w, game.h, game.clock.minutes, m.def.indoor, lights, time);
   drawFireflies(game, g, view);
+  drawSignsGlow(game, g, cx, cy, time);
   if (outdoors) {
     game.weatherFx.drawParticles(g, game.w, game.h, wthr, time, cx, cy);
     game.weatherFx.drawFlash(g, game.w, game.h);
@@ -761,5 +792,72 @@ function litGroups(game: Game, s: Structure, home: MapId | undefined): string[] 
     case 'museum': return tf.awakeIn('MUSEUM_INT') ? ['main', 'upper'] : [];
     case 'station': return flags.grant && game.clock.minutes < 22 * 60 ? ['main'] : [];
     default: return [];
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Cryptid clues                                                       */
+/* ------------------------------------------------------------------ */
+
+function drawSignsGround(game: Game, g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
+  for (const sg of game.sightings.signs) {
+    const k = sg.live ? 1 : Math.max(0, sg.fade);
+    if (sg.kind === 'tracks') {
+      g.globalAlpha = 0.85 * k;
+      for (const [px, py] of sg.prints) g.drawImage(MISC.paw, px * 16 - cx, py * 16 - cy);
+      g.globalAlpha = 1;
+    } else if (sg.kind === 'ripple') {
+      const bx = sg.x * 16 + 8 - cx, by = sg.y * 16 + 9 - cy;
+      for (let ring = 0; ring < 2; ring++) {
+        const t = (time * 0.7 + sg.seed + ring * 0.5) % 1;
+        const r = 2 + t * 7;
+        g.globalAlpha = (1 - t) * 0.9 * k;
+        g.fillStyle = hex(P.FOG);
+        for (let a = 0; a < 14; a++) { const ang = (a / 14) * Math.PI * 2; g.fillRect(Math.round(bx + Math.cos(ang) * r), Math.round(by + Math.sin(ang) * r * 0.5), 1, 1); }
+      }
+      // A dark shape just under the surface.
+      g.globalAlpha = 0.35 * k; g.fillStyle = hex(P.SHADOW);
+      g.fillRect(Math.round(bx - 5 + Math.sin(time + sg.seed) * 2), by - 1, 10, 3);
+      g.globalAlpha = 1;
+    }
+  }
+}
+
+/** Something heavy moving in the cover. */
+function drawRustle(g: CanvasRenderingContext2D, bx: number, by: number, t: number, k: number): void {
+  const shake = Math.sin(t * 18) * (Math.sin(t * 1.3) > 0.2 ? 2 : 0.5);
+  g.globalAlpha = k;
+  for (const [ox, oy, c] of [[3, 6, P.FERN], [7, 3, P.MOSS], [11, 6, P.FERN], [5, 10, P.MOSS], [10, 10, P.FOREST], [8, 7, P.FERN]] as Array<[number, number, number]>) {
+    g.fillStyle = hex(c);
+    g.fillRect(Math.round(bx + ox + shake * (oy < 8 ? 1 : 0.5)), Math.round(by + oy), 1, 4);
+  }
+  g.globalAlpha = 1;
+}
+
+/** Eyes in the brush shine through the dark; Wisp-Light Oil makes every clue glow. */
+function drawSignsGlow(game: Game, g: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
+  const wisp = game.wispNight === game.clock.day;
+  for (const sg of game.sightings.signs) {
+    const k = sg.live ? 1 : Math.max(0, sg.fade);
+    const bx = sg.x * 16 - cx, by = sg.y * 16 - cy;
+    if (wisp) {
+      g.globalAlpha = (0.18 + Math.sin(time * 3 + sg.seed) * 0.06) * k;
+      g.fillStyle = hex(P.VIOLET); g.fillRect(bx - 2, by - 2, 20, 20);
+      g.globalAlpha = 1;
+    }
+    if (sg.kind !== 'eyes') continue;
+    const blink = (time * 0.6 + sg.seed) % 3 < 0.12;
+    if (blink) continue;
+    const col = sg.variant === 'albino' ? P.MOON : sg.variant === 'static' ? P.LANTERN : (Math.floor(sg.seed) % 3 === 0 ? P.LANTERN : P.RED);
+    const look = Math.round(Math.sin(time * 0.5 + sg.seed) * 1.5);
+    const ex = bx + 3 + look, ey = by + 7;
+    g.globalAlpha = 0.18 * k; g.fillStyle = hex(col);
+    g.fillRect(ex - 3, ey - 3, 14, 7);
+    g.globalAlpha = 0.45 * k;
+    g.fillRect(ex - 1, ey - 1, 4, 3); g.fillRect(ex + 5, ey - 1, 4, 3);
+    g.globalAlpha = k;
+    g.fillRect(ex, ey, 2, 1); g.fillRect(ex + 6, ey, 2, 1);
+    if (sg.variant === 'static' && Math.floor(time * 8 + sg.seed) % 5 === 0) { g.fillStyle = hex(P.MIST); g.fillRect(ex + 2, ey - 3, 1, 2); }
+    g.globalAlpha = 1;
   }
 }

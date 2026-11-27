@@ -136,6 +136,7 @@ function buildCabinYard(): MapDef {
   b.setO(36, 18, O.WOODPILE);
   b.setO(41, 17, O.CRATE);
   b.setO(26, 19, O.ROCKER);  // porch rocker
+  b.setO(27, 19, O.PORCH_RADIO);  // Elias's old field radio: evening check-ins
   b.setO(30, 19, O.CHIMES);  // hung from the porch eave
   b.place(42, 20, O.CLOTHESLINE, 3, 1);
   b.sign(21, 22, 'HOMESTEAD GARDEN. Till plots with the Hoe, plant lure seeds, and water them every day. Rocky and overgrown plots can be cleared with the Hoe or Machete.');

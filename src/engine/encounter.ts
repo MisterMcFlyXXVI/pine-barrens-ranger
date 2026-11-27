@@ -1,16 +1,17 @@
 /**
  * GBC-style turn-based pacification encounter.
  *
- * Flow: "!" alert → horizontal-blinds wipe → split-screen battle (cryptid
- * top-right, ranger bottom-left, text box below) → 4-slot Field Kit turns →
- * Trust 100% logs the cryptid (specimen + Dex) / Startle 100% ends it.
+ * Flow: "!" alert → the camcorder powers on → you watch the cryptid through the
+ * ranger's viewfinder (REC dot, tape counter, battery, focus reticle, and
+ * region-matched foreground framing) → 4-slot Field Kit turns → Trust 100% logs
+ * the cryptid (specimen + Dex) / Startle 100% ends it → the camcorder powers off.
+ * The rules are unchanged from the GBC split-screen original; only the framing is new.
  */
 import type { Game } from './game';
 import type { Overlay } from '../ui/overlay';
 import { CryptidDef, STANCE_COUNTERS, Stance, Trait, Variant } from '../data/cryptids';
 import { ITEMS, BAIT_KINDS } from '../data/items';
 import { cryptidFrame } from '../graphics/cryptidSprites';
-import { playerFrame } from '../graphics/playerSprite';
 import { ICON } from '../graphics/sprites';
 import { drawText, drawTextRight, textWidth, wrapText } from '../graphics/font';
 import { hex, P } from '../graphics/palette';
@@ -26,6 +27,8 @@ export interface EncounterSetup {
   /** Encounter began on a steep slope tile (Wampahoofus bonus). */
   slope: boolean;
   summoned: boolean;
+  /** How you came upon it: crept up quietly (calmer) or stumbled into it (startled). */
+  approach?: 'quiet' | 'bumped';
 }
 
 type Phase = 'alert' | 'wipeIn' | 'msg' | 'menu' | 'kitCat' | 'kitPick' | 'wipeOut';
@@ -105,6 +108,11 @@ export class Encounter implements Overlay {
   private nightCloak = false;
   private readonly def: CryptidDef;
   private readonly name: string;
+  /** Tape counter: where the tape was when you hit record, and when that was. */
+  private readonly tapeBase: number;
+  private readonly startT: number;
+  /** Next creature call over the camcorder mic. */
+  private callT = 3;
 
   constructor(private readonly game: Game, private readonly setup: EncounterSetup) {
     this.def = setup.def;
@@ -114,7 +122,11 @@ export class Encounter implements Overlay {
     const ph = game.clock.phase();
     this.nightCloak = game.look.outfit === 'yow_cloak' && (ph === 'night' || ph === 'witching');
     if (this.nightCloak) this.startle = Math.round(this.startle * 0.5);
+    if (setup.approach === 'quiet') this.startle = Math.max(0, this.startle - 12);
+    if (setup.approach === 'bumped') this.startle = Math.min(60, this.startle + 12);
     this.shownStartle = this.startle;
+    this.startT = game.time;
+    this.tapeBase = 600 + (game.stats.daysPlayed * 137 + Object.values(game.dex).reduce((a, e) => a + e.encounters, 0) * 211) % 9000;
     this.stance = this.def.stances[Math.floor(this.rnd() * this.def.stances.length)];
     sfx.alert();
     game.input.releaseAll();
@@ -174,6 +186,8 @@ export class Encounter implements Overlay {
     const variantTag = this.setup.variant === 'albino' ? 'An ALBINO' : this.setup.variant === 'static' ? 'A STATIC-CHARGED' : art;
     const shownName = this.setup.variant === 'normal' ? this.name : d.name;
     this.say(this.setup.summoned ? `${variantTag} ${shownName} answers the call!` : `${variantTag} ${shownName} appears!`);
+    if (this.setup.approach === 'quiet') this.say('You crept close without a sound. It hasn\'t noticed the camera yet.');
+    if (this.setup.approach === 'bumped') this.say('You stumbled right into it! It\'s rattled.');
     if (this.setup.variant !== 'normal') this.say('A Rare Variant! Log it for a separate Dex entry.');
     if (firstTime) this.say(`New Cryptid-Dex sighting: No.${String(d.num).padStart(2, '0')} ${d.name}.`);
     if (this.has('squonk')) this.say('It is already weeping and half-startled...');
@@ -459,6 +473,11 @@ export class Encounter implements Overlay {
 
   update(game: Game, dt: number): void {
     this.t += dt;
+    // Now and then the creature calls, close enough for the camcorder mic to pick it up.
+    if (this.phase !== 'alert' && this.phase !== 'wipeIn' && this.phase !== 'wipeOut' && !this.outcome) {
+      this.callT -= dt;
+      if (this.callT <= 0) { this.callT = 6 + this.rnd() * 6; sfx.creature(this.def.temperament); }
+    }
     this.flash = Math.max(0, this.flash - dt * 2.5);
     this.shake = Math.max(0, this.shake - dt * 3);
     const k = Math.min(1, dt * 6);
@@ -577,13 +596,36 @@ export class Encounter implements Overlay {
   /* Drawing                                                       */
   /* ------------------------------------------------------------ */
 
-  private blinds(g: CanvasRenderingContext2D, p: number, reverse: boolean): void {
-    const W = this.game.w, H = this.game.h, bh = 6;
+  /** The camcorder switching on: static, then the picture opening out from a bright line. */
+  private powerOn(game: Game, g: CanvasRenderingContext2D, p: number): void {
+    const W = game.w, H = game.h;
+    p = clamp(p, 0, 1);
+    if (p > 0.45) {
+      this.drawBattle(game, g);
+      const open = (p - 0.45) / 0.55;
+      const keep = Math.round(H * open / 2);
+      g.fillStyle = hex(P.VOID);
+      g.fillRect(0, 0, W, Math.max(0, H / 2 - keep)); g.fillRect(0, H / 2 + keep, W, H);
+      return;
+    }
+    g.fillStyle = hex(P.VOID); g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 260; i++) { g.fillStyle = hex(i % 3 ? P.SHADOW : P.MIST); g.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * H), 2, 1); }
+    const lw = Math.round(W * Math.min(1, p / 0.35));
+    g.fillStyle = hex(P.FOG); g.fillRect(Math.round((W - lw) / 2), Math.floor(H / 2), lw, 1);
+    drawText(g, 'CAM', 6, H - 10, P.MIST);
+  }
+
+  /** And off again: the picture squeezes to a line, then a dot. */
+  private powerOff(game: Game, g: CanvasRenderingContext2D, p: number): void {
+    const W = game.w, H = game.h;
+    p = clamp(p, 0, 1);
+    const keep = Math.round((H / 2) * (1 - Math.min(1, p / 0.6)));
     g.fillStyle = hex(P.VOID);
-    for (let i = 0, y = 0; y < H; i++, y += bh) {
-      const local = clamp((p * 1.6 - i * (0.6 / Math.ceil(H / bh))), 0, 1);
-      const w = Math.round((reverse ? 1 - local : local) * W);
-      if (i % 2 === 0) g.fillRect(0, y, w, bh); else g.fillRect(W - w, y, w, bh);
+    g.fillRect(0, 0, W, Math.max(0, H / 2 - keep)); g.fillRect(0, H / 2 + keep + 1, W, H);
+    if (p > 0.6) {
+      g.fillRect(0, 0, W, H);
+      const lw = Math.round(W * (1 - (p - 0.6) / 0.4));
+      g.fillStyle = hex(P.FOG); g.fillRect(Math.round((W - lw) / 2), Math.floor(H / 2), Math.max(1, lw), 1);
     }
   }
 
@@ -596,10 +638,10 @@ export class Encounter implements Overlay {
       g.fillRect(px, py - 6 + bob, 1, 4); g.fillRect(px, py - 1 + bob, 1, 1);
       return;
     }
-    if (this.phase === 'wipeIn') { this.blinds(g, this.t / 0.75, false); return; }
+    if (this.phase === 'wipeIn') { this.powerOn(game, g, this.t / 0.75); return; }
     if (this.phase === 'wipeOut') {
-      if (this.t < 0.45) { this.drawBattle(game, g); this.blinds(g, this.t / 0.45, false); }
-      else this.blinds(g, (this.t - 0.45) / 0.45, true);
+      if (this.t < 0.5) { this.drawBattle(game, g); this.powerOff(game, g, this.t / 0.5); }
+      else { g.fillStyle = hex(P.VOID); g.globalAlpha = 1 - (this.t - 0.5) / 0.4; g.fillRect(0, 0, game.w, game.h); g.globalAlpha = 1; }
       return;
     }
     this.drawBattle(game, g);
@@ -636,8 +678,8 @@ export class Encounter implements Overlay {
     const intro = Math.min(1, this.t / 0.5);
     const slideC = this.turn === 0 ? Math.round((1 - intro) * W * 0.6) : 0;
 
-    // Cryptid platform + sprite
-    const cx = Math.round(W * 0.7) + slideC, cy = Math.round(arenaH * 0.46);
+    // The cryptid, framed in the viewfinder (we're looking through the camcorder now, so no ranger in shot).
+    const cx = Math.round(W * 0.58) + slideC, cy = Math.round(arenaH * 0.58);
     g.fillStyle = hex(P.VOID); g.globalAlpha = 0.3;
     g.beginPath(); g.ellipse(cx, cy + 2, 14 * s, 3.5 * s, 0, 0, Math.PI * 2); g.fill();
     g.globalAlpha = 1;
@@ -654,15 +696,6 @@ export class Encounter implements Overlay {
       for (let i = 0; i < 6; i++) g.fillRect(cx - 10 * s + ((i * 37 + Math.floor(time * 20)) % (20 * s)), cy - 22 * s + ((i * 23 + Math.floor(time * 30)) % (20 * s)), 1 + (i % 2), 1 + (i % 2));
     }
 
-    // Player (back view)
-    const pp = playerFrame(game.look, 'up', 0, 'walk');
-    const ps = Math.max(2, s);
-    const px = Math.round(W * 0.2) - slideC, py = arenaH - 24 * ps + 4 * ps;
-    g.fillStyle = hex(P.VOID); g.globalAlpha = 0.3;
-    g.beginPath(); g.ellipse(px + 12 * ps, arenaH - 3, 11 * ps, 2.5 * ps, 0, 0, Math.PI * 2); g.fill();
-    g.globalAlpha = 1;
-    g.drawImage(pp, px, py, 24 * ps, 24 * ps);
-
     // Fog over the arena
     if (wthr === 'FOG') {
       g.fillStyle = hex(P.FOG);
@@ -670,10 +703,15 @@ export class Encounter implements Overlay {
       g.globalAlpha = 1;
     }
 
+    // Region-matched foreground (pine boughs, cattails, rocks), weather on the lens, and the camcorder's OSD.
+    this.drawForeground(game, g, W, arenaH, time);
+    this.drawOsd(game, g, W, arenaH, cx, cy, s, time);
+
     // Cryptid status box (top-left)
     // Starts below the DOM corner toggles (SND/PAD) on desktop & landscape.
-    const bw = Math.min(124, Math.floor(W * 0.5)), bx = 4, by = 14;
-    panel(g, bx, by, bw, 40);
+    const bw = Math.min(124, Math.floor(W * 0.5)), bx = 4, by = 18;
+    g.globalAlpha = 0.62; g.fillStyle = hex(P.VOID); g.fillRect(bx, by, bw, 40); g.globalAlpha = 1;
+    g.fillStyle = hex(P.FOG); g.fillRect(bx, by, 4, 1); g.fillRect(bx, by, 1, 4); g.fillRect(bx + bw - 4, by + 39, 4, 1); g.fillRect(bx + bw - 1, by + 36, 1, 4);
     const label = this.name.length * 4 > bw - 24 ? this.def.name : this.name;
     drawText(g, label.slice(0, Math.floor((bw - 24) / 4)), bx + 5, by + 5, this.setup.variant === 'normal' ? P.LANTERN : this.setup.variant === 'albino' ? P.FOG : P.MIST);
     drawTextRight(g, `T${this.def.tier}`, bx + bw - 5, by + 5, P.VIOLET);
@@ -686,13 +724,6 @@ export class Encounter implements Overlay {
     drawText(g, `STANCE: ${this.stanceKnown ? this.stance : '???'}`, bx + 5, by + 30, P.MIST);
     const st = stars(game.dex[this.def.id]);
     for (let i = 0; i < 3; i++) drawStar(g, bx + bw - 24 + i * 7, by + 30, i < st);
-
-    // Ranger box (bottom-right of arena)
-    const rw = 88, rx = W - rw - 4, ry = arenaH - 24;
-    panel(g, rx, ry, rw, 21);
-    drawText(g, `RANGER  TURN ${this.turn}`, rx + 5, ry + 4, P.FOG);
-    drawText(g, '{', rx + 5, ry + 12, P.RED);
-    bar(g, rx + 11, ry + 12, rw - 16, 5, game.stamina / game.maxStamina, P.FERN);
 
     // Text box / menu
     panel(g, 0, boxY, W, L.boxH);
@@ -732,6 +763,113 @@ export class Encounter implements Overlay {
       const fx = cx - 14 * s, fy = cy - 24 * s, fw = 28 * s, fh = 28 * s;
       for (const [x, y, w, h] of [[fx, fy, 8, 2], [fx, fy, 2, 8], [fx + fw - 8, fy, 8, 2], [fx + fw - 2, fy, 2, 8], [fx, fy + fh - 2, 8, 2], [fx, fy + fh - 8, 2, 8], [fx + fw - 8, fy + fh - 2, 8, 2], [fx + fw - 2, fy + fh - 8, 2, 8]]) g.fillRect(x, y, w, h);
     }
+  }
+
+  /** What's in front of the lens: boughs, reeds or rocks for the region, and rain or snow on the glass. */
+  private drawForeground(game: Game, g: CanvasRenderingContext2D, W: number, arenaH: number, time: number): void {
+    const id = game.cur.id;
+    const night = game.clock.minutes >= 1200;
+    const dark = night ? P.VOID : P.SHADOW, mid = night ? P.SHADOW : P.PINE;
+    const sway = Math.sin(time * 0.8) * 2;
+    if (id === 'CRANBERRY_BOG_AND_SPRINGS') {
+      // Cattails and sphagnum along the bottom of the frame.
+      for (let i = 0; i < 14; i++) {
+        const x = (i * 37 + 11) % W, h = 18 + ((i * 13) % 22), lean = Math.sin(time * 1.1 + i) * 1.5;
+        g.fillStyle = hex(i % 2 ? dark : mid);
+        for (let k = 0; k < h; k++) g.fillRect(Math.round(x + lean * (k / h)), arenaH - k, 2, 1);
+        if (i % 3 === 0) { g.fillStyle = hex(night ? P.SHADOW : P.RUST); g.fillRect(Math.round(x + lean - 1), arenaH - h - 6, 4, 7); }
+      }
+    } else if (id === 'RADIO_RIDGE_AND_CROSSROADS') {
+      // Rocks and dry grass at the frame's edge.
+      g.fillStyle = hex(dark);
+      g.beginPath(); g.ellipse(-6, arenaH + 4, 46, 26, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(W + 10, arenaH + 8, 40, 20, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hex(night ? P.SHADOW : P.RUST);
+      for (let i = 0; i < 24; i++) { const x = (i * 29) % W, h = 6 + (i * 7) % 10; g.fillRect(x + Math.round(Math.sin(time + i) * 1), arenaH - h, 1, h); }
+    } else {
+      // Pine boughs hanging into the top corners, ferns along the bottom.
+      g.fillStyle = hex(dark);
+      // (Left side only: the right corner is where REC and the tape counter live.)
+      for (const [ox, dir] of [[0, 1]] as Array<[number, number]>) {
+        for (let b = 0; b < 3; b++) {
+          const y0 = 4 + b * 9 + sway, len = 42 - b * 8;
+          for (let k = 0; k < len; k++) {
+            const x = ox + dir * k, y = y0 + k * 0.35;
+            g.fillRect(Math.round(x), Math.round(y), 1, 2);
+            if (k % 3 === 0) { g.fillRect(Math.round(x), Math.round(y - 3), 1, 3); g.fillRect(Math.round(x), Math.round(y + 2), 1, 3); }
+          }
+        }
+      }
+      g.fillStyle = hex(mid);
+      for (let i = 0; i < 18; i++) {
+        const x = (i * 41 + 5) % W, h = 8 + (i * 11) % 12;
+        for (let k = 0; k < h; k++) g.fillRect(Math.round(x + (k / h) * (i % 2 ? 4 : -4)), arenaH - k, 2, 1);
+      }
+    }
+    // Weather on the lens.
+    const w = game.weatherNow();
+    if (w === 'RAIN' || w === 'STORM') {
+      for (let i = 0; i < 9; i++) {
+        const x = (i * 53 + 17) % W, y = ((i * 37 + 9) % Math.max(1, arenaH - 20)) + 10 + ((time * 6 + i * 3) % 8);
+        g.globalAlpha = 0.45; g.fillStyle = hex(P.MIST);
+        g.beginPath(); g.arc(x, y, 2 + (i % 3), 0, Math.PI * 2); g.fill();
+        g.globalAlpha = 0.8; g.fillStyle = hex(P.FOG); g.fillRect(x - 1, Math.round(y - 1), 1, 1);
+      }
+      g.globalAlpha = 1;
+    } else if (w === 'SNOW') {
+      g.fillStyle = hex(P.FOG);
+      for (let i = 0; i < 7; i++) { const x = (i * 61 + 23) % W, y = (i * 29 + 13) % arenaH; g.fillRect(x, y, 2, 2); g.fillRect(x - 1, y + 1, 4, 1); }
+    }
+  }
+
+  /** The camcorder's on-screen display. */
+  private drawOsd(game: Game, g: CanvasRenderingContext2D, W: number, arenaH: number, cx: number, cy: number, s: number, time: number): void {
+    // Scanlines and a soft vignette.
+    g.fillStyle = hex(P.VOID);
+    g.globalAlpha = 0.07; for (let y = 0; y < arenaH; y += 2) g.fillRect(0, y, W, 1);
+    g.globalAlpha = 0.25; g.fillRect(0, 0, W, 2); g.fillRect(0, arenaH - 2, W, 2); g.fillRect(0, 0, 2, arenaH); g.fillRect(W - 2, 0, 2, arenaH);
+    g.globalAlpha = 1;
+    // Viewfinder corner brackets.
+    const m = 6, L = 10;
+    const bracket = (x: number, y: number, dx: number, dy: number, len: number, col: number) => {
+      for (const [o, c] of [[1, P.VOID], [0, col]] as Array<[number, number]>) {
+        g.fillStyle = hex(c);
+        g.fillRect(Math.min(x, x + dx * len) + o, y + o, len, 1); g.fillRect(x + o, Math.min(y, y + dy * len) + o, 1, len);
+      }
+    };
+    for (const [x, y, dx, dy] of [[m, m, 1, 1], [W - m, m, -1, 1], [m, arenaH - m, 1, -1], [W - m, arenaH - m, -1, -1]] as Array<[number, number, number, number]>) bracket(x, y, dx, dy, L, P.FOG);
+    // REC, tape counter, battery (your stamina).
+    const rx = W - 52;
+    if (Math.floor(time * 2) % 2 === 0) { g.fillStyle = hex(P.RED); g.beginPath(); g.arc(rx + 3, 15, 2.5, 0, Math.PI * 2); g.fill(); }
+    drawText(g, 'REC', rx + 8, 12, P.FOG, P.VOID);
+    const secs = Math.floor(time - this.startT) + this.tapeBase;
+    const tape = `${String(Math.floor(secs / 3600)).padStart(2, '0')}:${String(Math.floor(secs / 60) % 60).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
+    drawTextRight(g, tape, W - 8, 21, P.FOG, P.VOID);
+    const bxB = W - 26, byB = 30, frac = game.stamina / game.maxStamina;
+    g.fillStyle = hex(P.FOG); g.fillRect(bxB, byB, 16, 7); g.fillRect(bxB + 16, byB + 2, 2, 3);
+    g.fillStyle = hex(P.VOID); g.fillRect(bxB + 1, byB + 1, 14, 5);
+    const bars = Math.ceil(frac * 4);
+    g.fillStyle = hex(frac < 0.25 ? P.RED : P.FOG);
+    for (let i = 0; i < bars; i++) g.fillRect(bxB + 2 + i * 3.5, byB + 2, 2, 3);
+    drawTextRight(g, `SHOT ${this.turn + 1}`, bxB - 3, byB + 1, P.FOG, P.VOID);
+    // Focus reticle on the subject; it tightens (zooms) as Trust grows.
+    const zoom = 1 + this.shownTrust / 100;
+    // The cryptid is drawn 24*s square from (cx - 12s, cy - 22s): centre the reticle on it.
+    const half = Math.round((14 * s) / zoom);
+    const fx = cx, fy = cy - 10 * s;
+    const lock = this.shownTrust >= 75;
+    for (const [x, y, dx, dy] of [[fx - half, fy - half, 1, 1], [fx + half, fy - half, -1, 1], [fx - half, fy + half, 1, -1], [fx + half, fy + half, -1, -1]] as Array<[number, number, number, number]>) bracket(x, y, dx, dy, 5, lock ? P.FERN : P.FOG);
+    drawText(g, lock ? 'AF LOCK' : 'AF', fx - half, fy + half + 3, lock ? P.FERN : P.FOG, P.VOID);
+    // Zoom bar.
+    const zy = arenaH - 12, zx = Math.round(W / 2) - 24;
+    drawText(g, 'W', zx - 6, zy - 2, P.FOG, P.VOID); drawText(g, 'T', zx + 50, zy - 2, P.FOG, P.VOID);
+    g.fillStyle = hex(P.VOID); g.fillRect(zx + 1, zy + 1, 48, 1);
+    g.fillStyle = hex(P.FOG); g.fillRect(zx, zy, 48, 1);
+    g.fillRect(zx + Math.round((zoom - 1) * 46), zy - 2, 2, 5);
+    // Date stamp.
+    const c = game.clock;
+    const hh = Math.floor(c.minutes / 60) % 24, mm = c.minutes % 60;
+    drawTextRight(g, `${c.season.slice(0, 3).toUpperCase()} ${c.dayOfSeason}  ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, W - 8, arenaH - 10, P.LANTERN, P.VOID);
   }
 
   private cellLabel(c: Category): [string, string] {

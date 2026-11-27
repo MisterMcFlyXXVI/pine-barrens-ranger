@@ -34,7 +34,7 @@ export interface Portal {
   closedMsg: string;
   /** Shown instead once the Town Restoration Grant is awarded. */
   grantMsg?: string;
-  /** Progress gate (e.g. the Archive Basement needs 8 donations). */
+  /** Progress gate (e.g. the Archive Basement needs 6 donations). */
   requires?: 'archive' | 'home';
 }
 
