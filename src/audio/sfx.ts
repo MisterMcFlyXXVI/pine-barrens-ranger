@@ -313,6 +313,17 @@ class Sfx {
   whistle(): void { this.tone('sawtooth', 880, 830, 0.9, 0.05); this.tone('square', 932, 870, 0.9, 0.035); this.tone('sine', 466, 440, 0.9, 0.03); this.noise(0.9, 0.03, 'bandpass', 1800, 1500, 3); }
   /** Brass tags clinking in your pocket. */
   tagClink(): void { this.tone('triangle', 2600, 2500, 0.05, 0.03); this.tone('triangle', 3100, 3000, 0.05, 0.022, 0.05); }
+  /** Homestead: a hen's cluck. */
+  cluck(): void { this.tone('square', 520, 380, 0.05, 0.03); this.tone('square', 560, 420, 0.07, 0.03, 0.09); }
+  /** Homestead: the fire pit taking hold. */
+  crackle(): void { for (let k = 0; k < 6; k++) this.noise(0.03, 0.05, 'highpass', 2200 + Math.random() * 1500, 1800, 1, k * 0.07 + Math.random() * 0.04); }
+  /** Homestead: the cuckoo clock (two falling notes, n times). */
+  cuckoo(n = 2): void { for (let k = 0; k < n; k++) { this.tone('sine', 784, 784, 0.12, 0.05, k * 0.45); this.tone('sine', 622, 622, 0.18, 0.05, k * 0.45 + 0.16); } }
+  /** Homestead: a short banjo roll (bright, plucked). */
+  banjo(): void {
+    const tune = [392, 494, 587, 784, 587, 494, 392, 440, 587, 740, 587, 440, 392];
+    tune.forEach((f, k) => this.tone('square', f, f * 0.995, 0.09, 0.03, k * 0.11));
+  }
   /** The canary, happy. */
   canary(): void { for (let k = 0; k < 3; k++) { const f = 2900 + Math.random() * 500; this.tone('sine', f, f * 1.15, 0.06, 0.03, k * 0.08); } }
   /** The canary, silent, rattling its bars. */

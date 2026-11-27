@@ -254,6 +254,26 @@ export const O = {
   CANARY_CAGE: 140,
   /** Pale cave fungus in the Old Works (a little light of its own). */
   GLOW_FUNGUS: 141,
+  // ---- Homestead decorations (src/data/homestead.ts) ----
+  FIRE_PIT: 142,
+  LOG_BENCH: 143,
+  CHICKEN_COOP: 144,
+  PICNIC_TABLE: 145,
+  LANTERN_POST: 146,
+  BIRDHOUSE: 147,
+  SCARECROW: 148,
+  PLANTER: 149,
+  WALL_PAINTING: 150,
+  WALL_PHOTO: 151,
+  WALL_MAP: 152,
+  WALL_SAMPLER: 153,
+  WALL_QUILT: 154,
+  WALL_BANJO: 155,
+  WALL_ANTLERS: 156,
+  WALL_CLOCK: 157,
+  ARMCHAIR: 158,
+  FLOOR_LAMP: 159,
+  POTTED_FERN: 160,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -272,7 +292,7 @@ export type Interact =
   | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
-  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar' | 'mine';
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar' | 'mine' | 'deco';
 
 export interface Drop {
   item: string;
@@ -300,7 +320,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.PINE]: { name: 'Pitch Pine', solid: true },
   [O.OAK]: { name: 'Scrub Oak', solid: true },
   [O.BRUSH]: { name: 'Brush', solid: true, tool: 'machete', hp: 1, drops: [{ item: 'plant_fiber', chance: 0.7, min: 1, max: 2 }, { item: 'wild_acorn', chance: 0.12, min: 1, max: 1 }] },
-  [O.ROCK]: { name: 'Rock', solid: true, tool: 'hoe', hp: 3, drops: [{ item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }, { item: 'mineral_salt', chance: 0.12, min: 1, max: 1 }] },
+  [O.ROCK]: { name: 'Rock', solid: true, tool: 'hoe', hp: 3, drops: [{ item: 'field_stone', chance: 0.75, min: 1, max: 2 }, { item: 'crushed_quartz', chance: 0.3, min: 1, max: 1 }, { item: 'mineral_salt', chance: 0.12, min: 1, max: 1 }] },
   [O.STUMP]: { name: 'Stump', solid: true, tool: 'machete', hp: 4, drops: [{ item: 'timber', chance: 0.5, min: 1, max: 2 }, { item: 'pine_resin', chance: 0.8, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.25, min: 1, max: 1 }] },
   [O.LOG]: { name: 'Fallen Log', solid: true, tool: 'machete', hp: 5, drops: [{ item: 'timber', chance: 0.5, min: 1, max: 2 }, { item: 'charred_wood', chance: 0.5, min: 1, max: 2 }, { item: 'pine_resin', chance: 0.4, min: 1, max: 1 }] },
   [O.BOULDER]: { name: 'Boulder', solid: true },
@@ -369,6 +389,25 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.RIDE_CART]: { name: 'Ore Car', solid: true, interact: 'mine' },
   [O.CANARY_CAGE]: { name: 'Canary Cage', solid: true, interact: 'mine' },
   [O.GLOW_FUNGUS]: { name: 'Cave Fungus', solid: false, interact: 'mine' },
+  [O.FIRE_PIT]: { name: 'Fire Pit', solid: true, interact: 'deco' },
+  [O.LOG_BENCH]: { name: 'Log Bench', solid: true, interact: 'deco' },
+  [O.CHICKEN_COOP]: { name: 'Chicken Coop', solid: true, interact: 'deco' },
+  [O.PICNIC_TABLE]: { name: 'Picnic Table', solid: true, interact: 'deco' },
+  [O.LANTERN_POST]: { name: 'Lantern Post', solid: true, interact: 'deco' },
+  [O.BIRDHOUSE]: { name: 'Birdhouse', solid: true, interact: 'deco' },
+  [O.SCARECROW]: { name: 'Scarecrow', solid: true, interact: 'deco' },
+  [O.PLANTER]: { name: 'Flower Planter', solid: true, interact: 'deco' },
+  [O.WALL_PAINTING]: { name: 'Painting', solid: true, interact: 'deco' },
+  [O.WALL_PHOTO]: { name: 'Family Photo', solid: true, interact: 'deco' },
+  [O.WALL_MAP]: { name: 'Park Map', solid: true, interact: 'deco' },
+  [O.WALL_SAMPLER]: { name: 'Sampler', solid: true, interact: 'deco' },
+  [O.WALL_QUILT]: { name: 'Wall Quilt', solid: true, interact: 'deco' },
+  [O.WALL_BANJO]: { name: 'Banjo', solid: true, interact: 'deco' },
+  [O.WALL_ANTLERS]: { name: 'Antlers', solid: true, interact: 'deco' },
+  [O.WALL_CLOCK]: { name: 'Cuckoo Clock', solid: true, interact: 'deco' },
+  [O.ARMCHAIR]: { name: 'Armchair', solid: true, interact: 'deco' },
+  [O.FLOOR_LAMP]: { name: 'Floor Lamp', solid: true, interact: 'deco' },
+  [O.POTTED_FERN]: { name: 'Potted Fern', solid: true, interact: 'deco' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
   [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
   [O.THISTLE]: { name: 'Thistle', solid: false },

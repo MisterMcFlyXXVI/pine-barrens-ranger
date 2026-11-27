@@ -12,6 +12,7 @@ import { bakeTown } from './townSprites';
 import { bakeOutdoors } from './outdoorSprites';
 import { bakeDecor } from './decorSprites';
 import { bakeMine } from './mineSprites';
+import { bakeHomestead } from './homeSprites';
 
 export const TILE = 16;
 
@@ -1311,5 +1312,6 @@ export function bakeAll(): void {
   bakeOutdoors();
   bakeDecor();
   bakeMine();
+  bakeHomestead();
   bakeCryptids();
 }

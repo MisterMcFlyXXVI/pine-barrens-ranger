@@ -75,8 +75,15 @@ export abstract class ListMenu implements Overlay {
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 10);
     const rows = Array.from({ length: visible }, (_, i) => ({ x: x + 4, y: y + top + i * rowH, w: w - 8, h: rowH - 1 }));
     const tl = this.tabs();
-    const tw = tl.length ? Math.floor((w - 8) / tl.length) : 0;
-    const tabs = tl.map((_, i) => ({ x: x + 4 + i * tw, y: y + 13, w: tw - 2, h: 10 }));
+    // Tabs share the width by label length, so long names (BLUEPRINTS) aren't clipped.
+    const weight = tl.map((t) => t.length + 3), total = weight.reduce((n, k) => n + k, 0);
+    let tx0 = 0;
+    const tabs = tl.map((_, i) => {
+      const tw = Math.floor(((w - 8) * weight[i]) / total);
+      const r = { x: x + 4 + tx0, y: y + 13, w: tw - 2, h: 10 };
+      tx0 += tw;
+      return r;
+    });
     const detailRect = { x: x + 4, y: y + h - 17 - detailLines * 7, w: w - 8, h: detailLines * 7 + 3 };
     return { x, y, w, h, rows, tabs, visible, rowH, detailLines, detailRect };
   }
@@ -215,7 +222,7 @@ export class StoreMenu extends ListMenu {
 /** Porch Workbench (crafting + mail-order seeds) or, with station 'stove', the cabin stove (cooking). */
 export class CraftMenu extends ListMenu {
   constructor(private readonly station: 'workbench' | 'stove' = 'workbench') { super(); }
-  override tabs(): string[] { return this.station === 'stove' ? ['COOK', 'LIST'] : ['CRAFT', 'BLUEPRINTS', 'SEEDS', 'LIST']; }
+  override tabs(): string[] { return this.station === 'stove' ? ['COOK', 'LIST'] : ['CRAFT', 'HOME', 'BLUEPRINTS', 'SEEDS', 'LIST']; }
   title(): string { return this.station === 'stove' ? 'CABIN STOVE' : 'PORCH WORKBENCH'; }
   private tabName(): string { return this.tabs()[this.tab] ?? ''; }
   override footer(): string {
@@ -263,8 +270,10 @@ export class CraftMenu extends ListMenu {
     const taughtRow = (r: Recipe): Row => game.progress.flags.has(r.taught!.flag) ? this.recipeRow(game, r)
       : { icon: r.out, label: `??? ${ITEMS[r.out].name}`, sub: `TAUGHT BY ${r.taught!.by}`, right: 'LOCKED', dim: true, desc: `A folk recipe. Get to know ${r.taught!.by.split(' ').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ')} and you might be shown how.` };
     if (this.station === 'stove') return RECIPES.filter((r) => r.station === 'stove').map((r) => r.taught ? taughtRow(r) : this.recipeRow(game, r));
-    if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint && !r.station && !r.taught).map((r) => this.recipeRow(game, r));
-    if (this.tab === 1) {
+    const tab = this.tabName();
+    if (tab === 'CRAFT') return RECIPES.filter((r) => !r.blueprint && !r.station && !r.taught && !r.homestead).map((r) => this.recipeRow(game, r));
+    if (tab === 'HOME') return RECIPES.filter((r) => r.homestead).map((r) => this.recipeRow(game, r));
+    if (tab === 'BLUEPRINTS') {
       return [...RECIPES.filter((r) => r.taught && !r.station).map(taughtRow), ...RECIPES.filter((r) => r.blueprint).map((r) => {
         if (game.progress.blueprints.has(r.blueprint!)) return this.recipeRow(game, r);
         const bp = BLUEPRINTS.find((b) => b.id === r.blueprint)!;

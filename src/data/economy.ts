@@ -3,6 +3,7 @@
  * Outfitter tool upgrades, shop stock, diner menu, and Historical Society
  * donation milestones.
  */
+import { DECO_RECIPES } from './homestead';
 
 export interface Recipe {
   id: string;
@@ -15,6 +16,8 @@ export interface Recipe {
   station?: 'stove';
   /** Taught by a townsperson instead of bought: the story flag that unlocks it, and who teaches it. */
   taught?: { flag: string; by: string };
+  /** A homestead decoration (Workbench HOME tab). */
+  homestead?: boolean;
 }
 
 /** Standard Porch Workbench recipes (CLAUDE.md §6) + a couple of quality-of-life extras. */
@@ -46,6 +49,8 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'r_radio', out: 'static_radio', qty: 1, inputs: [['scrap_copper', 1], ['battery_pack', 1]] },
   { id: 'r_torch', out: 'pitch_torch', qty: 3, inputs: [['timber', 1], ['pine_resin', 1], ['plant_fiber', 2]] },
   { id: 'r_cider', out: 'apple_cider', qty: 1, inputs: [['wild_apple', 2], ['sweet_sap', 1]] },
+  // Homestead decorations (HOME tab)
+  ...DECO_RECIPES,
   // Taught by the Meissgeiers (folk crafts: on the BLUEPRINTS tab, locked until you learn them)
   { id: 't_mask_goat', out: 'mask_goat', qty: 1, inputs: [['timber', 1], ['charred_wood', 1], ['plant_fiber', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },
   { id: 't_mask_owl', out: 'mask_owl', qty: 1, inputs: [['timber', 1], ['pine_resin', 1], ['plant_fiber', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },
@@ -145,7 +150,7 @@ export interface ShopEntry {
 export const STORE_STOCK: readonly ShopEntry[] = [
   { id: 'seed_clover', cost: 15 }, { id: 'seed_catnip', cost: 25 }, { id: 'seed_moss', cost: 30 }, { id: 'seed_corn', cost: 35 },
   { id: 'seed_pepper', cost: 55 }, { id: 'seed_cranberry', cost: 40 },
-  { id: 'mineral_salt', cost: 45 }, { id: 'bird_seed', cost: 10, qty: 5 }, { id: 'iron_nail', cost: 18 }, { id: 'timber', cost: 25 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
+  { id: 'mineral_salt', cost: 45 }, { id: 'bird_seed', cost: 10, qty: 5 }, { id: 'iron_nail', cost: 18 }, { id: 'timber', cost: 25 }, { id: 'field_stone', cost: 12 }, { id: 'pine_resin', cost: 40 }, { id: 'smoked_fish', cost: 70 },
   { id: 'fishing_rod', cost: 250 }, { id: 'hunting_bow', cost: 700 }, { id: 'arrow', cost: 30, qty: 5 },
   { id: 'deer_rifle', cost: 1400 }, { id: 'rifle_cartridge', cost: 40, qty: 5 },
 ];

@@ -16,12 +16,12 @@ import { playerFrame } from '../graphics/playerSprite';
 import type { Dir } from '../util';
 import { sfx } from '../audio/sfx';
 import {
-  Appearance, BUILDS, FACIALS, HAIRS, HAIR_NAMES, HAIR_STYLES, NAME_MAX, SKINS, SKIN_NAMES, START_OUTFITS, cleanName,
+  Appearance, BUILDS, FACIALS, HAIRS, HAIR_NAMES, HAIR_STYLES, NAME_MAX, SKINS, SKIN_NAMES, START_HATS, START_OUTFITS, cleanName,
 } from '../data/appearance';
 
 export type CreatorMode = 'new' | 'returning' | 'mirror';
 
-type Row = 'name' | 'build' | 'skin' | 'style' | 'hair' | 'facial' | 'outfit' | 'done';
+type Row = 'name' | 'build' | 'skin' | 'style' | 'hair' | 'facial' | 'outfit' | 'hat' | 'done';
 
 const ROW_H = 11;
 
@@ -39,6 +39,7 @@ export class CharacterCreator implements Overlay {
   private rows: Row[];
   private a: Appearance;
   private outfit: number;
+  private hat: number;
   private field: HTMLInputElement | null = null;
   private rects: Array<{ row: number; r: Rect }> = [];
   private warn = 0;
@@ -46,7 +47,8 @@ export class CharacterCreator implements Overlay {
   constructor(private readonly game: Game, private readonly mode: CreatorMode, private readonly onDone: () => void) {
     this.a = { ...game.appearance };
     this.outfit = Math.max(0, START_OUTFITS.findIndex(([id]) => id === game.look.outfit));
-    this.rows = mode === 'mirror' ? ['build', 'skin', 'style', 'hair', 'facial', 'done'] : ['name', 'build', 'skin', 'style', 'hair', 'facial', 'outfit', 'done'];
+    this.hat = Math.max(0, START_HATS.findIndex(([id]) => id === game.look.hat));
+    this.rows = mode === 'mirror' ? ['build', 'skin', 'style', 'hair', 'facial', 'done'] : ['name', 'build', 'skin', 'style', 'hair', 'facial', 'outfit', 'hat', 'done'];
     if (mode !== 'mirror') this.openField();
   }
 
@@ -108,6 +110,7 @@ export class CharacterCreator implements Overlay {
       case 'hair': a.hair = cyc(a.hair, HAIRS.length); break;
       case 'facial': a.facial = FACIALS[cyc(FACIALS.findIndex(([f]) => f === a.facial), FACIALS.length)][0]; break;
       case 'outfit': this.outfit = cyc(this.outfit, START_OUTFITS.length); break;
+      case 'hat': this.hat = cyc(this.hat, START_HATS.length); break;
       default: return;
     }
     sfx.plant();
@@ -117,7 +120,7 @@ export class CharacterCreator implements Overlay {
   /** Show the change on the player straight away (the preview draws from it). */
   private preview(): void {
     this.game.setAppearance(this.a);
-    if (this.mode !== 'mirror') this.game.look = { ...this.game.look, outfit: START_OUTFITS[this.outfit][0] };
+    if (this.mode !== 'mirror') this.game.look = { ...this.game.look, outfit: START_OUTFITS[this.outfit][0], hat: START_HATS[this.hat][0] };
   }
 
   private finish(): void {
@@ -191,10 +194,11 @@ export class CharacterCreator implements Overlay {
         case 'hair': return HAIR_NAMES[a.hair % HAIR_NAMES.length];
         case 'facial': return FACIALS.find(([f]) => f === a.facial)![1];
         case 'outfit': return START_OUTFITS[this.outfit][1];
+        case 'hat': return START_HATS[this.hat][1];
         case 'done': return '';
       }
     };
-    const label: Record<Row, string> = { name: 'NAME', build: 'BODY', skin: 'SKIN', style: 'HAIR', hair: 'COLOR', facial: 'FACE', outfit: 'WEAR', done: '' };
+    const label: Record<Row, string> = { name: 'NAME', build: 'BODY', skin: 'SKIN', style: 'HAIR', hair: 'COLOR', facial: 'FACE', outfit: 'WEAR', hat: 'HAT', done: '' };
     this.rects = [];
     this.rows.forEach((row, i) => {
       const ry = y + 18 + i * ROW_H;

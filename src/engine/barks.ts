@@ -47,6 +47,49 @@ const COAT: Lines = {
   barnaby: 'Elias\'s old coat! Thought I saw him coming up the street. Gave me a turn.',
   gideon: 'That coat. Left elbow\'s my patch. The ugly one.',
 };
+/** Fun outfits: one remark each, once. */
+const DRESSED: Record<string, Lines> = {
+  prison_stripes: {
+    _: 'Should I be calling the sheriff, or is that a costume?',
+    mabel: 'Lord, hon, did you break out of the county lockup? Sit down, I\'ll get you a pepperoni roll before they catch you.',
+    gideon: 'Stripes. Want me to forge you a ball and chain to go with it? I\'ve got the iron.',
+    barnaby: 'Last fella I saw in stripes like that rode the prison car through here in \'52. Smiled the whole way.',
+    agnes: 'Historically accurate, I\'ll give you that. The county jail wore stripes till 1904.',
+    ruth: 'If you\'re on the run, the back porch light\'s always on. Just saying.',
+  },
+  union_suit: {
+    _: 'That\'s... a union suit. Out in public. Well, it is honest.',
+    mabel: 'Honey, you came down Main Street in your long johns. I have seen everything now.',
+    gideon: 'Red flannel union suit. My granddad wore one from October to April and never once said why.',
+    walter: 'Ha! In the Allgaeu we had these too. Very warm. Very not for the street.',
+    ruth: 'Earl had one just like it. Button flap and all. Don\'t you dare turn around.',
+  },
+  black_gown: {
+    _: 'My, my. Going somewhere fancy, or coming back from it?',
+    mabel: 'Look at you! Somebody\'s going to the Buckwheat Festival dance in style.',
+    gideon: 'You\'ll snag that on every briar between here and the ridge. Looks good, though.',
+    agnes: 'Oh, very elegant. Like the old dance-hall photographs in our archive.',
+    liesl: 'Schatz, you look like a film star. Now go and change before you sit on a pie.',
+  },
+  white_gown: {
+    _: 'A wedding gown! Is there something you\'re not telling us?',
+    mabel: 'Are you getting married?! Who is it? You tell me first, hon, before Agnes hears.',
+    agnes: 'Oh, how lovely. My mother\'s had a train just that long. It took three bridesmaids to get her up the church steps.',
+    liesl: 'Ach, so beautiful. If there is a wedding, I bake the cake. That is not a question.',
+    barnaby: 'Well now! If there\'s a wedding, the rail car\'s yours. I\'ll ring the bell all the way to Elkins.',
+  },
+  sunday_suit: {
+    _: 'All dressed up! Somebody have a funeral, or a court date?',
+    mabel: 'Well, aren\'t you sharp. You look like you\'re about to sell me insurance.',
+    gideon: 'A suit. Huh. Last time I wore one was Earl Haddix\'s funeral.',
+  },
+  camo_blaze: {
+    _: 'Deer season already? Don\'t let the cryptids see you coming.',
+    gideon: 'Blaze orange. Smart. The hunters out of Elkins shoot at anything that moves.',
+    ruth: 'You look like every man in my family the week before Thanksgiving.',
+  },
+};
+
 const GEAR: Record<string, string> = {
   parabolic_dish: 'That\'s a Parabolic Dish on your pack. Pike\'s design, but the welds are sloppy. Bring it by and I\'ll true it up for free.',
   chronos_shutter: 'Chronos Shutter on your camera? Pike\'s fancy work. Quiet as a held breath, that thing.',
@@ -200,6 +243,8 @@ export function barkFor(game: Game, id: string): string | null {
   // What you're wearing / carrying.
   if (game.look.outfit === 'lapel_tag' && !said('lapel')) return say('lapel', pick(LAPEL, id));
   if (game.look.outfit === 'elias_coat' && !said('coat')) return say('coat', pick(COAT, id));
+  const dressed = DRESSED[game.look.outfit];
+  if (dressed && !said(`wear_${game.look.outfit}`)) return say(`wear_${game.look.outfit}`, pick(dressed, id));
   if (id === 'gideon') for (const [item, line] of Object.entries(GEAR)) if (ITEMS[item] && game.keepsake(item) && !said(`gear_${item}`)) return say(`gear_${item}`, line);
   // Weather and the hour.
   const morning = game.clock.minutes < 12 * 60;

@@ -1,7 +1,19 @@
 /** Wearable outfits & hats for the modular player renderer. */
 
-export type OutfitStyle = 'jacket' | 'flannel' | 'slicker' | 'cloak' | 'mantle' | 'suit' | 'apron';
-export type HatStyle = 'none' | 'cap' | 'bucket' | 'antlers' | 'goggles' | 'crown' | 'headphones' | 'mask' | 'alpine' | 'kerchief' | 'minercap' | 'respirator';
+export type OutfitStyle = 'jacket' | 'flannel' | 'slicker' | 'cloak' | 'mantle' | 'suit' | 'apron'
+  | 'tee' | 'dress' | 'gown' | 'stripes' | 'union' | 'blazer' | 'overalls' | 'camo';
+export type HatStyle = 'none' | 'cap' | 'bucket' | 'antlers' | 'goggles' | 'crown' | 'headphones' | 'mask' | 'alpine' | 'kerchief' | 'minercap' | 'respirator'
+  | 'beanie' | 'sunhat' | 'tophat' | 'cowboy' | 'flowers' | 'veil' | 'stripecap';
+
+/** What's below the waist, when an outfit brings its own (default: the body's jeans and boots). */
+export interface Legs {
+  /** pants: plain; ripped: knees out; stripes: banded; skirt: knee-length (bare legs below); gown: to the floor. */
+  kind: 'pants' | 'ripped' | 'stripes' | 'skirt' | 'gown';
+  main: number;
+  shade: number;
+  /** Shoes (default: the body's boots). */
+  boot?: number;
+}
 /** Which face a carved Fasnacht mask has. */
 export type MaskFace = 'goat' | 'owl' | 'bear' | 'stag' | 'krampus';
 
@@ -15,6 +27,7 @@ export interface OutfitDef {
   accent: number;
   starter: boolean;
   source: string;
+  legs?: Legs;
 }
 
 export interface HatDef {
@@ -32,7 +45,16 @@ export interface HatDef {
 export const OUTFITS: readonly OutfitDef[] = [
   { id: 'ranger_jacket', name: 'Ranger Jacket', style: 'jacket', main: 3, shade: 2, trim: 8, accent: 6, starter: true, source: 'Standard issue.' },
   { id: 'chore_coat', name: 'Chore Coat & Jeans', style: 'jacket', main: 8, shade: 9, trim: 1, accent: 7, starter: true, source: 'Your own clothes: duck canvas, brass buttons, a corduroy collar.' },
-  { id: 'red_flannel', name: 'Red Flannel', style: 'flannel', main: 11, shade: 10, trim: 0, accent: 7, starter: true, source: 'Comfy and warm.' },
+  { id: 'red_flannel', name: 'Red Flannel & Jeans', style: 'flannel', main: 11, shade: 10, trim: 0, accent: 7, starter: true, source: 'Comfy and warm.' },
+  { id: 'sundress', name: 'Sundress & Sandals', style: 'dress', main: 13, shade: 12, trim: 6, accent: 11, starter: true, source: 'Your own clothes: cornflower-blue cotton with little white and red flowers.', legs: { kind: 'skirt', main: 13, shade: 12, boot: 9 } },
+  { id: 'sunday_suit', name: 'Sunday Suit', style: 'blazer', main: 1, shade: 0, trim: 6, accent: 11, starter: true, source: 'Your own clothes: charcoal wool, a white shirt and a red tie. Funerals, weddings, court.', legs: { kind: 'pants', main: 1, shade: 0, boot: 0 } },
+  { id: 'tee_ripped', name: 'Band Tee & Ripped Jeans', style: 'tee', main: 0, shade: 1, trim: 11, accent: 7, starter: true, source: 'Your own clothes: a faded concert tee and jeans gone at both knees.', legs: { kind: 'ripped', main: 13, shade: 12, boot: 6 } },
+  { id: 'union_suit', name: 'Red Union Suit', style: 'union', main: 11, shade: 10, trim: 6, accent: 7, starter: true, source: 'Long johns, one piece, a button flap round back. Somebody\'s grandpa would be proud.', legs: { kind: 'pants', main: 11, shade: 10, boot: 10 } },
+  { id: 'prison_stripes', name: 'Prisoner Stripes', style: 'stripes', main: 6, shade: 0, trim: 7, accent: 0, starter: true, source: 'Old-time jailhouse stripes. You swear it\'s a costume.', legs: { kind: 'stripes', main: 6, shade: 0, boot: 0 } },
+  { id: 'black_gown', name: 'Black Evening Gown', style: 'gown', main: 0, shade: 1, trim: 15, accent: 14, starter: true, source: 'Floor-length black satin. Wildly impractical for fire-watch.', legs: { kind: 'gown', main: 0, shade: 1, boot: 0 } },
+  { id: 'white_gown', name: 'White Wedding Gown', style: 'gown', main: 6, shade: 13, trim: 7, accent: 15, starter: true, source: 'Lace and satin, a long train. Somebody\'s story, surely.', legs: { kind: 'gown', main: 6, shade: 13, boot: 6 } },
+  { id: 'bib_overalls', name: 'Bib Overalls & Tee', style: 'overalls', main: 12, shade: 1, trim: 6, accent: 8, starter: true, source: 'Your own clothes: denim bibs, brass buckles, a white tee.', legs: { kind: 'pants', main: 12, shade: 1 } },
+  { id: 'camo_blaze', name: 'Camo & Blaze Orange', style: 'camo', main: 3, shade: 2, trim: 9, accent: 8, starter: true, source: 'Deer-season best: woodland camo under a blaze-orange vest.', legs: { kind: 'pants', main: 3, shade: 2, boot: 9 } },
   { id: 'elias_coat', name: "Elias's Wool Coat", style: 'jacket', main: 9, shade: 10, trim: 6, accent: 8, starter: false, source: 'From Mabel, at 4 hearts. Patched at both elbows.' },
   { id: 'frog_slicker', name: 'Loveland Frog Slicker', style: 'slicker', main: 4, shade: 3, trim: 8, accent: 7, starter: false, source: 'Historical Society: 10 donations.' },
   { id: 'yow_cloak', name: 'Snarly Yow Shadow Cloak', style: 'cloak', main: 0, shade: 1, trim: 12, accent: 11, starter: false, source: 'Historical Society: 15 donations.' },
@@ -85,6 +107,14 @@ export const HATS: readonly HatDef[] = [
   { id: 'none', name: 'No Hat', style: 'none', main: 0, shade: 0, accent: 0, starter: true, source: '' },
   { id: 'ranger_cap', name: 'Ranger Cap', style: 'cap', main: 3, shade: 2, accent: 8, starter: true, source: 'Standard issue.' },
   { id: 'bucket_hat', name: 'Bucket Hat', style: 'bucket', main: 8, shade: 9, accent: 10, starter: true, source: 'Keeps the sun off.' },
+  { id: 'trucker_cap', name: 'Trucker Cap', style: 'cap', main: 6, shade: 11, accent: 11, starter: true, source: 'Mesh back, a feed-store patch on the front.' },
+  { id: 'beanie', name: 'Knit Beanie', style: 'beanie', main: 11, shade: 10, accent: 6, starter: true, source: 'Ribbed wool with a pom-pom.' },
+  { id: 'sun_hat', name: 'Straw Sun Hat', style: 'sunhat', main: 8, shade: 9, accent: 11, starter: true, source: 'Wide straw brim, a red ribbon band.' },
+  { id: 'top_hat', name: 'Top Hat', style: 'tophat', main: 0, shade: 1, accent: 11, starter: true, source: 'Tall, black, and a little dusty.' },
+  { id: 'cowboy_hat', name: 'Cowboy Hat', style: 'cowboy', main: 9, shade: 10, accent: 1, starter: true, source: 'Sweat-stained felt with a pinched crown.' },
+  { id: 'flower_crown', name: 'Flower Crown', style: 'flowers', main: 11, shade: 4, accent: 7, starter: true, source: 'Wild roses, black-eyed Susans and fern.' },
+  { id: 'bridal_veil', name: 'Bridal Veil', style: 'veil', main: 15, shade: 6, accent: 11, starter: true, source: 'Tulle and a ring of tiny flowers.' },
+  { id: 'stripe_cap', name: 'Jailhouse Cap', style: 'stripecap', main: 6, shade: 0, accent: 0, starter: true, source: 'Goes with the stripes.' },
   { id: 'jackalope_cap', name: 'Jackalope Antler Cap', style: 'antlers', main: 9, shade: 10, accent: 7, starter: false, source: 'Historical Society: 5 donations.' },
   { id: 'mothman_goggles', name: 'Mothman Goggles', style: 'goggles', main: 0, shade: 1, accent: 11, starter: false, source: 'Historical Society: 20 donations.' },
   { id: 'antler_crown', name: 'Wendigo Antler Crown', style: 'crown', main: 1, shade: 6, accent: 7, starter: false, source: 'Historical Society: 28 donations.' },

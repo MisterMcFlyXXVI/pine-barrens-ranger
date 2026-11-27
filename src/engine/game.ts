@@ -72,6 +72,8 @@ import { WorldMap, handcarUnlocked } from '../ui/worldmap';
 import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
+import { placeDeco, decoInteract, canPlaceDeco, homesteadOvernight, homesteadTick, fireSmoke, decoItemFor } from './homestead';
+import { WALL_DECOS, DECO_BY_OBJ } from '../data/homestead';
 import { mineTick, mineArrive, mineInteract, placeHemlock, placeTorch, mineBusy, crawlBlocked, mineStep, throwCoal, mineEmptyA, banked } from './mine';
 import { MineMap } from '../ui/mineMap';
 import { isDeepSeam, isMineMap, MINE_LEVELS, MINERS } from '../data/mine';
@@ -901,6 +903,7 @@ export class Game {
       if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); adoptionTick(this); oriTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
       mineTick(this, dt);
+      homesteadTick(this);
       this.wildlife.update(this, dt);
       this.updateAmbience(dt);
     }
@@ -1401,6 +1404,7 @@ export class Game {
 
   private placeMount(id: string, tx: number, ty: number): void {
     const m = this.cur;
+    if (placeDeco(this, id, tx, ty)) return;
     if (id === 'display_pedestal') {
       const ok = m.id === 'CABIN_INTERIOR' && m.obj(tx, ty) === O.NONE && !m.blocked(tx, ty) && m.ground(tx, ty) !== T.DOORMAT && !m.portalAt(tx, ty);
       if (!ok) { sfx.error(); this.notice('Display pedestals go on open floor inside your cabin.'); return; }
@@ -1656,7 +1660,7 @@ export class Game {
   private refundRoom(ms: MapSave): void {
     const back: Record<number, string> = { [O.PEDESTAL]: 'display_pedestal', [O.HEMLOCK_PROP]: 'hemlock_prop', [O.BARN_STAR]: 'barn_star', [O.TORCH]: 'pitch_torch' };
     for (const [k, v] of Object.entries(MOUNT_OBJECT)) back[v] = k;
-    for (const [, o] of ms.placed ?? []) { const it = back[o]; if (it && ITEMS[it]) this.storage.add(it, 1); }
+    for (const [, o] of ms.placed ?? []) { const it = back[o] ?? decoItemFor(o); if (it && ITEMS[it]) this.storage.add(it, 1); }
   }
 
   /** In someone's home, everything has a story. */
@@ -1679,6 +1683,7 @@ export class Game {
     const npc = this.npcFacing(tx, ty);
     if (npc) { talkTo(this, npc); return true; }
     if (mineInteract(this, tx, ty)) return true;
+    if (decoInteract(this, tx, ty)) return true;
     if (visitorAt(this, tx, ty)) return true;
     if (this.progress.pet && this.companion.at(this, tx, ty)) { petPet(this); return true; }
     if (eventStallAt(this, tx, ty)) return true;
@@ -1748,6 +1753,7 @@ export class Game {
         openLedger(this, 'museum');
         return true;
       case 'mine':
+      case 'deco':
         return false;
       case 'barnstar':
         sfx.blip();
@@ -2117,6 +2123,8 @@ export class Game {
     };
     if (this.journalPagesOn(this.cur.id).some((pg) => pg.x === tx && pg.y === ty)) return 'PICK UP PAGE';
     if (kind === 'table' && this.cur.id === 'CABIN_INTERIOR') return 'READ JOURNAL';
+    if (kind === 'deco') { const dd = DECO_BY_OBJ[this.cur.obj(tx, ty)]; return dd?.item === 'deco_coop' ? 'COOP' : dd?.item === 'deco_fire_pit' ? 'FIRE PIT' : 'LOOK'; }
+    if (this.cur.id === 'CABIN_INTERIOR' && this.cur.ground(tx, ty) === T.WALL_BASE && WALL_DECOS.has(this.cur.obj(tx, ty - 1))) return 'LOOK';
     if (kind === 'crate' && this.cur.id === 'CABIN_INTERIOR') return 'STORAGE';
     if (kind === 'stove' && this.cur.id === 'CABIN_INTERIOR') return 'COOK';
     const held = this.selected ? ITEMS[this.selected.id]?.tool : undefined;
@@ -2158,6 +2166,7 @@ export class Game {
     if (def.tool === 'machete') return props.tool === 'machete' ? 'CUT' : '';
     if (def.kind === 'seed' && pi >= 0 && m.plots[pi].tilled && !m.plots[pi].crop && o === O.NONE) return 'PLANT';
     if (def.kind === 'placeable' && this.cur.def.wild && o === O.NONE && !this.cur.blocked(tx, ty)) return 'PLACE';
+    if (def.kind === 'placeable' && canPlaceDeco(this, st.id, tx, ty)) return this.cur.ground(tx, ty) === T.WALL_BASE ? 'HANG' : 'PLACE';
     if (def.edible && kind === null && o === O.NONE) return 'EAT';
     return '';
   }
@@ -2243,6 +2252,8 @@ export class Game {
     for (const m of this.maps.values()) { m.spawnForage(this.clock.day, this.forageBoosts()); checkSnares(m); }
     const gift = petOvernight(this);
     if (gift) lines.push(gift);
+    const hens = homesteadOvernight(this);
+    if (hens) lines.push(hens);
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
     this.cur = this.getMap(BED_SPAWN.map);
     lines.push(this.saveGame() ? 'Field journal saved.' : 'Warning: could not save.');
@@ -2281,6 +2292,7 @@ export class Game {
     if (this.smokeT <= 0) {
       this.smokeT = 0.3;
       for (const s of m.def.structures) if (s.chimney) this.particles.smoke(s.x * 16 + s.chimney[0], s.y * 16 + s.chimney[1]);
+      for (const [fx, fy] of fireSmoke(this)) this.particles.smoke(fx, fy);
       // Mineral-spring steam
       for (let k = 0; k < 6; k++) {
         const x = Math.floor(this.cam.x / 16) + Math.floor(Math.random() * (this.w / 16 + 1));

@@ -35,7 +35,17 @@ export const FACIALS: ReadonlyArray<[Facial, string]> = [
 ];
 export const BUILDS: ReadonlyArray<[Build, string]> = [['a', 'BODY A'], ['b', 'BODY B']];
 /** What you can arrive in (both stay in your wardrobe). */
-export const START_OUTFITS: ReadonlyArray<[string, string]> = [['ranger_jacket', 'RANGER UNIFORM'], ['chore_coat', 'CHORE COAT']];
+export const START_OUTFITS: ReadonlyArray<[string, string]> = [
+  ['ranger_jacket', 'RANGER UNIFORM'], ['chore_coat', 'CHORE COAT'], ['red_flannel', 'FLANNEL+JEANS'], ['sundress', 'SUNDRESS'],
+  ['sunday_suit', 'SUNDAY SUIT'], ['tee_ripped', 'RIPPED JEANS'], ['bib_overalls', 'OVERALLS'], ['camo_blaze', 'CAMO+BLAZE'],
+  ['union_suit', 'RED UNION SUIT'], ['prison_stripes', 'PRISON STRIPES'], ['black_gown', 'BLACK GOWN'], ['white_gown', 'WHITE GOWN'],
+];
+/** Hats you can arrive in (all stay in your wardrobe too). */
+export const START_HATS: ReadonlyArray<[string, string]> = [
+  ['none', 'NO HAT'], ['ranger_cap', 'RANGER CAP'], ['bucket_hat', 'BUCKET HAT'], ['trucker_cap', 'TRUCKER CAP'], ['beanie', 'BEANIE'],
+  ['sun_hat', 'STRAW SUN HAT'], ['cowboy_hat', 'COWBOY HAT'], ['top_hat', 'TOP HAT'], ['flower_crown', 'FLOWER CROWN'],
+  ['bridal_veil', 'BRIDAL VEIL'], ['stripe_cap', 'JAILHOUSE CAP'],
+];
 
 export const DEFAULT_LOOK: Appearance = { name: '', build: 'a', skin: 0, hair: 0, hairStyle: 'short', facial: 'none' };
 
