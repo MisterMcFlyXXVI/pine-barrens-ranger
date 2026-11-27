@@ -84,6 +84,21 @@ export function inAlcove(game: Game): boolean { return game.cur.ground(game.play
 export function respirator(game: Game): boolean { return game.look.hat === 'brattice_respirator'; }
 export function levelOf(game: Game): MineLevel | null { return MINE_LEVELS[game.cur.id] ?? null; }
 
+/** Pitch torches set down on this level. */
+export function torchesHere(game: Game): Pt[] {
+  const m = game.cur, out: Pt[] = [];
+  for (const [i, o] of m.placed) if (o === O.TORCH) out.push([i % m.w, Math.floor(i / m.w)]);
+  return out;
+}
+export const TORCH_RADIUS = 56;
+/** Standing in torchlight: they can see you, shutter or no. */
+export function inTorchLight(game: Game): boolean {
+  const p = game.player;
+  return torchesHere(game).some(([x, y]) => Math.hypot(x - p.tx, y - p.ty) <= TORCH_RADIUS / 16 - 0.5);
+}
+/** Can the husks and the Foreman see you? (Open carbide glare, or a torch's light.) */
+export function visible(game: Game): boolean { return glare(game) || inTorchLight(game); }
+
 /** Light radius in pixels right now. */
 export function lightRadius(game: Game): number {
   if (!lampLit(game)) return 9;
@@ -205,7 +220,7 @@ function alert(game: Game, x: number, y: number, radius: number, loud: boolean):
 function updateEnts(game: Game, dt: number): void {
   const p = game.player, px = p.tx, py = p.ty;
   const hidden = inAlcove(game);
-  const lit = glare(game);
+  const lit = visible(game);
   for (const e of rt.ents) {
     e.anim += dt;
     const dist = Math.hypot(e.x - px, e.y - py);
@@ -390,6 +405,20 @@ function shored(game: Game, x: number, y: number): boolean {
   return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => game.cur.obj(x + dx, y + dy) === O.HEMLOCK_PROP);
 }
 
+/** Set a pitch torch down on the floor of a mine level. */
+export function placeTorch(game: Game, x: number, y: number): void {
+  const m = game.cur;
+  if (!isMineMap(m.id)) { sfx.error(); game.notice('Pitch torches are for the dark below. Set them down in the mine.'); return; }
+  if (gasAt(levelOf(game), x, y, 1) === 'fire') { sfx.error(); game.notice('The safety lamp burns blue here: firedamp. An open torch would blow the drift apart.'); return; }
+  if (!m.inBounds(x, y) || m.obj(x, y) !== O.NONE || m.blocked(x, y, true) || m.portalAt(x, y) || m.ground(x, y) === T.ALCOVE) {
+    sfx.error(); game.notice('Set the torch down on open floor (not in an alcove).'); return;
+  }
+  m.placeObject(m.idx(x, y), O.TORCH);
+  game.inv.removeAt(game.sel, 1);
+  sfx.refill();
+  game.toast('You drive the torch into the coal floor. Warm light, a long way out. (In its light, they can see you.)');
+}
+
 /** Wedge a hemlock prop (from the hotbar) on open floor. */
 export function placeHemlock(game: Game, x: number, y: number): void {
   const m = game.cur;
@@ -534,6 +563,12 @@ export function mineInteract(game: Game, tx: number, ty: number): boolean {
       say(sign ?? 'A tin dinner bucket, empty now. The lid is scratched with initials.'); return true;
     }
     case O.CRIB: crib(game, ax, ay); return true;
+    case O.TORCH:
+      game.openOverlay(new Dialog(['Your pitch torch, spitting and smoking, throwing a warm circle on the coal.'], [
+        { label: 'Take it down', fn: () => { m.removeObject(ai); give(game, 'pitch_torch', 1); sfx.blip(); } },
+        { label: 'Leave it burning', fn: () => undefined },
+      ]));
+      return true;
     case O.HEMLOCK_PROP: say('Your hemlock prop, wedged tight. It smells like Christmas down here, which is strange.'); return true;
     case O.MINE_POST: say('An old timber set: two legs and a collar beam, black with a century of damp. (Tap things with the Sounding Bar, T, to hear what\'s sound.)'); return true;
     default:
@@ -572,7 +607,7 @@ function locker(game: Game): void {
   if (!s.kit) {
     s.kit = true; s.fuel = 100; s.shut = false;
     game.wardrobe.add('miner_coveralls'); game.wardrobe.add('miner_cap');
-    give(game, 'carbide_pellets', 4); give(game, 'seep_water', 2); give(game, 'miner_biscuit', 2); give(game, 'mine_ledger', 1);
+    give(game, 'carbide_pellets', 4); give(game, 'seep_water', 2); give(game, 'miner_biscuit', 2); give(game, 'mine_ledger', 1); give(game, 'pitch_torch', 3);
     sfx.fanfare();
     game.openOverlay(new Dialog([
       'THE MINE KIT. You take down, one by one:',
@@ -580,13 +615,15 @@ function locker(game: Game): void {
       'A CANARY in a wire cage. (It sings in good air. When it goes quiet and rattles the bars, there\'s gas or haze. Get out of it.)',
       'A FIRE-BOSS SOUNDING BAR. (T or TAP: RING is solid slate, HOLLOW THUD is trouble, or a keystone. It\'s loud. He hears it.)',
       'A DAVY SAFETY LAMP for your belt. (It burns blue-green near firedamp: shutter your carbide there or it ignites. It picks out the calcified props that are holding up the roof.)',
-      'Also: Canvas Miner\'s Coveralls and a Hard-Boiled Leather Cap (wardrobe), carbide, water, biscuits, and the BLACK-EDGED MINE LEDGER for any pages you find.',
+      'Also: Canvas Miner\'s Coveralls and a Hard-Boiled Leather Cap (wardrobe), carbide, water, biscuits, the BLACK-EDGED MINE LEDGER for any pages you find, and three PITCH TORCHES. (Set them down to light a big circle for good. More at the Porch Workbench: 1 Timber, 1 Pine Resin, 2 Plant Fiber. In torchlight, things down there can see you.)',
       'The lift cage is in the corner. Twelve checks on the board say IN. Bring them OUT.',
     ]));
     return;
   }
   if (banked(game) === 12 && !s.sealed && game.inv.count('blasting_box') + game.storage.count('blasting_box') === 0) {
-    give(game, 'blasting_box', 1); give(game, 'black_powder', 4);
+    // These have to go down the hole with you: the bag, not the crate.
+    if (!game.inv.canFit('blasting_box') || !game.inv.canFit('black_powder')) { sfx.error(); game.openOverlay(new Dialog(['Something new is waiting at the back of the locker, but your bag is too full to carry it. (Make room for two things.)'])); return; }
+    game.inv.add('blasting_box', 1); game.inv.add('black_powder', 4);
     sfx.fanfare();
     game.openOverlay(new Dialog([
       'At the back of the locker, where there was nothing yesterday: a HAND-CRANK BLASTING BOX, a coil of copper wire, and four BLACK POWDER CHARGES wrapped in oilcloth. A note in Gideon\'s block capitals: "FOR THE CRIBS. ALL FOUR. THEN CRANK IT AT THE LIFT AND DON\'T LOOK BACK."',
@@ -726,7 +763,7 @@ function crib(game: Game, x: number, y: number): void {
   if (s.wired.includes(n)) { sfx.blip(); game.openOverlay(new Dialog(['A black powder charge is lashed into the crib, its copper lead running back toward the lift.'])); return; }
   if (game.inv.count('blasting_box') < 1 || game.inv.count('black_powder') < 1) {
     sfx.blip();
-    game.openOverlay(new Dialog(['A MASTER TIMBER CRIB: notched hemlock logs laid log-cabin style, floor to roof, black with age. Carved in one log: "J.M. 1911." Four of these hold up the whole Tally Chamber.', banked(game) === 12 ? '(The blasting box and charges are in the Lamp House locker.)' : '(Josef\'s ledger: take out all four, and the mountain closes its hand.)']));
+    game.openOverlay(new Dialog(['A MASTER TIMBER CRIB: notched hemlock logs laid log-cabin style, floor to roof, black with age. Carved in one log: "J.M. 1911." Four of these hold up the whole Tally Chamber.', banked(game) === 12 ? (game.storage.count('blasting_box') ? '(Your blasting box and charges are in the Storage Crate at the cabin. Bring them down.)' : '(The blasting box and charges are in the Lamp House locker.)') : '(Josef\'s ledger: take out all four, and the mountain closes its hand.)']));
     return;
   }
   game.openOverlay(new Dialog(['Josef\'s crib. You could wire a charge into it.'], [
@@ -745,9 +782,9 @@ function crib(game: Game, x: number, y: number): void {
 
 /** Coal-Chewer: shutter closed, then offer water or something warm. */
 function offerChewer(game: Game, e: Ent): void {
-  if (glare(game)) {
+  if (visible(game)) {
     sfx.chew();
-    game.openOverlay(new Dialog(['It turns into your light, ember throat glowing, and lunges.']));
+    game.openOverlay(new Dialog([glare(game) ? 'It turns into your light, ember throat glowing, and lunges.' : 'In the torchlight it sees you plain, and lunges. (Meet them in the dark.)']));
     game.afterOverlays(() => passOut(game, 'chewer'));
     return;
   }

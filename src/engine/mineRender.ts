@@ -11,7 +11,7 @@ import { drawText } from '../graphics/font';
 import { panel, bar } from '../ui/panel';
 import { MINE_LEVELS, isMineMap, MINERS } from '../data/mine';
 import { O } from '../data/tiles';
-import { rt, glare, lampLit, lightRadius, LISTEN, hazeOn, hazeLevel, carried, banked, lampedProps, spiritsShown, respirator } from './mine';
+import { rt, glare, lampLit, lightRadius, torchesHere, TORCH_RADIUS, LISTEN, hazeOn, hazeLevel, carried, banked, lampedProps, spiritsShown, respirator } from './mine';
 
 type Draw = { y: number; fn: () => void };
 
@@ -88,12 +88,20 @@ export function drawMineOverlay(game: Game, g: CanvasRenderingContext2D, cx: num
   hole(o, px, py, R, 1);
   // The lift lamp, and the little blue flame of the safety lamp at your belt.
   if (L) hole(o, (L.lift[0] + 0.5) * 16 - cx, L.lift[1] * 16 + 2 - cy, 18, 0.7);
+  const torches = torchesHere(game);
+  for (const [tx, ty] of torches) hole(o, tx * 16 + 8 - cx, ty * 16 - cy, TORCH_RADIUS + Math.sin(time * 9 + tx) * 1.5 + Math.sin(time * 23 + ty), 1);
   hole(o, px + 5, py + 8, 7, 0.6);
   o.globalCompositeOperation = 'source-over';
   g.drawImage(layer!, 0, 0);
 
   // Tint inside your light: sulfur amber open, phosphor green shut; coal-dust haze over everything.
   const open = glare(game);
+  // Torchlight: warm and wide, red at the edges.
+  const [qr, qg, qb] = rgbOf(P.AMBER);
+  for (const [tx, ty] of torches) {
+    g.fillStyle = `rgba(${qr},${qg},${qb},${(0.1 + Math.sin(time * 11 + tx) * 0.02).toFixed(3)})`;
+    g.beginPath(); g.arc(tx * 16 + 8 - cx, ty * 16 - cy, Math.round(TORCH_RADIUS * 0.75), 0, Math.PI * 2); g.fill();
+  }
   const [tr, tg, tb] = rgbOf(open ? P.LANTERN : P.FERN);
   g.fillStyle = `rgba(${tr},${tg},${tb},${open ? 0.08 : 0.1})`;
   g.beginPath(); g.arc(Math.round(px), Math.round(py), Math.round(R * 0.7), 0, Math.PI * 2); g.fill();

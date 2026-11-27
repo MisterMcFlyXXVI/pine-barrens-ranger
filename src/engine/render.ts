@@ -361,6 +361,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.BRATTICE: return MO.brattice[Math.floor(time * 1.2) % 2];
     case O.FIRST_AID: return MO.firstAid[0];
     case O.CUPBOARD: return MO.cupboard[0];
+    case O.TORCH: return MO.torch[Math.floor(time * 6 + h * 4) % 2];
     default: return null;
   }
 }

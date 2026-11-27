@@ -348,7 +348,7 @@ export const BIRTHDAY_LINES: Record<FriendId | 'vance', string> = {
 
 /** Candlelit Christmas trees (the old German way), Fall 22 through Old Christmas: where they stand. */
 export const CANDLE_TREES: Partial<Record<string, Array<[number, number]>>> = {
-  PINE_HOLLOW_TOWN: [[40, 27]], CABIN_INTERIOR: [[18, 4]], HOUSE_MEISSGEIER: [[16, 4]], DINER_INT: [[18, 4]], MUSEUM_INT: [[24, 3]],
+  PINE_HOLLOW_TOWN: [[40, 27]], CABIN_INTERIOR: [[11, 4]], HOUSE_MEISSGEIER: [[16, 4]], DINER_INT: [[18, 4]], MUSEUM_INT: [[24, 3]],
   HOUSE_VANCE: [[14, 4]], HOUSE_RUTH: [[14, 4]], HOUSE_MILLER: [[16, 4]], HOUSE_FINCH: [[1, 4]], HOUSE_CALLOWAY: [[14, 4]],
 };
 export function candleSeason(season: number, day: number): boolean { return (season === 2 && day >= 22) || (season === 3 && day <= 6); }

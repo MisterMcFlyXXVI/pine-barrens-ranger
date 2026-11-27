@@ -66,6 +66,11 @@ down. They show as four slots on the mine HUD.
 | 4 | **Davy / Wolf Safety Lamp** | A wire-gauze flame on your belt. Burns blue-green near **firedamp** and picks out the load-bearing **Calcified Props** that need shoring. |
 | 5 | **Hand-Crank Blasting Box & Black Powder** | Unlocked in the locker once all 12 tags hang on OUT. Wire the 4 Master Timber Cribs, then crank it at the ore-cart lift. |
 
+**Pitch Torches** (3 in the locker; craft more at the Porch Workbench: 1 Timber, 1 Pine Resin, 2 Plant Fiber, makes 3):
+set one down on any mine floor (select it, press A) and it lights a wide warm circle for good (take it down again with A).
+The catch: anywhere inside torchlight, Coal-Chewers and the Foreman can see you even with your shutter closed. So
+light the haulage roads, and meet the husks in the dark. Never in firedamp (the game won't let you).
+
 Supplies: **Carbide Pellets** (Lamp House tin, and caches below), **Drip-Seep Water** (seeps on every
 level), **Fresh Hemlock Timber Props** (Lamp House timber rack, 1 Timber each, and salvage stacks below),
 **Miner's Biscuits** (Lamp House cupboard; Pepperoni Rolls work too).

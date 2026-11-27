@@ -72,8 +72,11 @@ import { WorldMap, handcarUnlocked } from '../ui/worldmap';
 import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
-import { mineTick, mineArrive, mineInteract, placeHemlock } from './mine';
+import { mineTick, mineArrive, mineInteract, placeHemlock, placeTorch } from './mine';
 import { isDeepSeam, MINE_LEVELS } from '../data/mine';
+
+/** Rooms rebuilt to a new size since older saves (saves without a recorded size). */
+const RESIZED_MAPS: ReadonlySet<MapId> = new Set<MapId>(['CABIN_INTERIOR', 'LAMP_HOUSE']);
 import { drawHud, hotbarHit } from '../ui/hud';
 import { checkSnares, waterAt, WEAPONS } from './outdoors';
 import { Wildlife } from './wildlife';
@@ -260,9 +263,12 @@ export class Game {
     adoptSaveSettings(d.settings);
     this.wardrobe = new Set([...this.starterWardrobe(), ...d.wardrobe]);
     this.maps.clear();
+    const rebuilt: MapId[] = [];
     for (const [id, ms] of Object.entries(d.maps) as Array<[MapId, MapSave]>) {
       if (!BUILT_MAPS.has(id)) continue;
       const m = this.getMap(id);
+      // A room rebuilt to a new size since this save: its tile indices no longer line up, so start it fresh.
+      if (ms.w !== undefined ? ms.w !== m.w || ms.h !== m.h : RESIZED_MAPS.has(id)) { rebuilt.push(id); this.refundRoom(ms); continue; }
       m.applyRemoved(ms.removed);
       ms.plots.forEach((p, i) => { if (m.plots[i]) Object.assign(m.plots[i], p); });
       for (const [i, hp] of ms.hp) m.hp.set(i, hp);
@@ -281,6 +287,13 @@ export class Game {
     this.wispNight = d.wispNight ?? 0;
     this.lunarNight = d.lunarNight ?? 0;
     this.progress = Progress.load(d.progress);
+    // Specimens on display in a rebuilt room go back to the Storage Crate.
+    for (const id of rebuilt) for (const [k, item] of Object.entries(this.progress.displays)) {
+      if (!k.startsWith(`${id}:`)) continue;
+      delete this.progress.displays[k];
+      if (ITEMS[item]) this.storage.add(item, 1);
+    }
+    if (rebuilt.includes('CABIN_INTERIOR')) this.afterOverlays(() => this.toast('The cabin got a cozier layout. Your trophies and display pedestals are in the Storage Crate.'));
     // Regions were rebuilt before progress loaded: clear the lines of repaired stops now.
     for (const m of this.maps.values()) if (this.stopRepaired(m.id)) this.clearLine(m);
     if (this.inv.count('bog_waders') > 0 && this.progress.tools.waders === 0) this.progress.tools.waders = 1;
@@ -325,6 +338,7 @@ export class Game {
         placed: [...m.placed.entries()],
         snares: [...m.snares.entries()],
         seen: m.seenToString(),
+        w: m.w, h: m.h,
       };
     }
     return {
@@ -1382,6 +1396,7 @@ export class Game {
       return;
     }
     if (id === 'hemlock_prop') { placeHemlock(this, tx, ty); return; }
+    if (id === 'pitch_torch') { placeTorch(this, tx, ty); return; }
     if (id === 'barn_star') {
       const ok = m.id === 'CABIN_YARD' && m.obj(tx, ty) === O.NONE && !m.blocked(tx, ty) && !m.portalAt(tx, ty) && m.plotIndex(tx, ty) < 0 && m.ground(tx, ty) !== T.PATH;
       if (!ok) { sfx.error(); this.notice('Hang the barn star on open ground in your cabin yard (off the path and the garden).'); return; }
@@ -1620,6 +1635,13 @@ export class Game {
     // The last three pages (the warden cabin, the man in green, the last entry) turn up once Act III begins,
     // so the ending isn't lying in the town square on day one.
     return (this.pageSpots.get(map) ?? []).filter((p) => !this.progress.pages.has(p.id) && (p.id < 7 || this.progress.act >= 3));
+  }
+
+  /** A rebuilt room's player-placed things go back to the Storage Crate. */
+  private refundRoom(ms: MapSave): void {
+    const back: Record<number, string> = { [O.PEDESTAL]: 'display_pedestal', [O.HEMLOCK_PROP]: 'hemlock_prop', [O.BARN_STAR]: 'barn_star', [O.TORCH]: 'pitch_torch' };
+    for (const [k, v] of Object.entries(MOUNT_OBJECT)) back[v] = k;
+    for (const [, o] of ms.placed ?? []) { const it = back[o]; if (it && ITEMS[it]) this.storage.add(it, 1); }
   }
 
   /** In someone's home, everything has a story. */

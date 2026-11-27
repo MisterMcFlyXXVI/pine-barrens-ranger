@@ -235,47 +235,45 @@ function buildCabinYard(): MapDef {
 }
 
 /* ------------------------------------------------------------------ */
-/* CABIN_INTERIOR — 20x16                                              */
+/* CABIN_INTERIOR — 13x11                                              */
 /* ------------------------------------------------------------------ */
 
 function buildCabinInterior(): MapDef {
-  const W = 20, H = 16;
+  // A one-room fire-watch cabin: bed and desk along the back wall, the hearth in the middle,
+  // the woodstove and crate by the door, a table under the window and three trophy pedestals.
+  const W = 13, H = 11;
   const b = new Builder(W, H, T.VOID);
   for (let x = 0; x < W; x++) { b.setG(x, 0, T.WALL_TOP); b.setG(x, 1, T.WALL_FACE); b.setG(x, 2, T.WALL_BASE); }
   for (let y = 3; y < H; y++) { b.setG(0, y, T.WALL_SIDE); b.setG(W - 1, y, T.WALL_SIDE); }
   for (let x = 0; x < W; x++) b.setG(x, H - 1, T.WALL_SIDE);
-  for (let x = 0; x < W; x++) { b.setG(x, 1, T.WALL_FACE); }
   b.setG(0, 1, T.WALL_SIDE); b.setG(0, 2, T.WALL_SIDE); b.setG(W - 1, 1, T.WALL_SIDE); b.setG(W - 1, 2, T.WALL_SIDE);
   b.rectG(1, 3, W - 2, H - 4, T.FLOOR);
-  b.rectG(7, 7, 6, 4, T.RUG);
-  b.setG(10, 14, T.DOORMAT);
-  b.setG(10, 15, T.DOOR);
-  b.rectG(14, 4, 2, 1, T.HEARTH);
+  b.rectG(4, 5, 4, 3, T.RUG);
+  b.setG(6, 9, T.DOORMAT);
+  b.setG(6, 10, T.DOOR);
+  b.rectG(6, 4, 2, 1, T.HEARTH);
 
-  // Windows on the back wall
-  for (const x of [4, 11, 17]) b.setO(x, 1, O.WINDOW);
-  // Furniture
-  b.place(2, 3, O.BED, 1, 2);
-  b.setO(5, 3, O.DESK);
-  b.setO(8, 3, O.DRESSER);
-  b.place(14, 3, O.FIREPLACE, 2, 1);
-  b.setO(17, 3, O.BOOKSHELF);
-  b.setO(18, 3, O.PLANT);
-  b.setO(1, 8, O.STOVE);
-  b.setO(1, 9, O.CRATE);
-  b.setO(4, 11, O.TABLE);
-  b.setO(3, 11, O.CHAIR);
-  b.setO(5, 11, O.CHAIR);
-  b.setO(13, 10, O.PEDESTAL);
-  b.setO(15, 10, O.PEDESTAL);
-  b.setO(17, 10, O.PEDESTAL);
-  b.setO(18, 13, O.PLANT);
-  b.setO(1, 13, O.WOODPILE);
+  for (const x of [3, 10]) b.setO(x, 1, O.WINDOW);
+  b.place(1, 3, O.BED, 1, 2);
+  b.setO(3, 3, O.DESK);
+  b.setO(4, 3, O.DRESSER);
+  b.place(6, 3, O.FIREPLACE, 2, 1);
+  b.setO(9, 3, O.BOOKSHELF);
+  b.setO(11, 3, O.PLANT);
+  b.setO(1, 6, O.STOVE);
+  b.setO(1, 7, O.CRATE);
+  b.setO(1, 9, O.WOODPILE);
+  b.setO(10, 8, O.TABLE);
+  b.setO(9, 8, O.CHAIR);
+  b.setO(11, 8, O.CHAIR);
+  b.setO(11, 5, O.PEDESTAL);
+  b.setO(11, 6, O.PEDESTAL);
+  b.setO(9, 5, O.PEDESTAL);
 
   return {
     id: 'CABIN_INTERIOR', name: MAP_NAMES.CABIN_INTERIOR, w: W, h: H, indoor: true, wild: false,
     ground: b.ground, objects: b.objects, anchors: b.anchors, structAt: b.structAt, structures: [],
-    portals: [{ x: 10, y: 15, w: 1, h: 1, to: 'CABIN_YARD', tx: 28, ty: 19, dir: 'down', closedMsg: '' }],
+    portals: [{ x: 6, y: 10, w: 1, h: 1, to: 'CABIN_YARD', tx: 28, ty: 19, dir: 'down', closedMsg: '' }],
     plots: [], signs: b.signs, forage: [], zones: [], battleColors: [P.AMBER, P.RUST],
   };
 }
@@ -324,4 +322,4 @@ export function getMapDef(id: MapId): MapDef {
 }
 
 /** Bed tile where the player wakes up. */
-export const BED_SPAWN = { map: 'CABIN_INTERIOR' as MapId, x: 3, y: 4, dir: 'down' as Dir };
+export const BED_SPAWN = { map: 'CABIN_INTERIOR' as MapId, x: 2, y: 4, dir: 'down' as Dir };

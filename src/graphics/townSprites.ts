@@ -37,9 +37,9 @@ function checker(): Canv {
 }
 
 function marble(seed: number): Canv {
-  const { c, p, r } = tile(P.FOG, [[P.MOON, 0.05], [P.MIST, 0.02]], seed);
-  p.hline(0, 15, 15, P.MOON); p.vline(15, 0, 15, P.MOON);
-  for (let i = 0; i < 2; i++) { let x = r() * 16; for (let y = 0; y < 16; y += 2) { p.px(x, y, P.MOON); x += r() < 0.5 ? 1 : -1; } }
+  const { c, p, r } = tile(P.FOG, [[P.LANTERN, 0.05], [P.MIST, 0.02]], seed);
+  p.hline(0, 15, 15, P.MIST); p.vline(15, 0, 15, P.MIST);
+  for (let i = 0; i < 2; i++) { let x = r() * 16; for (let y = 0; y < 16; y += 2) { p.px(x, y, P.MIST); x += r() < 0.5 ? 1 : -1; } }
   return c;
 }
 
@@ -261,16 +261,27 @@ let onGroups: Set<string> | null = null;
 let litNow: Array<[string, number, number]> | null = null;
 const glow = (night: boolean, group: string) => night && group !== 'never' && (group === 'lamp' || onGroups === null || onGroups.has(group));
 
-function facade(W: number, H: number, wallTop: number, wall: number, wallSh: number, roof: number, roofSh: number, seed: number, wear = 0): { c: Canv; p: Pen } {
+/** Trim colour of the building being drawn (window frames, sills, corner boards). */
+let trimNow: number = P.FOG;
+
+/**
+ * A wall-and-roof front: clapboard siding, a shingled roof with staggered tabs, a shadow under the
+ * eaves, painted corner boards (`trim`, or -1 for brick/plaster), and a fieldstone foundation.
+ */
+function facade(W: number, H: number, wallTop: number, wall: number, wallSh: number, roof: number, roofSh: number, seed: number, wear = 0, trim: number = P.FOG): { c: Canv; p: Pen } {
   const { c, p } = mk(W, H);
   const r = mulberry32(seed);
+  trimNow = trim < 0 ? P.FOG : trim;
   p.rect(2, wallTop, W - 4, H - wallTop, wall);
   for (let y = wallTop + 3; y < H; y += 4) p.hline(2, W - 3, y, wallSh);
   const inset = (y: number) => Math.round((1 - (y - 4) / (wallTop - 1)) * 8);
   for (let y = 4; y <= wallTop + 3; y++) {
-    for (let x = inset(y); x < W - inset(y); x++) p.px(x, y, (y - 4) % 4 === 3 ? roofSh : ((x + (y >> 2) * 3) % 9 === 0 ? roofSh : roof));
+    // Courses of shingles: a dark butt line every 4 rows and staggered joints between the tabs.
+    const course = (y - 4) >> 2;
+    for (let x = inset(y); x < W - inset(y); x++) p.px(x, y, (y - 4) % 4 === 3 ? roofSh : ((x + course * 3) % 6 === 0 ? roofSh : roof));
   }
   p.hline(8, W - 9, 4, P.SHADOW);
+  p.hline(9, W - 10, 5, roofSh); // ridge cap
   for (let i = 0; i < 6; i++) p.px(10 + r() * (W - 20), 8 + r() * (wallTop - 8), roofSh);
   if (wear > 0) {
     // Moss creeping over the shingles, a few slipped shingles.
@@ -295,20 +306,29 @@ function facade(W: number, H: number, wallTop: number, wall: number, wallSh: num
     p.rect(px, py, 10, 4, P.AMBER); p.hline(px, px + 9, py + 3, P.RUST); p.px(px + 1, py + 1, P.SHADOW); p.px(px + 8, py + 1, P.SHADOW);
   }
   p.hline(0, W - 1, wallTop + 3, P.SHADOW);
+  p.hline(2, W - 3, wallTop + 4, wallSh); p.hline(2, W - 3, wallTop + 5, wallSh); // shadow under the eaves
+  if (trim >= 0) for (const x of [2, W - 5]) { p.rect(x, wallTop + 4, 3, H - wallTop - 10, trim); p.vline(x + 2, wallTop + 6, H - 7, wallSh); }
+  // Fieldstone foundation.
+  p.rect(2, H - 6, W - 4, 6, P.SHADOW);
+  for (let y = H - 6; y < H; y += 3) for (let x = 2 + ((y >> 1) % 2) * 3; x < W - 4; x += 6) { p.rect(x, y, 5, 2, P.TWILIGHT); p.px(x, y, P.MIST); }
   return { c, p };
 }
 
 /** A window; at night the pane glows and (when lit) is recorded for the lighting. Curtains make it lived-in. */
-function window4(p: Pen, x: number, y: number, night: boolean, w = 18, h = 14, curtain = -1, group = 'main'): void {
+function window4(p: Pen, x: number, y: number, night: boolean, w = 18, h = 14, curtain = -1, group = 'main', shutter = -1): void {
   const lit = glow(night, group);
-  p.rect(x, y, w, h, P.AMBER); p.rect(x + 2, y + 2, w - 4, h - 4, lit ? P.LANTERN : night ? P.SHADOW : P.MIST);
-  if (!night) { p.px(x + 3, y + 3, P.FOG); p.px(x + 4, y + 3, P.FOG); }
+  if (shutter >= 0) for (const sx of [x - 5, x + w + 1]) { p.rect(sx, y, 4, h, shutter); for (let k = y + 2; k < y + h - 1; k += 2) p.hline(sx + 1, sx + 2, k, P.SHADOW); }
+  p.rect(x - 1, y - 1, w + 2, h + 2, P.SHADOW);
+  p.rect(x, y, w, h, trimNow); p.rect(x + 2, y + 2, w - 4, h - 4, lit ? P.LANTERN : night ? P.SHADOW : P.TWILIGHT);
+  p.rect(x - 2, y + h, w + 4, 2, trimNow); p.hline(x - 2, x + w + 1, y + h + 2, P.SHADOW); // sill
+  if (!night) { p.px(x + 3, y + 3, P.MIST); p.px(x + 4, y + 3, P.MIST); p.px(x + 3, y + 4, P.MIST); }
+  p.hline(x + 2, x + w - 3, y + (h >> 1), P.SHADOW); // the sash
   if (curtain >= 0) {
     // Tied-back curtains in the corners.
     for (let k = 0; k < 3; k++) { p.hline(x + 2, x + 4 - k, y + 2 + k, curtain); p.hline(x + w - 5 + k, x + w - 3, y + 2 + k, curtain); }
     p.vline(x + 2, y + 2, y + h - 3, curtain); p.vline(x + w - 3, y + 2, y + h - 3, curtain);
   }
-  p.vline(x + (w >> 1), y + 2, y + h - 3, P.RUST);
+  p.vline(x + (w >> 1), y + 2, y + h - 3, P.SHADOW);
   if (lit && litNow) litNow.push([group, x + (w >> 1), y + (h >> 1)]);
 }
 
@@ -376,7 +396,7 @@ function diner(night: boolean): Canv {
   for (let x = 34; x < 94; x += 8) p.rect(x, 27, 5, 6, neon ? P.RED : P.RUST);
   if (neon) p.rect(82, 27, 5, 6, P.SHADOW); // one letter of the sign is burnt out
   window4(p, 12, 56, night, 22, 14, P.RED); window4(p, 92, 56, night, 22, 14, P.RED);
-  flowerBox(p, 13, 71, 20, P.RED); flowerBox(p, 93, 71, 20, P.RED);
+  flowerBox(p, 13, 74, 20, P.RED); flowerBox(p, 93, 74, 20, P.RED);
   door(p, 52, 84, 28, P.RED);
   porchLamp(p, 44, 86, night);
   // A blade sign on the corner: EAT, in letters that glow at night.
@@ -410,51 +430,67 @@ function museum(night: boolean): Canv {
   const W = 192, H = 144;
   const { c, p } = mk(W, H);
   const r = mulberry32(1340);
-  p.rect(4, 54, W - 8, H - 54, P.FOG);
-  for (let y = 58; y < H; y += 6) p.hline(4, W - 5, y, P.MOON);
+  trimNow = P.FOG;
+  // Red brick, the way county seats built them: white stone columns, cornice and pediment.
+  p.rect(4, 54, W - 8, H - 54, P.RUST);
+  for (let y = 57; y < H - 8; y += 4) {
+    p.hline(4, W - 5, y, P.CRAN);
+    for (let x = 6 + ((y >> 2) % 2) * 4; x < W - 5; x += 8) p.vline(x, y + 1, y + 3, P.CRAN);
+  }
+  for (let i = 0; i < 14; i++) p.rect(8 + Math.round(r() * (W - 20)), 58 + Math.round(r() * 60), 3, 1, P.AMBER); // weathered bricks
+  // Pediment and its slate roof.
   for (let y = 10; y < 54; y++) {
     const half = Math.round(((y - 10) / 44) * (W / 2 - 4));
-    p.hline(W / 2 - half, W / 2 + half - 1, y, (y % 6 === 0) ? P.MIST : P.MOON);
+    p.hline(W / 2 - half, W / 2 + half - 1, y, y < 16 || y > 47 ? P.TWILIGHT : (y % 6 === 0 ? P.MIST : P.FOG));
   }
-  // Weathered pediment: moss in the corners, streaks down the walls.
-  for (let i = 0; i < 7; i++) { const y = 30 + Math.round(r() * 20), half = Math.round(((y - 10) / 44) * (W / 2 - 4)); const x = W / 2 - half + 4 + Math.round(r() * (half * 2 - 8)); p.rect(x, y, 3, 2, P.MOSS); p.px(x + 1, y - 1, P.FERN); }
-  for (let i = 0; i < 9; i++) { const x = 8 + Math.round(r() * (W - 16)); p.vline(x, 56, 60 + Math.round(r() * 14), P.MIST); }
-  p.hline(0, W - 1, 52, P.MIST); p.hline(0, W - 1, 53, P.TWILIGHT);
-  p.ellipse(W / 2, 36, 7, 7, P.AMBER); p.ellipse(W / 2, 36, 5, 5, P.LANTERN);
-  if (night && litNow) litNow.push(['lamp', W / 2, 36]);
-  for (let x = 14; x < W - 10; x += 24) { p.rect(x, 58, 8, H - 66, P.MOON); p.vline(x + 7, 58, H - 9, P.MIST); p.rect(x - 2, 56, 12, 3, P.FOG); }
-  // Two storeys of tall windows; Agnes's office upstairs stays lit late, a couple of rooms are dark.
-  for (const [x, y, grp] of [[23, 64, 'never'], [47, 64, 'upper'], [127, 64, 'upper'], [151, 64, 'never'], [22, 88, 'main'], [46, 92, 'main'], [128, 92, 'main'], [W - 40, 88, 'main']] as Array<[number, number, string]>) {
-    window4(p, x, y, night, x === 22 || x === W - 40 ? 18 : 14, x === 22 || x === W - 40 ? 24 : 18, y < 80 ? P.VIOLET : -1, grp);
+  for (let y = 16; y < 48; y++) { const half = Math.round(((y - 10) / 44) * (W / 2 - 4)); p.px(W / 2 - half + 1, y, P.TWILIGHT); p.px(W / 2 + half - 2, y, P.TWILIGHT); }
+  // Weathering: moss in the pediment corners, streaks under the cornice.
+  for (let i = 0; i < 7; i++) { const y = 30 + Math.round(r() * 16), half = Math.round(((y - 10) / 44) * (W / 2 - 4)); const x = W / 2 - half + 6 + Math.round(r() * (half * 2 - 12)); p.rect(x, y, 3, 2, P.MOSS); p.px(x + 1, y - 1, P.FERN); }
+  for (let i = 0; i < 9; i++) { const x = 8 + Math.round(r() * (W - 16)); p.vline(x, 58, 60 + Math.round(r() * 12), P.CRAN); }
+  p.rect(0, 48, W, 6, P.FOG); p.hline(0, W - 1, 52, P.MIST); p.hline(0, W - 1, 53, P.SHADOW); // cornice
+  for (let x = 4; x < W - 4; x += 6) p.rect(x, 50, 3, 2, P.MIST);                          // dentils
+  p.ellipse(W / 2, 34, 7, 7, P.AMBER); p.ellipse(W / 2, 34, 5, 5, P.LANTERN);            // the clock
+  p.vline(W / 2, 30, 34, P.SHADOW); p.hline(W / 2, W / 2 + 3, 34, P.SHADOW);
+  if (night && litNow) litNow.push(['lamp', W / 2, 34]);
+  // Two storeys of tall windows set in the bays between the columns (the columns stand in front of the wall).
+  // Agnes's office upstairs stays lit late; a couple of rooms are always dark.
+  for (const [x, y, grp] of [[19, 64, 'never'], [43, 64, 'upper'], [135, 64, 'upper'], [159, 64, 'never'], [19, 90, 'main'], [43, 90, 'main'], [135, 90, 'main'], [159, 90, 'main']] as Array<[number, number, string]>) {
+    window4(p, x, y, night, 14, y < 80 ? 16 : 20, y < 80 ? P.CRAN : -1, grp);
   }
-  door(p, 86, 104, 40, P.RUST);
+  // White columns with capitals and bases, in pairs either side of the wide centre bay with the door.
+  for (const x of [8, 32, 56, 128, 152, 176]) { p.rect(x - 2, 55, 12, 3, P.FOG); p.rect(x, 58, 8, H - 66, P.FOG); p.vline(x + 6, 58, H - 9, P.MIST); p.vline(x + 7, 58, H - 9, P.MIST); p.rect(x - 2, H - 10, 12, 3, P.FOG); }
+  // Granite steps up to the door.
+  p.rect(74, H - 7, 44, 7, P.MIST); p.hline(74, 117, H - 7, P.FOG); p.hline(78, 113, H - 4, P.FOG);
+  p.rect(4, H - 7, 70, 7, P.SHADOW); p.rect(118, H - 7, W - 122, 7, P.SHADOW);
+  for (let x = 6; x < W - 6; x += 7) if (x < 72 || x > 118) { p.rect(x, H - 6, 5, 2, P.TWILIGHT); p.rect(x + 3, H - 3, 5, 2, P.TWILIGHT); }
+  door(p, 86, 102, 35, P.FOREST);
   p.rect(70, 62, 52, 10, P.SHADOW); p.rect(72, 64, 48, 6, P.AMBER);
-  porchLamp(p, 74, 106, night); porchLamp(p, 114, 106, night);
-  ivy(p, 8, H - 1, 80, 10, 1341, 4, W - 5);
-  ivy(p, W - 10, H - 1, 50, 8, 1342, 4, W - 5);
+  porchLamp(p, 74, 104, night); porchLamp(p, 114, 104, night);
+  ivy(p, 8, H - 8, 80, 10, 1341, 4, W - 5);
+  ivy(p, W - 10, H - 8, 50, 8, 1342, 4, W - 5);
   return outline(c);
 }
 
 function house(night: boolean, seed: number): Canv {
   const W = 96, H = 96;
-  // 0 lilac (Agnes), 1 white & cranberry (Miller-Thorne), 2 butter yellow (Finch), 3 sage (Calloway), 4 brick red (Ruth), 5 half-timbered (Meissgeier)
-  const roofs = [[P.TWILIGHT, P.SHADOW], [P.CRAN, P.SHADOW], [P.FOREST, P.PINE], [P.TWILIGHT, P.SHADOW], [P.PINE, P.SHADOW], [P.RUST, P.CRAN]];
-  const walls = [[P.MOON, P.VIOLET], [P.FOG, P.MIST], [P.LANTERN, P.AMBER], [P.FERN, P.MOSS], [P.RUST, P.CRAN], [P.FOG, P.MIST]];
+  // Old paint and natural stuff: 0 cedar shingle (Agnes), 1 white clapboard (Miller-Thorne), 2 butter yellow (Finch),
+  // 3 sage green (Calloway), 4 red brick (Ruth), 5 half-timbered plaster (Meissgeier).
+  const roofs = [[P.TWILIGHT, P.SHADOW], [P.CRAN, P.SHADOW], [P.FOREST, P.PINE], [P.SHADOW, P.VOID], [P.PINE, P.SHADOW], [P.RUST, P.CRAN]];
+  const walls = [[P.AMBER, P.RUST], [P.FOG, P.MIST], [P.LANTERN, P.AMBER], [P.MOSS, P.FOREST], [P.RUST, P.CRAN], [P.FOG, P.MIST]];
+  const trims = [P.FOG, P.LANTERN, P.FOG, P.FOG, -1, -1];
+  const shutters = [-1, P.FOREST, P.FOREST, P.SHADOW, -1, P.FOREST];
   const [rf, rs] = roofs[seed % 6];
   const [wl, ws] = walls[seed % 6];
-  const { c, p } = facade(W, H, 44, wl, ws, rf, rs, 1320 + seed, [0.5, 0.75, 1, 0.4, 0.7, 0.3][seed % 6]);
+  const { c, p } = facade(W, H, 44, wl, ws, rf, rs, 1320 + seed, [0.5, 0.75, 1, 0.4, 0.7, 0.3][seed % 6], trims[seed % 6]);
   if (seed === 5) fachwerk(p, W, H);
+  if (seed === 4) { for (let y = 46; y < H - 6; y += 4) for (let x = 3 + ((y >> 2) % 2) * 4; x < W - 3; x += 8) p.vline(x, y + 1, y + 3, P.CRAN); } // brick coursing
   chimneyStack(p, seed === 1 || seed === 4 ? 18 : 70, 2, 20);
   atticWindow(p, 48, 18, night);
-  const curtain = [P.CRAN, P.TWILIGHT, P.RED, P.LANTERN, P.FOG, P.RED][seed % 6];
-  window4(p, 12, 60, night, 18, 14, curtain);
-  flowerBox(p, 13, 75, 16, [P.RED, P.LANTERN, P.VIOLET, P.RED, P.LANTERN, P.RED][seed % 6]);
-  door(p, 38, 66, 30, [P.RUST, P.FOREST, P.TWILIGHT, P.CRAN, P.FOREST, P.FOREST][seed % 6]);
-  const small = glow(night, 'main');
-  p.rect(70, 60, 14, 14, P.AMBER); p.rect(72, 62, 10, 10, small ? P.LANTERN : night ? P.SHADOW : P.MIST);
-  if (curtain >= 0) { p.vline(72, 62, 71, curtain); p.vline(81, 62, 71, curtain); }
-  if (small && litNow) litNow.push(['main', 77, 67]);
-  if (seed === 4) { for (let y = 46; y < H; y += 4) for (let x = 3 + ((y >> 2) % 2) * 4; x < W - 3; x += 8) p.vline(x, y + 1, y + 3, P.CRAN); } // brick coursing
+  const curtain = [P.CRAN, P.RED, P.RED, P.LANTERN, P.FOG, P.RED][seed % 6];
+  window4(p, 14, 60, night, 16, 14, curtain, 'main', shutters[seed % 6]);
+  flowerBox(p, 14, 78, 16, [P.RED, P.LANTERN, P.VIOLET, P.RED, P.LANTERN, P.RED][seed % 6]);
+  door(p, 38, 66, 30, [P.FOREST, P.FOREST, P.TWILIGHT, P.CRAN, P.FOREST, P.FOREST][seed % 6]);
+  window4(p, 70, 60, night, 14, 14, curtain, 'main', shutters[seed % 6]);
   porchLamp(p, 54, 68, night);
   if (seed === 0) ivy(p, 6, H - 1, 50, 8, 1325, 2, W - 3);
   if (seed === 1) { ivy(p, W - 8, H - 1, 70, 14, 1326, 2, W - 3); ivy(p, 30, H - 1, 22, 4, 1327, 2, W - 3); }
@@ -468,11 +504,11 @@ function house(night: boolean, seed: number): Canv {
 /** Dark timber framing over pale plaster (posts, rails and braces that stay clear of the windows and door). */
 function fachwerk(p: Pen, W: number, H: number): void {
   const T = P.SHADOW;
-  for (const x of [3, 34, 62, W - 4]) p.rect(x - 1, 45, 2, H - 46, T);
-  p.rect(2, 45, W - 4, 2, T); p.rect(2, 57, 36, 2, T); p.rect(60, 57, W - 62, 2, T); p.rect(2, H - 3, W - 4, 2, T);
+  for (const x of [3, 34, 62, W - 4]) p.rect(x - 1, 45, 2, H - 52, T);
+  p.rect(2, 45, W - 4, 2, T); p.rect(2, 57, 36, 2, T); p.rect(60, 57, W - 62, 2, T); p.rect(2, H - 8, W - 4, 2, T);
   for (let k = 0; k < 10; k++) { p.px(5 + k, 47 + k, T); p.px(6 + k, 47 + k, T); p.px(32 - k, 47 + k, T); p.px(33 - k, 47 + k, T); }
   for (let k = 0; k < 10; k++) { p.px(64 + k, 47 + k, T); p.px(65 + k, 47 + k, T); p.px(W - 6 - k, 47 + k, T); p.px(W - 7 - k, 47 + k, T); }
-  for (let k = 0; k < 30; k++) { p.px(5 + Math.floor(k * 0.9), 64 + k, T); }
+  for (let k = 0; k < 24; k++) { p.px(5 + Math.floor(k * 0.9), 64 + k, T); }
   for (let k = 0; k < 10; k++) p.px(30 - k, 76 + k, T);
 }
 

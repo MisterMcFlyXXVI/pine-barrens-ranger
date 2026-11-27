@@ -241,6 +241,8 @@ export const O = {
   FIRST_AID: 135,
   /** Biscuit cupboard. */
   CUPBOARD: 136,
+  /** A pitch torch you set down in the mine. */
+  TORCH: 137,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -351,6 +353,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.BRATTICE]: { name: 'Brattice Curtain', solid: true, interact: 'mine' },
   [O.FIRST_AID]: { name: 'First-Aid Box', solid: true, interact: 'mine' },
   [O.CUPBOARD]: { name: 'Biscuit Cupboard', solid: true, interact: 'mine' },
+  [O.TORCH]: { name: 'Pitch Torch', solid: false, interact: 'mine' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
   [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
   [O.THISTLE]: { name: 'Thistle', solid: false },

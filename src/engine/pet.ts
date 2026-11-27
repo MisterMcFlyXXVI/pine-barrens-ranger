@@ -16,7 +16,7 @@ import { sfx } from '../audio/sfx';
 import { hash2 } from '../util';
 
 const HOME_SPOT: [number, number] = [30, 20];          // cabin porch steps
-const BED_SPOT: [number, number] = [2, 9];             // by the woodstove inside
+const BED_SPOT: [number, number] = [2, 6];             // by the woodstove inside
 const DOORMAT: [number, number] = [27, 20];            // the cat's gift spot
 const SPEED = 70;                                       // px per second
 const PERCHES = new Set<number>([O.FENCE, O.SIGN, O.LAMP, O.MAILBOX, O.WOODPILE]);

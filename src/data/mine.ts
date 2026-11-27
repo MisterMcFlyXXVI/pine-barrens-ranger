@@ -193,7 +193,7 @@ export const isMineMap = (id: MapId): boolean => MINE_MAPS.has(id);
 export const isDeepSeam = (id: MapId): boolean => MINE_MAPS.has(id) || id === 'LAMP_HOUSE';
 
 /** Lamp House interior spots. */
-export const LAMP_HOUSE = { arrive: [11, 11] as Pt, wake: [12, 9] as Pt, board: [8, 3] as Pt, locker: [3, 3] as Pt, lift: [19, 4] as Pt };
+export const LAMP_HOUSE = { arrive: [6, 7] as Pt, wake: [6, 5] as Pt, board: [4, 3] as Pt, locker: [1, 3] as Pt, lift: [11, 3] as Pt };
 
 /* ------------------------------------------------------------------ */
 /* Builders                                                            */
@@ -231,22 +231,23 @@ function level(b: Builder, L: MineLevel, portals: MapDef['portals']): MapDef {
 }
 
 export function buildLampHouse(front: Pt): MapDef {
-  const b = shell(22, 14, T.LAMP_FLOOR, 11);
+  // One tight room: the locker and the carbide tin, the In-and-Out Board, the biscuit cupboard and the
+  // timber rack along the back wall, the bench, and the lift cage in the corner.
+  const b = shell(13, 9, T.LAMP_FLOOR, 6);
   put(b, LAMP_HOUSE.locker[0], LAMP_HOUSE.locker[1], O.LOCKER);
-  put(b, 5, 3, O.CARBIDE, 'The lamp-house carbide tin, dented, half full of grey pellets. It smells of garlic and pennies.');
+  put(b, 2, 3, O.CARBIDE, 'The lamp-house carbide tin, dented, half full of grey pellets. It smells of garlic and pennies.');
   b.place(LAMP_HOUSE.board[0], LAMP_HOUSE.board[1], O.INOUT_BOARD, 2, 1);
-  put(b, 11, 3, O.SHELF, 'The 1978 board, the checks all taken down now. Over the pegs somebody has chalked, small: "312 -- OUT. -- W."');
-  put(b, 12, 3, O.SHELF, 'Rows of brass lamp hooks, and a hand-lettered sign: "NO MAN GOES DOWN WITHOUT A CANARY, A FIRE BOSS, AND HIS SUPPER."');
-  put(b, 14, 3, O.CUPBOARD);
-  put(b, 17, 3, O.TIMBER_RACK);
+  put(b, 7, 3, O.SHELF, 'The 1978 board, the checks all taken down now. Over the pegs somebody has chalked, small: "312 -- OUT. -- W." Above it, a hand-lettered sign: "NO MAN GOES DOWN WITHOUT A CANARY, A FIRE BOSS, AND HIS SUPPER."');
+  put(b, 8, 3, O.CUPBOARD);
+  put(b, 9, 3, O.TIMBER_RACK);
   put(b, LAMP_HOUSE.lift[0], LAMP_HOUSE.lift[1], O.LIFT);
-  put(b, 12, 8, O.BENCH, 'The lamp-house bench, worn smooth. Men laced their boots here for sixty years.');
-  put(b, 2, 9, O.SHELF, 'Hard hats from 1978 on one shelf, leather caps from 1914 on the shelf below. Somebody has dusted them.');
-  put(b, 19, 9, O.ORE_CART, 'An ore car on a stub of rail, loaded with fresh-cut hemlock and a coil of shot-firer\'s wire.');
-  b.setO(6, 1, O.WINDOW); b.setO(15, 1, O.WINDOW);
+  put(b, 5, 6, O.BENCH, 'The lamp-house bench, worn smooth. Men laced their boots here for sixty years.');
+  put(b, 1, 6, O.SHELF, 'Hard hats from 1978 on one shelf, leather caps from 1914 on the shelf below. Somebody has dusted them.');
+  put(b, 11, 6, O.ORE_CART, 'An ore car on a stub of rail, loaded with fresh-cut hemlock and a coil of shot-firer\'s wire.');
+  b.setO(3, 1, O.WINDOW); b.setO(9, 1, O.WINDOW);
   return wrap(b, 'LAMP_HOUSE', 'The No. 3 Lamp House', {
     indoor: true, battleColors: [P.SHADOW, P.AMBER],
-    portals: [{ x: 11, y: 13, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: front[0], ty: front[1], dir: 'down', closedMsg: '' }],
+    portals: [{ x: 6, y: 8, w: 1, h: 1, to: 'PINE_HOLLOW_TOWN', tx: front[0], ty: front[1], dir: 'down', closedMsg: '' }],
   });
 }
 

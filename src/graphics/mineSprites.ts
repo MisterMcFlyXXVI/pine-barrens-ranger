@@ -257,6 +257,16 @@ function cupboard(): Canv {
   }, true);
 }
 
+/** A pitch torch on an iron stake, spitting. */
+function torch(f: number): Canv {
+  return art(16, 22, (p) => {
+    p.vline(7, 9, 21, SHADOW); p.vline(8, 9, 21, TWILIGHT); p.hline(5, 10, 21, SHADOW);
+    p.rect(6, 7, 4, 3, RUST); p.hline(6, 9, 8, AMBER);
+    p.rect(6, 3 - f, 4, 4 + f, RED); p.rect(7, 2 - f, 2, 4, AMBER); p.px(7 + f, 1 - f, LANTERN); p.px(8, 4, LANTERN);
+    p.px(5 + f * 5, 2, AMBER);
+  }, true);
+}
+
 /* ---------------- figures ---------------- */
 
 /** Coal-Chewer: a husk with an ember throat, jaw working. */
@@ -363,6 +373,7 @@ export function bakeMine(): void {
   MO.brattice = [brattice(0), brattice(1)];
   MO.firstAid = [firstAid()];
   MO.cupboard = [cupboard()];
+  MO.torch = [torch(0), torch(1)];
   MO.chewer = [chewer(0), chewer(1)];
   MO.foreman = [foreman(0), foreman(1)];
   MO.spirit = [spirit(0), spirit(1)];
@@ -375,6 +386,7 @@ export function bakeMine(): void {
   ICON.carbide_pellets = art(16, 16, (p) => { for (const [x, y] of [[5, 9], [9, 8], [7, 11], [10, 11], [6, 6]]) { p.ellipse(x, y, 2, 1.6, TWILIGHT); p.px(x - 1, y - 1, MIST); } }, true);
   ICON.seep_water = art(16, 16, (p) => { p.rect(5, 4, 6, 10, MIST); p.rect(6, 6, 4, 7, TWILIGHT); p.hline(6, 9, 6, FOG); p.rect(6, 2, 4, 2, RUST); }, true);
   ICON.hemlock_prop = art(16, 16, (p) => { p.line(3, 13, 12, 2, AMBER); p.line(4, 13, 13, 2, RUST); p.px(12, 2, LANTERN); p.px(6, 10, MOSS); }, true);
+  ICON.pitch_torch = art(16, 16, (p) => { p.line(4, 14, 9, 6, SHADOW); p.line(5, 14, 10, 6, TWILIGHT); p.rect(9, 4, 3, 3, RUST); p.rect(9, 1, 3, 3, RED); p.px(10, 1, AMBER); p.px(10, 0, LANTERN); }, true);
   ICON.miner_biscuit = art(16, 16, (p) => { p.ellipse(8, 9, 5, 3.5, AMBER); p.ellipse(8, 8, 4, 2.5, LANTERN); p.px(6, 8, RUST); p.px(10, 9, RUST); }, true);
   ICON.black_powder = art(16, 16, (p) => { p.rect(4, 4, 8, 9, FOG); p.rect(5, 5, 6, 7, MOON); p.hline(5, 10, 8, VOID); p.line(12, 6, 15, 2, AMBER); }, true);
   ICON.blasting_box = art(16, 16, (p) => { p.rect(3, 7, 10, 7, RUST); p.hline(3, 12, 7, AMBER); p.vline(8, 2, 7, MIST); p.hline(5, 11, 2, MIST); p.px(11, 9, RED); }, true);

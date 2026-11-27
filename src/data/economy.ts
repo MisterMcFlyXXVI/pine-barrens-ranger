@@ -44,6 +44,7 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'r_brass', out: 'brass_bell', qty: 1, inputs: [['scrap_copper', 1], ['silver_silk', 1], ['iron_nail', 1]] },
   { id: 'r_silver', out: 'silver_bell', qty: 1, inputs: [['silver_silk', 2], ['crushed_quartz', 1], ['iron_nail', 1]] },
   { id: 'r_radio', out: 'static_radio', qty: 1, inputs: [['scrap_copper', 1], ['battery_pack', 1]] },
+  { id: 'r_torch', out: 'pitch_torch', qty: 3, inputs: [['timber', 1], ['pine_resin', 1], ['plant_fiber', 2]] },
   { id: 'r_cider', out: 'apple_cider', qty: 1, inputs: [['wild_apple', 2], ['sweet_sap', 1]] },
   // Taught by the Meissgeiers (folk crafts: on the BLUEPRINTS tab, locked until you learn them)
   { id: 't_mask_goat', out: 'mask_goat', qty: 1, inputs: [['timber', 1], ['charred_wood', 1], ['plant_fiber', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },

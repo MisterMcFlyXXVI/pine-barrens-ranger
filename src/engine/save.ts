@@ -23,6 +23,9 @@ export interface MapSave {
   snares?: Array<[number, string]>;
   /** Pocket Map fog of war (bit-packed, base64). */
   seen?: string;
+  /** Map size when saved: if a room has since been rebuilt to a new size, tile indices no longer line up. */
+  w?: number;
+  h?: number;
 }
 
 export interface Stats {

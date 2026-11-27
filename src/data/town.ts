@@ -71,8 +71,6 @@ export function buildTown(): MapDef {
   b.trail([[17, 34], [17, 36]], 1);
   b.trail([[53, 34], [53, 36]], 1);
   b.trail([[62, 33], [62, 36]], 1);
-  b.trail([[37, 22], [37, 24]], 2);
-  b.trail([[20, 38], [15, 47]], 1); b.trail([[27, 38], [27, 49]], 1); b.trail([[41, 38], [41, 49]], 1);
 
   // Town Square plaza
   const S = TOWN_SQUARE;
@@ -115,13 +113,29 @@ export function buildTown(): MapDef {
   house(49, 42, 3, 'The Calloway house. A sticker on the door: "JUNIOR CRYPTID CLUB -- MEMBERS ONLY."');
   for (let y = 51; y <= 55; y++) for (let x = 31; x <= 36; x++) b.setO(x, y, O.NONE);
   house(31, 51, 4, "Ruth Haddix's house. Chickens complain from somewhere behind it.");
-  b.trail([[55, 37], [55, 44], [54, 47], [51, 47]], 1);
   // The Meissgeiers, at the end of the east lane: half-timbered, with a barn star on the gable.
   for (let y = 49; y <= 53; y++) for (let x = 57; x <= 62; x++) b.setO(x, y, O.NONE);
   house(57, 49, 5, 'The Meissgeier house. Half-timbered, a painted barn star on the gable, and the smell of fresh bread. A carved sign: "BAKERY SATURDAYS -- TOWN SQUARE."');
-  b.trail([[55, 47], [55, 51], [57, 54], [59, 54]], 1);
-  b.trail([[27, 49], [27, 53], [28, 57], [33, 57], [33, 56]], 1);
-  for (const [x, y] of [[20, 38], [27, 38], [41, 38], [57, 38], [10, 38], [47, 38]]) if (b.g(x, y) !== T.PATH) b.setO(x, y, O.LAMP);
+  // The museum's stone walk down to the square.
+  for (let y = 22; y <= 23; y++) for (let x = 36; x <= 38; x++) { b.setG(x, y, T.PLAZA); b.setO(x, y, O.NONE); }
+  // Front doors face south, away from Main Street: a lane runs along the fronts of the houses, with short
+  // walks to each door, and connector lanes up to Main Street *between* the houses (never under them).
+  const walk = (pts: Array<[number, number]>) => {
+    for (let k = 0; k + 1 < pts.length; k++) {
+      const [ax, ay] = pts[k], [bx, by] = pts[k + 1];
+      for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) {
+        if (!b.in(x, y) || b.structAt.has(b.i(x, y))) continue;
+        b.setG(x, y, T.PATH);
+        if (b.o(x, y) !== O.BLOCK) b.setO(x, y, O.NONE);
+      }
+    }
+  };
+  walk([[14, 49], [55, 49]]);                               // Hollow Lane, along the house fronts
+  walk([[14, 47], [14, 49]]); walk([[51, 47], [51, 49]]);   // Agnes's and the Calloways' front walks (Barney's and the Miller-Thornes' doors open right onto the lane)
+  walk([[20, 37], [20, 49]]); walk([[34, 37], [34, 49]]); walk([[46, 37], [46, 49]]); // up to Main Street between the houses
+  walk([[55, 37], [55, 54], [59, 54]]);                     // the east lane, past the Calloways to the Meissgeiers
+  walk([[30, 49], [30, 56], [33, 56]]);                     // round the side of Ruth's to her front door
+  for (const [x, y] of [[21, 38], [27, 38], [35, 38], [41, 38], [57, 38], [10, 38], [47, 38], [22, 50], [44, 50]]) if (b.g(x, y) !== T.PATH) b.setO(x, y, O.LAMP);
   b.setO(23, 34, O.LAMP); b.setO(49, 34, O.LAMP);
 
   // Hedges & greenery
