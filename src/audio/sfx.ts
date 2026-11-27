@@ -11,6 +11,10 @@ export type Wave = OscillatorType;
 class Sfx {
   private ac: AudioContext | null = null;
   private master: GainNode | null = null;
+  /** Separate volume knobs under the master: sound effects and music. */
+  private sfxBus: GainNode | null = null;
+  private musicBus: GainNode | null = null;
+  private vol = { music: 0.8, sfx: 0.8 };
   private noiseBuf: AudioBuffer | null = null;
   muted: boolean;
   private stepFlip = false;
@@ -31,6 +35,12 @@ class Sfx {
       this.master = this.ac.createGain();
       this.master.gain.value = this.muted ? 0 : 0.42;
       this.master.connect(this.ac.destination);
+      this.sfxBus = this.ac.createGain();
+      this.sfxBus.gain.value = this.curve(this.vol.sfx);
+      this.sfxBus.connect(this.master);
+      this.musicBus = this.ac.createGain();
+      this.musicBus.gain.value = this.curve(this.vol.music);
+      this.musicBus.connect(this.master);
       const len = this.ac.sampleRate;
       this.noiseBuf = this.ac.createBuffer(1, len, this.ac.sampleRate);
       const d = this.noiseBuf.getChannelData(0);
@@ -48,7 +58,18 @@ class Sfx {
 
   /** Shared output for the music engine (muting the master silences both). */
   output(): { ac: AudioContext; dest: AudioNode } | null {
-    return this.ac && this.master ? { ac: this.ac, dest: this.master } : null;
+    return this.ac && this.musicBus ? { ac: this.ac, dest: this.musicBus } : null;
+  }
+
+  /** Perceptual-ish volume curve (0-1 in, gain out). */
+  private curve(v: number): number { return v <= 0 ? 0 : v * v; }
+
+  /** Music and sound-effect volume, 0-100 each (Settings). */
+  setVolumes(music: number, sfxVol: number): void {
+    this.vol = { music: music / 100, sfx: sfxVol / 100 };
+    if (!this.ac) return;
+    this.musicBus?.gain.setTargetAtTime(this.curve(this.vol.music), this.ac.currentTime, 0.03);
+    this.sfxBus?.gain.setTargetAtTime(this.curve(this.vol.sfx), this.ac.currentTime, 0.03);
   }
 
   private ready(): AudioContext | null {
@@ -68,7 +89,7 @@ class Sfx {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(this.sfxBus ?? this.master);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
@@ -89,7 +110,7 @@ class Sfx {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(this.master);
+    src.connect(f).connect(g).connect(this.sfxBus ?? this.master);
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + 0.02);
   }
@@ -197,6 +218,10 @@ class Sfx {
   /* ---- UI ---- */
   blip(): void { this.tone('square', 880, 880, 0.03, 0.05); }
   type(): void { this.tone('square', 1200 + Math.random() * 120, 1200, 0.015, 0.025); }
+  /** The hound pup: two little yips. */
+  bark(): void { this.tone('square', 700, 520, 0.07, 0.05); this.tone('square', 760, 560, 0.07, 0.05, 0.12); }
+  /** The raven: a soft, gravelly caw. */
+  caw(): void { this.noise(0.22, 0.05, 'bandpass', 900, 700, 3); this.tone('sawtooth', 330, 260, 0.2, 0.025); }
   /** A speaker's typing voice: their pitch, wobbling a little like speech. */
   voice(wave: Wave, f: number, lilt: number): void {
     const k = 1 + (Math.random() * 2 - 1) * lilt;

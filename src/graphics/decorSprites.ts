@@ -411,6 +411,47 @@ function porchRadio(glow: boolean): Canv {
   }, 16, 16, true);
 }
 
+/** Seasonal gathering stalls (Calendar). 32x32, anchored at the bottom-left of a 2x2 area. */
+function eventProp(kind: string, f: number): Canv {
+  return art((p) => {
+    const fire = (x: number, y: number) => { p.rect(x, y, 6, 2, RUST); p.px(x + 1, y - 1 - f, RED); p.px(x + 3, y - 2 + f, AMBER); p.px(x + 4, y - 1, LANTERN); p.px(x + 2, y - 2, LANTERN); };
+    if (kind === 'apple_butter') {
+      // Copper kettle on a tripod over a wood fire, the long stirring paddle leaning in.
+      p.line(6, 30, 12, 10, SHADOW); p.line(26, 30, 20, 10, SHADOW); p.line(16, 31, 16, 10, SHADOW);
+      fire(13, 29);
+      p.rect(9, 17, 14, 9, RUST); p.hline(9, 22, 17, AMBER); p.hline(10, 21, 25, CRAN); p.rect(10, 18, 3, 6, AMBER);
+      p.rect(10, 16, 12, 2, CRAN); p.hline(11, 20, 16, RED); // apple butter
+      p.line(18, 17, 27, 4, AMBER); p.rect(26, 2, 3, 3, RUST);
+      for (let k = 0; k < 3; k++) p.px(12 + k * 4, 13 - ((f + k) % 2), FOG);
+      return;
+    }
+    if (kind === 'ramp_feed') {
+      // Trestle table with two skillets of ramps and potatoes, a bushel basket.
+      p.rect(1, 20, 30, 3, AMBER); p.hline(1, 30, 20, LANTERN); p.vline(3, 23, 30, RUST); p.vline(28, 23, 30, RUST);
+      for (const x of [4, 17]) { p.rect(x, 16, 10, 4, SHADOW); p.rect(x + 1, 16, 8, 2, AMBER); p.px(x + 2, 16, MOSS); p.px(x + 5, 16, FERN); p.px(x + 7, 17, MOSS); p.hline(x + 10, x + 12, 18, SHADOW); }
+      for (let k = 0; k < 4; k++) p.px(6 + k * 6, 13 - ((f + k) % 2), FOG);
+      p.rect(11, 25, 8, 6, RUST); p.hline(11, 18, 25, AMBER); for (const x of [12, 14, 16]) p.vline(x, 23, 25, FOREST); p.px(13, 22, MOSS); p.px(15, 22, MOSS);
+      return;
+    }
+    if (kind === 'buckwheat') {
+      // Long table, a griddle with a stack of buckwheat cakes and sausage coils.
+      p.rect(1, 21, 30, 3, AMBER); p.hline(1, 30, 21, LANTERN); p.vline(3, 24, 30, RUST); p.vline(28, 24, 30, RUST);
+      p.rect(3, 17, 13, 4, VOID); p.hline(3, 15, 17, SHADOW); for (const x of [5, 9, 12]) { p.rect(x, 16, 3, 1, AMBER); p.px(x + 1, 15, RUST); }
+      p.rect(19, 15, 6, 6, RUST); for (let y = 15; y < 21; y += 2) p.hline(19, 24, y, AMBER); p.hline(20, 23, 14, LANTERN); // the stack
+      p.rect(26, 18, 4, 3, CRAN); p.px(27, 18, RED);
+      for (let k = 0; k < 3; k++) p.px(6 + k * 4, 12 - ((f + k) % 2), FOG);
+      return;
+    }
+    // Old Christmas: a ring of tin lanterns on posts around a pot of hot cider.
+    for (const [x, y] of [[3, 14], [27, 14], [8, 6], [22, 6]] as Array<[number, number]>) {
+      p.vline(x + 1, y + 4, 30, SHADOW); p.rect(x, y, 3, 4, (f + x) % 2 ? LANTERN : AMBER); p.px(x + 1, y - 1, SHADOW);
+    }
+    p.rect(11, 22, 10, 7, SHADOW); p.hline(11, 20, 22, MIST); p.rect(12, 21, 8, 2, CRAN);
+    fire(13, 30);
+    for (let k = 0; k < 3; k++) p.px(13 + k * 3, 18 - ((f + k) % 2), FOG);
+  }, 32, 32, true);
+}
+
 /** The town gazebo (Restoration Ledger P3): 3 tiles wide, pointed roof, lanterns under the eaves. */
 function gazebo(night: boolean): Canv {
   return art((p) => {
@@ -581,6 +622,7 @@ export function bakeDecor(): void {
   PROP.porchradio = [porchRadio(false), porchRadio(true)];
   PROP.oldtrap = [oldTrap()];
   PROP.gazebo = [gazebo(false), gazebo(true)];
+  for (const k of ['ramp_feed', 'apple_butter', 'buckwheat', 'old_christmas']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
   PROP.ledger = [ledgerStand()];
   for (const k of ['pie', 'cider', 'lantern', 'crafts']) PROP[`stall_${k}`] = [stall(0, k), stall(1, k), stall(2, k)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];

@@ -2,6 +2,12 @@
  * Game orchestrator: owns world state, runs the update loop, resolves tool
  * use / interaction, and drives the sleep → grow → ship → save day cycle.
  */
+import { recordPrints, goldCount, backfillAlbum } from './album';
+import { markMilestone } from './barks';
+import { morningNews, eveningEventToday, eventNow, eventStallAt } from './calendar';
+import { Companion, petPet, petOvernight, adoptionTick } from './pet';
+import { NamePrompt } from '../ui/namePrompt';
+import { onSettings, settings, adoptSaveSettings } from './settings';
 import { LORE } from '../data/lore';
 import { DEFAULT_LOOK, bodyFor, setPlayerName, nameOrRanger } from '../data/appearance';
 import type { Appearance } from '../data/appearance';
@@ -149,13 +155,18 @@ export class Game {
   // ---- Phase 3: town progression & townsfolk ----
   progress = new Progress();
   readonly townsfolk = new Townsfolk();
+  /** Your cabin companion (pup, cat or raven). */
+  readonly companion = new Companion();
   private talks = new Map<string, number>();
   /** The porch radio has crackled to let you know someone's calling (once a night). */
   private radioHintDay = 0;
   private campaignT = 1;
   private pageSpots: Map<string, Array<{ id: number; x: number; y: number }>> | null = null;
 
-  constructor(readonly canvas: HTMLCanvasElement, readonly g: CanvasRenderingContext2D) {}
+  constructor(readonly canvas: HTMLCanvasElement, readonly g: CanvasRenderingContext2D) {
+    // Volumes follow Settings (sliders on the title screen and in the Journal).
+    onSettings((st) => sfx.setVolumes(st.music, st.sfx));
+  }
 
   /* ------------------------------------------------------------ */
   /* Setup                                                         */
@@ -242,6 +253,7 @@ export class Game {
     this.sel = Math.min(HOTBAR_SIZE - 1, Math.max(0, d.sel));
     this.look = { ...d.look };
     this.setAppearance(d.appearance ?? DEFAULT_LOOK);
+    adoptSaveSettings(d.settings);
     this.wardrobe = new Set([...this.starterWardrobe(), ...d.wardrobe]);
     this.maps.clear();
     for (const [id, ms] of Object.entries(d.maps) as Array<[MapId, MapSave]>) {
@@ -277,6 +289,7 @@ export class Game {
     // The Grant used to repair the station: keep it repaired for those saves (now a Ledger project).
     if (this.progress.has('grant')) this.progress.flags.add('proj_station');
     applyRestoration(this);
+    backfillAlbum(this);
     // Story letters for milestones reached before letters existed: past Act II they're filed away, otherwise delivered now.
     for (const l of LETTERS) {
       if (this.progress.donations < l.donations || l.id in this.progress.mail) continue;
@@ -321,6 +334,7 @@ export class Game {
       sel: this.sel,
       look: { ...this.look },
       appearance: { ...this.appearance },
+      settings: { ...settings() },
       wardrobe: [...this.wardrobe],
       map: this.cur.id,
       px: this.player.tx,
@@ -437,7 +451,7 @@ export class Game {
 
   isFestival(): boolean {
     // Sunday nights once the museum holds 24 specimens, plus the very first festival (the night Agnes's letter arrives).
-    return this.progress.has('festival') && (this.clock.weekday === 'Sun' || this.clock.day === this.progress.firstFest) && this.clock.minutes >= 1080;
+    return this.progress.has('festival') && (this.clock.weekday === 'Sun' || this.clock.day === this.progress.firstFest) && this.clock.minutes >= 1080 && !eveningEventToday(this);
   }
 
   /** Outfitter upgrade price (Gideon's 4-heart discount stacks with the Shimmer Suit). */
@@ -777,6 +791,10 @@ export class Game {
     setPlayerName(this.appearance.name);
   }
 
+  /** Screen shake until this time (render reads it; off in Settings). */
+  shakeT = 0;
+  shake(secs: number): void { this.shakeT = Math.max(this.shakeT, this.time + secs); }
+
   /** Run once every dialog is closed (e.g. walk somewhere after a scene). */
   afterOverlays(fn: () => void): void { this.afterQ.push(fn); }
   private afterQ: Array<() => void> = [];
@@ -824,6 +842,7 @@ export class Game {
     this.toasts = this.toasts.filter((t) => t.t > 0);
 
     CharacterCreator.sweep(this.overlays);
+    NamePrompt.sweep(this.overlays);
     const top = this.overlays[this.overlays.length - 1];
     if (top) {
       if (this.fadeDir === 0) top.update(this, dt);
@@ -834,16 +853,17 @@ export class Game {
       this.handleHotbarInput();
       if (this.clock.tick(dt)) this.passOut();
       this.townsfolk.update(this, dt);
+      this.companion.update(this, dt);
       this.sightings.update(this, dt);
       this.campaignT -= dt;
-      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); needsWatch.tick(this); }
+      if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); adoptionTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
       this.wildlife.update(this, dt);
       this.updateAmbience(dt);
     }
 
     const outdoors = !this.cur.def.indoor;
-    if (this.weatherFx.update(dt, this.weatherNow(), outdoors) && outdoors) sfx.thunder();
+    if (this.weatherFx.update(dt, this.weatherNow(), outdoors) && outdoors) { sfx.thunder(); this.shake(0.6); }
     this.particles.update(dt);
     this.cam.follow(this.player.x + 8, this.player.y + 8, this.cur.w * 16, this.cur.h * 16, dt);
     this.prompt = this.overlays.length || this.fadeDir ? '' : this.computePrompt();
@@ -914,7 +934,7 @@ export class Game {
     if (m.def.indoor) return 'interior';
     const tags = timeTags(this.clock.minutes);
     const night = tags.includes('NIGHT') || tags.includes('WITCHING');
-    if (m.id === 'PINE_HOLLOW_TOWN') return this.isFestival() || porchMusic(this) ? 'festival' : night ? 'night' : 'town';
+    if (m.id === 'PINE_HOLLOW_TOWN') return this.isFestival() || porchMusic(this) || eventNow(this) ? 'festival' : night ? 'night' : 'town';
     if (night) return 'night';
     if (m.id === 'CABIN_YARD') return 'cabin';
     if (m.id === 'CRANBERRY_BOG_AND_SPRINGS') return 'bog';
@@ -1123,6 +1143,15 @@ export class Game {
   startEncounter(def: CryptidDef, variant: Variant, slope: boolean, summoned: boolean, approach?: Approach): void {
     this.player.chain = false;
     this.openOverlay(new Encounter(this, { def, variant, slope, summoned, approach }));
+  }
+
+  /** After an encounter commits to the Dex: album prints and news for the townsfolk. */
+  onLogged(def: CryptidDef, variant: Variant, beforeStars: number, firstLog: boolean, rareNew: boolean): void {
+    const made = recordPrints(this, def, variant, beforeStars, rareNew);
+    if (made.length) this.toast(`New ${made.join(' & ')} print in your Field Photo Album! (${goldCount(this)}/${CRYPTIDS.length} Gold)`);
+    if (firstLog && def.id === 'mothman') markMilestone(this, 'mothman');
+    if (firstLog && ['sasquatch', 'wendigo', 'thunderbird', 'awful'].includes(def.id)) markMilestone(this, `warden_${def.id}`);
+    if (rareNew && variant !== 'normal') markMilestone(this, `rare_${def.id}:${variant}`);
   }
 
   /** Called by the encounter as it closes. */
@@ -1561,6 +1590,8 @@ export class Game {
     const npc = this.npcFacing(tx, ty);
     if (npc) { talkTo(this, npc); return true; }
     if (visitorAt(this, tx, ty)) return true;
+    if (this.progress.pet && this.companion.at(this, tx, ty)) { petPet(this); return true; }
+    if (eventStallAt(this, tx, ty)) return true;
     const track = this.trackAt(tx, ty);
     if (track) { this.inspectTrack(track); return true; }
     const sign = this.sightings.at(tx, ty);
@@ -2080,6 +2111,9 @@ export class Game {
       lines.push(lost > 0 ? `Someone carried you home... ${lost}g went missing.` : 'Someone carried you home.');
     }
 
+    // Remember last night's weather: the town will talk about it in the morning.
+    if (this.dayWeather.evening === 'STORM' || this.dayWeather.morning === 'STORM') markMilestone(this, 'storm');
+    if (this.dayWeather.evening === 'FOG') markMilestone(this, 'fog');
     this.clock.newDay();
     this.clock.minutes = DAY_START;
     this.summoned.clear();
@@ -2097,10 +2131,13 @@ export class Game {
     this.stats.daysPlayed++;
     const kids = rescueOvernight(this);
     if (kids) lines.push(kids);
+    lines.push(...morningNews(this.clock.day, this.progress.flags.has('finale')));
     if (this.unreadLetters().length) lines.push('There\'s a letter waiting in your mailbox.');
     if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Park!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');
     for (const m of this.maps.values()) { m.spawnForage(this.clock.day); checkSnares(m); }
+    const gift = petOvernight(this);
+    if (gift) lines.push(gift);
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
     this.cur = this.getMap(BED_SPAWN.map);
     lines.push(this.saveGame() ? 'Field journal saved.' : 'Warning: could not save.');

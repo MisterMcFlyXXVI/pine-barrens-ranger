@@ -10,9 +10,10 @@ import { accountEmail } from '../engine/account';
 import { accountModalOpen, openAccount } from './accountModal';
 import { hash2, touchOn } from '../util';
 import { inRect, panel, Rect } from './panel';
+import { SettingsMenu } from './settingsMenu';
 
-type Opt = 'resume' | 'continue' | 'new' | 'export' | 'import' | 'account';
-const LABEL: Record<Opt, string> = { resume: 'RESUME', continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT' };
+type Opt = 'resume' | 'continue' | 'new' | 'export' | 'import' | 'account' | 'settings';
+const LABEL: Record<Opt, string> = { resume: 'RESUME', continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT', settings: 'SETTINGS' };
 
 export class TitleScreen {
   private sel = 0;
@@ -22,9 +23,11 @@ export class TitleScreen {
   private msg = '';
   private msgT = 0;
   private confirmNew = false;
+  /** Settings screen open over the title. */
+  private sub: SettingsMenu | null = null;
 
   private options(): Opt[] {
-    const base: Opt[] = this.save ? ['continue', 'new', 'export', 'import', 'account'] : ['new', 'import', 'account'];
+    const base: Opt[] = this.save ? ['continue', 'new', 'export', 'import', 'account', 'settings'] : ['new', 'import', 'account', 'settings'];
     return this.resume ? ['resume', ...base] : base;
   }
 
@@ -46,6 +49,7 @@ export class TitleScreen {
     const inp = game.input;
     this.msgT = Math.max(0, this.msgT - 1 / 60);
     if (accountModalOpen()) return;
+    if (this.sub) { this.sub.update(game); if (this.sub.closed) this.sub = null; return; }
     const opts = this.options();
     if (this.sel >= opts.length) this.sel = 0;
     if (this.confirmNew) {
@@ -64,6 +68,7 @@ export class TitleScreen {
     sfx.unlock();
     const o = opts[this.sel];
     if (o === 'account') { sfx.open(); openAccount(); return; }
+    if (o === 'settings') { sfx.open(); this.sub = new SettingsMenu(); return; }
     if (o === 'resume' && this.resume) game.startFromTitle(this.resume);
     else if (o === 'continue' && this.save) game.startFromTitle(this.save, true);
     else if (o === 'new') { if (this.save || this.resume) { this.confirmNew = true; sfx.alert(); } else game.startFromTitle(null); }
@@ -75,6 +80,11 @@ export class TitleScreen {
   }
 
   draw(game: Game, g: CanvasRenderingContext2D): void {
+    this.drawTitle(game, g);
+    this.sub?.draw(game, g);
+  }
+
+  private drawTitle(game: Game, g: CanvasRenderingContext2D): void {
     const W = game.w, H = game.h, t = game.time;
     const bands = [P.VOID, P.SHADOW, P.PINE, P.TWILIGHT];
     const bh = Math.ceil((H * 0.7) / bands.length);

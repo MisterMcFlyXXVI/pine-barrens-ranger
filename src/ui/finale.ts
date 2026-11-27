@@ -3,6 +3,7 @@
  * Indrid Cold and The Weaver, solved by tuning the Static Radio to the three
  * frequencies hidden in Ranger Vance's journal. Wrong tunings just crackle.
  */
+import { textRate } from '../engine/settings';
 import { speakerOf, voiceOf } from './speaker';
 import type { SpeakerId } from './speaker';
 import { fillName } from '../data/appearance';
@@ -62,7 +63,7 @@ export class FinaleScene implements Overlay {
     const inp = game.input;
     const text = this.text;
     if (this.shown < text.length) {
-      this.shown = Math.min(text.length, this.shown + dt * 55);
+      this.shown = Math.min(text.length, this.shown + dt * textRate(55));
       // Voices over the radio: Indrid's hum, Elias's low crackle.
       this.voiceT += dt;
       const sp = speakerOf(text) ?? (this.reply === null ? (this.beats[this.beat].speaker as SpeakerId | undefined) ?? null : null);

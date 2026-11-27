@@ -1,4 +1,5 @@
 /** Town Restoration Ledger: funding projects, and what each one changes about town life. */
+import { markMilestone } from './barks';
 import type { Game } from './game';
 import { PROJECTS, PROJECT_BY_ID, GAZEBO } from '../data/restoration';
 import type { Project, ProjectId } from '../data/restoration';
@@ -56,6 +57,7 @@ function fund(game: Game, p: Project): void {
   }
   game.gold -= projectGold(game, p);
   game.progress.flags.add(p.flag);
+  markMilestone(game, p.flag);
   applyRestoration(game);
   sfx.fanfare();
   game.openOverlay(new Dialog([...p.done]));

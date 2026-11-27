@@ -3,6 +3,7 @@ import type { Game } from './game';
 import { FRIENDS, FriendId, MAX_HEARTS, POINTS_PER_HEART, isFriend } from '../data/friends';
 import { ITEMS } from '../data/items';
 import { friendMult } from './restoration';
+import { isBirthday, birthdayLine } from './calendar';
 
 export interface FriendState { pts: number; talk: number; gift: number; claimed: number[]; known: string[] }
 
@@ -82,9 +83,12 @@ export function giveGift(game: Game, npcId: FriendId, npcName: string, item: str
   st.gift = game.clock.day;
   if (!st.known.includes(item)) st.known.push(item);
   const before = hearts(game, npcId);
-  const scenes = addPoints(game, npcId, GAIN[t] > 0 ? GAIN[t] * friendMult(game) : GAIN[t]);
-  const line = REACT[t][game.clock.day % REACT[t].length].replace('{item}', ITEMS[item].name);
+  // Birthdays: any gift counts two and a half times (even one they wouldn't normally pick).
+  const bday = isBirthday(game, npcId);
+  const gain = bday ? Math.round(Math.max(GAIN[t], GAIN.neutral) * 2.5) : GAIN[t] > 0 ? GAIN[t] * friendMult(game) : GAIN[t];
+  const scenes = addPoints(game, npcId, gain);
+  const line = bday ? `"${birthdayLine(npcId)}"` : REACT[t][game.clock.day % REACT[t].length].replace('{item}', ITEMS[item].name);
   const after = hearts(game, npcId);
-  const meter = after > before ? `(Friendship grew: ${after}/${MAX_HEARTS} hearts!)` : t === 'dislike' ? '(They didn\'t care for that.)' : `(Friendship: ${after}/${MAX_HEARTS} hearts)`;
+  const meter = bday ? `(Birthday gift! Friendship x2.5: ${after}/${MAX_HEARTS} hearts.)` : after > before ? `(Friendship grew: ${after}/${MAX_HEARTS} hearts!)` : t === 'dislike' ? '(They didn\'t care for that.)' : `(Friendship: ${after}/${MAX_HEARTS} hearts)`;
   return { pages: [`${npcName.split(' ')[0].replace(/"/g, '')}: ${line}`, meter], scenes };
 }

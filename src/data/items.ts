@@ -68,6 +68,7 @@ const base: ItemDef[] = [
   { id: 'squirrel', name: 'Raw Squirrel', kind: 'material', price: 20, stack: 99, desc: 'Mountain staple. Squirrel and dumplings, anyone?' },
   { id: 'grouse', name: 'Ruffed Grouse', kind: 'material', price: 55, stack: 99, desc: 'The drummer of the hardwoods. A rare catch.' },
   { id: 'brook_trout', name: 'Brook Trout', kind: 'forage', price: 40, stack: 99, desc: "West Virginia's state fish. Cold, clear creeks." },
+  { id: 'jay_feather', name: 'Blue Jay Feather', kind: 'forage', price: 15, stack: 99, desc: 'A barred blue feather. Somebody small and proud left it on your doormat.' },
   { id: 'creek_chub', name: 'Creek Chub', kind: 'forage', price: 12, stack: 99, desc: 'Bony little fish. Better smoked into bait.' },
   { id: 'smallmouth_bass', name: 'Smallmouth Bass', kind: 'forage', price: 45, stack: 99, desc: 'Bronze fighter of the lake and canal.' },
   { id: 'channel_catfish', name: 'Channel Catfish', kind: 'forage', price: 50, stack: 99, desc: 'Bites after dark in the bog lake.' },
@@ -152,6 +153,11 @@ const base: ItemDef[] = [
   { id: 'rabbit_haunch', name: 'Rabbit Haunch', kind: 'bait', price: 40, stack: 99, desc: 'Resin-smoked rabbit. Lure: Wampus Cat, Hodag, Dwayyo.' },
   { id: 'pepperoni_roll', name: 'Pepperoni Roll', kind: 'food', price: 20, stack: 20, edible: 45, buff: 'haul', desc: '+45 energy. Long Haul: tools cost 1 energy today. The coal-camp lunch.' },
   { id: 'soup_beans', name: 'Soup Beans & Cornbread', kind: 'food', price: 35, stack: 20, edible: 90, desc: '+90 energy. Pintos, ham hock, a skillet of cornbread.' },
+  // ---- Seasonal community events (Calendar) ----
+  { id: 'ramp_skillet', name: 'Ramps & Taters Skillet', kind: 'food', price: 45, stack: 20, edible: 100, buff: 'haul', desc: '+100 energy. Long Haul: tools cost 1 energy today. The Ramp Feed\'s pride: you\'ll smell of ramps for a week.' },
+  { id: 'apple_butter', name: 'Spiced Apple Butter', kind: 'food', price: 40, stack: 20, edible: 35, buff: 'lucky', desc: '+35 energy. Lucky: double Rare Variant odds today. Stirred all day in a copper kettle.' },
+  { id: 'buckwheat_cakes', name: 'Buckwheat Cakes & Sausage', kind: 'food', price: 50, stack: 20, edible: 90, buff: 'calm', desc: '+90 energy. Steady Nerves: +20% Trust gains today. Buckwheat Festival supper.' },
+  { id: 'hot_cider', name: 'Old Christmas Hot Cider', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today. Mulled with cinnamon and a little black pepper.' },
   { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },
 ];
 

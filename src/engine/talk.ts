@@ -1,4 +1,6 @@
 /** NPC conversations: greetings, chat & rumors, quest offers / progress / hand-ins, role menus. */
+import { isBirthday, birthdayLine } from './calendar';
+import { barkFor } from './barks';
 import type { Game } from './game';
 import type { NpcRT } from './townsfolk';
 import { kidsHiding, rescueKids } from './heartScenes';
@@ -164,7 +166,8 @@ export function talkTo(game: Game, npc: NpcRT): void {
   const w = game.weatherNow();
   const tag = npc.map === npc.stop?.map ? npc.stop?.tag : undefined;
   const pool = (tag && d.lines?.[tag]) || ((w === 'RAIN' || w === 'STORM') && d.lines?.rain) || d.greet;
-  const greet = pool[Math.floor(hash2(game.clock.day, d.name.length + game.talkCount(d.id), 7) * pool.length)];
+  // Something on their mind (a gathering, your news, last night's storm) comes before the usual hello.
+  const greet = barkFor(game, d.id) ?? pool[Math.floor(hash2(game.clock.day, d.name.length + game.talkCount(d.id), 7) * pool.length)];
   const active = QUESTS.find((q) => giverMatches(q, d.id) && p.active(q.id));
   const pages = [`${d.name}: "${greet.replace(/^"|"$/g, '')}"`];
   // Friends greet you by name now and then.
@@ -213,6 +216,17 @@ export function talkTo(game: Game, npc: NpcRT): void {
       for (const s of [...r.scenes].reverse()) game.openOverlay(new Dialog(s));
       if (r.scenes.length) sfx.trustChime();
       game.openOverlay(new Dialog(r.pages));
+    } });
+  }
+  // Elias isn't one for gifts, except on his birthday.
+  if (d.id === 'vance' && held && giftable(held.id) && isBirthday(game, 'vance') && p.days.eliasBday !== game.clock.day) {
+    choices.unshift({ label: 'Birthday gift', fn: () => {
+      const cur = game.selected;
+      if (!cur || cur.id !== held.id) return;
+      game.inv.removeAt(game.sel, 1);
+      p.days.eliasBday = game.clock.day;
+      sfx.trustChime();
+      game.openOverlay(new Dialog([`ELIAS: "${birthdayLine('vance')}"`]));
     } });
   }
   choices.push({ label: 'Chat', fn: chat }, { label: 'Bye', fn: () => undefined });

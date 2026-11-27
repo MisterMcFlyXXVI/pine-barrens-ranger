@@ -21,6 +21,7 @@ import { DIR_VEC } from '../util';
 import { sfx } from '../audio/sfx';
 import { kidsHiding } from './heartScenes';
 import { foggyWeekend } from './restoration';
+import { eventStop } from './calendar';
 import { P } from '../graphics/palette';
 
 const STEP = 0.3;
@@ -128,6 +129,9 @@ export class Townsfolk {
     const id = npc.def.id;
     const held = this.held.get(id);
     if (held) return { ...held.stop, dir: npc.dir };
+    // A town gathering: everybody comes.
+    const ev = eventStop(game, id);
+    if (ev) return ev;
     const hiding = kidsHiding(game, id);
     if (hiding) return { map: 'OLD_GROWTH_AND_SAWMILL', x: hiding[0], y: hiding[1], dir: 'down', wander: 0 };
     if ((id === 'buster' || id === 'toby') && game.progress.stage(id) === 1 && !game.progress.done(id)) {

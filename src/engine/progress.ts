@@ -1,4 +1,7 @@
 /** Phase 3 progression state: quests, donations & milestones, blueprints, tool levels, buffs, displays, board. */
+import type { Print } from './album';
+import type { PetState } from '../data/pets';
+import { PET_KINDS } from '../data/pets';
 import { MILESTONES, Milestone, ToolLine, TOOL_LINES } from '../data/economy';
 import { QUESTS, TRAILS, TrailSpec } from '../data/quests';
 import { getMapDef } from '../data/maps';
@@ -39,6 +42,10 @@ export interface ProgressSave {
   firstFest?: number;
   // Pass B
   days?: Record<string, number>;
+  // Pass C
+  album?: Print[];
+  barks?: Record<string, number>;
+  pet?: PetState | null;
 }
 
 export interface Track {
@@ -84,6 +91,12 @@ export class Progress {
    * (homestead visits), 'rescue' (kids lost at the sawmill), 'foresight', 'porchMusic'.
    */
   days: Record<string, number> = {};
+  /** Field Photo Album prints. */
+  album: Print[] = [];
+  /** Reaction lines already said: "npc:bark" -> day. */
+  barks: Record<string, number> = {};
+  /** Your cabin companion (null = none yet). */
+  pet: PetState | null = null;
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -98,6 +111,7 @@ export class Progress {
       act: this.act, flags: [...this.flags], pages: [...this.pages], visited: [...this.visited], friends: JSON.parse(JSON.stringify(this.friends)),
       reason: this.reason ?? undefined, mail: { ...this.mail }, radioDay: this.radioDay, festRollDay: this.festRollDay, firstFest: this.firstFest,
       days: { ...this.days },
+      album: this.album.map((p) => ({ ...p })), barks: { ...this.barks }, pet: this.pet ? { ...this.pet } : null,
     };
   }
 
@@ -124,6 +138,9 @@ export class Progress {
     p.festRollDay = d.festRollDay ?? 0;
     p.firstFest = d.firstFest ?? 0;
     p.days = { ...(d.days ?? {}) };
+    p.album = (d.album ?? []).map((x) => ({ ...x }));
+    p.barks = { ...(d.barks ?? {}) };
+    p.pet = d.pet && PET_KINDS.includes(d.pet.kind) ? { ...d.pet } : null;
     // The Archive Basement now opens at 6 donations (was 8): don't announce it twice to older saves.
     if (p.claimed.has(8)) p.claimed.add(6);
     return p;

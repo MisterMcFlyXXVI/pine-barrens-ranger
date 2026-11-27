@@ -7,6 +7,7 @@
  * the cryptid (specimen + Dex) / Startle 100% ends it → the camcorder powers off.
  * The rules are unchanged from the GBC split-screen original; only the framing is new.
  */
+import { textRate, settings } from './settings';
 import { arcBonus } from './bonds';
 import type { Game } from './game';
 import type { Overlay } from '../ui/overlay';
@@ -453,12 +454,15 @@ export class Encounter implements Overlay {
   /** Commit observations and outcome to game state (runs once, as the wipe-out starts). */
   private finish(): void {
     const g = this.game, e = g.dex[this.def.id];
+    const before = stars(e), wasLogged = e.logged;
+    const v = this.setup.variant, hadVariant = v === 'albino' ? e.albino : v === 'static' ? e.static : true;
     Object.assign(e, this.mergedObs(e));
     if (this.outcome === 'logged') {
       e.logged = true;
       if (this.setup.variant === 'albino') e.albino = true;
       if (this.setup.variant === 'static') e.static = true;
     }
+    g.onLogged(this.def, v, before, this.outcome === 'logged' && !wasLogged, this.outcome === 'logged' && !hadVariant);
     if (this.outcome === 'forced') g.stamina = Math.max(0, g.stamina - 15);
     g.encounterEnded();
   }
@@ -508,7 +512,7 @@ export class Encounter implements Overlay {
         if (!this.cur) { this.nextMsg(); return; }
         const len = this.cur.text.length;
         if (this.shown < len) {
-          this.shown = Math.min(len, this.shown + dt * 75);
+          this.shown = Math.min(len, this.shown + dt * textRate(75));
           if (inp.pressed('a') || inp.pressed('b') || inp.taps.length) this.shown = len;
           return;
         }
@@ -692,7 +696,7 @@ export class Encounter implements Overlay {
     g.globalAlpha = 1;
     const frame = Math.floor(time * 2.2) % 2;
     const spr = cryptidFrame(this.def.id, this.setup.variant, frame);
-    const sh = this.shake > 0 ? Math.round(Math.sin(time * 70) * 2 * s * this.shake) : 0;
+    const sh = this.shake > 0 && settings().shake ? Math.round(Math.sin(time * 70) * 2 * s * this.shake) : 0;
     const fade = this.outcome === 'bolted' || this.outcome === 'fled' || this.outcome === 'retreat';
     if (fade && !this.queue.length) g.globalAlpha = 0.35;
     g.drawImage(spr, cx - 12 * s + sh, cy - 22 * s, 24 * s, 24 * s);

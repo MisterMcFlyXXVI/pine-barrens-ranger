@@ -1,4 +1,12 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
+import { PhotoAlbum } from './album';
+import { goldCount } from '../engine/album';
+import { SettingsMenu } from './settingsMenu';
+import { EVENTS } from '../data/calendar';
+import { seasonIndex, dayOfSeason, eventOn, birthdaysOn, friendName } from '../engine/calendar';
+import { PETS } from '../data/pets';
+import { bondWord } from '../engine/pet';
+import { textRate } from '../engine/settings';
 import { speakerOf, speakerSprite, speakerName, voiceOf, stripLabel } from './speaker';
 import type { SpeakerId } from './speaker';
 import { fillName } from '../data/appearance';
@@ -94,7 +102,7 @@ export class Dialog implements Overlay {
     const inp = game.input;
     const text = this.pages[this.page];
     if (this.shown < text.length) {
-      this.shown = Math.min(text.length, this.shown + dt * 70);
+      this.shown = Math.min(text.length, this.shown + dt * textRate(70));
       this.blipAcc += dt;
       const voice = voiceOf(this.speakers[this.page]);
       // Speakers "talk" a syllable every few letters; narration ticks like a typewriter.
@@ -446,15 +454,29 @@ export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
-  private static readonly PAGES = 7;
+  private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls'] as const;
+  private static readonly PAGES = JournalMenu.IDS.length;
+  /** The page's action button (Photo Album, Settings), for A and taps. */
+  private action: { rect: Rect; open: () => void } | null = null;
 
   update(game: Game): void {
     const inp = game.input;
     const n = JournalMenu.PAGES;
     for (const t of inp.taps) if (tapMore(game, this.mores, t)) return;
+    const act = this.action;
+    if (act && (inp.pressed('a') || inp.taps.some((t) => inRect(act.rect, t.x, t.y)))) { sfx.open(); act.open(); return; }
     if (inp.repeat('left')) { this.page = (this.page + n - 1) % n; sfx.blip(); }
     if (inp.repeat('right') || inp.pressed('a') || inp.taps.length) { this.page = (this.page + 1) % n; sfx.blip(); }
     if (inp.pressed('b') || inp.pressed('dex')) { this.closed = true; sfx.cancel(); }
+  }
+
+  /** A button drawn at the bottom of the page. */
+  private button(g: CanvasRenderingContext2D, label: string, x: number, y: number, w: number, open: () => void): void {
+    const bw = textWidth(label) + 14, bx = x + Math.floor((w - bw) / 2);
+    g.fillStyle = hex(P.RUST); g.fillRect(bx, y, bw, 11);
+    g.fillStyle = hex(P.CRAN); g.fillRect(bx, y + 10, bw, 1);
+    drawText(g, label, bx + 7, y + 2, P.LANTERN);
+    this.action = { rect: { x: bx, y, w: bw, h: 11 }, open };
   }
 
   draw(game: Game, g: CanvasRenderingContext2D): void {
@@ -462,14 +484,30 @@ export class JournalMenu implements Overlay {
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
     this.mores = [];
-    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'TOWNSFOLK', 'ALMANAC & KIT', 'CONTROLS'];
+    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'TOWNSFOLK', 'CALENDAR', 'PHOTO ALBUM', 'ALMANAC & KIT', 'CONTROLS & SETTINGS'];
     drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
+    this.action = null;
     drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
     let ly = y + 16;
     const line = (s: string, c: number = P.RUST) => { drawText(g, s, lx, ly, c); ly += 8; };
-    const page = this.page - 1;
-    if (this.page === 0) {
+    const id = JournalMenu.IDS[this.page];
+    if (id === 'calendar') { this.drawCalendar(game, g, x, y, w, h); return; }
+    if (id === 'album') {
+      const gold = goldCount(game), rare = game.progress.album.filter((p) => p.variant !== 'normal').length;
+      line(`${gold} / ${CRYPTIDS.length} GOLD PRINTS`, P.CRAN);
+      line(`${rare} RARE VARIANT PRINTS`, P.VIOLET);
+      ly += 2;
+      wrapText('Every 3-star Gold mastery and every Rare Variant you log is printed here, stamped with the season, day, time, place and weather of the shot.', w - 12).forEach((l) => line(l, P.RUST));
+      const last = [...game.progress.album].filter((p) => p.day).sort((a, b) => b.day - a.day || b.minutes - a.minutes)[0];
+      if (last) { ly += 2; line(`LATEST: ${CRYPTIDS.find((c) => c.id === last.id)?.name.toUpperCase() ?? ''}`, P.FOREST); }
+      this.button(g, 'OPEN THE ALBUM (A)', x, y + h - 26, w, () => game.openOverlay(new PhotoAlbum()));
+      return;
+    }
+    // The original pages, by their old order.
+    const legacy = ({ campaign: 0, journal: 1, quests: 2, materials: 3, folks: 4, almanac: 5, controls: 6 } as Record<string, number>)[id];
+    const page = legacy - 1;
+    if (legacy === 0) {
       const act = game.progress.act;
       const [num, title] = ACT_TITLES[act];
       line(`${num}: ${title.toUpperCase()}`, P.CRAN);
@@ -581,6 +619,8 @@ export class JournalMenu implements Overlay {
       const bonds = bondsMade(game);
       if (bonds.length) line(`HOMESTEAD BONDS: ${bonds.length}/5`, P.FOREST);
       const keeps = ['radio_key', 'conductor_whistle', 'lamphouse_key', 'binocular_strap', 'handcar_crank'].filter((id) => game.keepsake(id));
+      const pet = game.progress.pet;
+      if (pet) wrapText(`COMPANION: ${pet.name.toUpperCase()}, ${PETS[pet.kind].title.toUpperCase()} (${bondWord(pet.bond).toUpperCase()}). ${PETS[pet.kind].perk.toUpperCase()}`, w - 12).forEach((l) => line(l, P.FOREST));
       if (keeps.length) wrapText(`KEEPSAKES: ${keeps.map((id) => ITEMS[id].name).join(', ')}`, w - 12).forEach((l) => line(l, P.AMBER));
     } else {
       const rows = touchOn() ? [
@@ -598,7 +638,39 @@ export class JournalMenu implements Overlay {
         'SLEEP IN BED TO SAVE & END THE DAY', 'HOLD A TO KEEP SWINGING A TOOL',
       ];
       rows.forEach((r) => line(r));
+      this.button(g, 'SETTINGS: TEXT SPEED, VOLUME, SHAKE (A)', x, y + h - 22, w, () => game.openOverlay(new SettingsMenu()));
     }
+  }
+
+  /** This season at a glance: gatherings and birthdays. */
+  private drawCalendar(game: Game, g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+    const day = game.clock.day, season = seasonIndex(day), today = dayOfSeason(day);
+    const finale = game.progress.flags.has('finale');
+    const names = ['SPRING', 'SUMMER', 'FALL', 'WINTER'];
+    drawTextRight(g, `${names[season]}, YEAR ${game.clock.year}`, x + w - 5, y + 14, P.RUST);
+    const cw = Math.floor((w - 12) / 7), ch = 10, gx = x + 6, gy = y + 22;
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((d, i) => drawTextCentered(g, d, gx + i * cw + cw / 2, gy, P.RUST));
+    // The season starts on whatever weekday day 1 fell on.
+    const first = day - (today - 1);
+    const offset = (first - 1) % 7;
+    for (let d = 1; d <= 28; d++) {
+      const k = d - 1 + offset, col = k % 7, row = Math.floor(k / 7);
+      const cx = gx + col * cw, cy = gy + 8 + row * ch;
+      const ev = eventOn(first + d - 1);
+      const bdays = birthdaysOn(season, d).filter((b) => b !== 'vance' || finale);
+      g.fillStyle = hex(d === today ? P.RED : ev ? P.AMBER : bdays.length ? P.MOON : P.LANTERN); g.fillRect(cx + 1, cy, cw - 2, ch - 1);
+      drawText(g, String(d), cx + 3, cy + 2, d === today ? P.LANTERN : d < today ? P.MIST : P.SHADOW);
+      if (ev) { g.fillStyle = hex(P.CRAN); g.fillRect(cx + cw - 6, cy + 2, 3, 3); }
+      if (bdays.length) { g.fillStyle = hex(P.RED); g.fillRect(cx + cw - 6, cy + 6, 3, 2); g.fillRect(cx + cw - 5, cy + 7, 1, 1); }
+    }
+    let ly = gy + 8 + 5 * ch + 2;
+    const rows: Array<[string, number]> = [];
+    for (const e of EVENTS) if (e.season === season) rows.push([`${e.days.join('-')}: ${e.name.toUpperCase()} (${e.place.toUpperCase()})`, P.CRAN]);
+    const bd = [] as string[];
+    for (let d = 1; d <= 28; d++) for (const b of birthdaysOn(season, d)) if (b !== 'vance' || finale) bd.push(`${d} ${friendName(b).toUpperCase()}`);
+    if (bd.length) rows.push([`BIRTHDAYS: ${bd.join(', ')}`, P.RED]);
+    rows.push(['A GIFT ON A BIRTHDAY COUNTS 2.5X.', P.FOREST]);
+    for (const [t, c] of rows) for (const l of wrapText(t, w - 12)) { if (ly > y + h - 10) return; drawText(g, l, x + 6, ly, c); ly += 7; }
   }
 }
 

@@ -2,6 +2,7 @@
  * Firewatch-style story panels: a skippable 4-panel GBC pixel-art sequence
  * used for the New Game intro and the campaign epilogue, plus the act card.
  */
+import { textRate } from '../engine/settings';
 import { fillName } from '../data/appearance';
 import type { Game } from '../engine/game';
 import type { Overlay } from './overlay';
@@ -207,7 +208,7 @@ export class StoryPanels implements Overlay {
     const text = fillName(this.texts[this.idx]);
     if (this.skippable && inp.pressed('b')) { sfx.cancel(); this.finish(); return; }
     if (this.shown < text.length) {
-      this.shown = Math.min(text.length, this.shown + dt * 45);
+      this.shown = Math.min(text.length, this.shown + dt * textRate(45));
       this.blip += dt;
       if (this.blip > 0.07) { this.blip = 0; sfx.type(); }
       if ((inp.pressed('a') || inp.taps.length) && this.t > 0.25) this.shown = text.length;

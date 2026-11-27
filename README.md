@@ -235,6 +235,24 @@ Handy URL flags for trying things out:
 - **Why they're all here**: the Quiet Zone. Everywhere else the sky is full of signal; Pine Holler is one of the last
   quiet places, so the stories come here to sleep (Dr. Okafor's theory).
 
+## A living world
+- **Townsfolk notice things**: before their usual hello they'll bring up your first Mothman, a rare variant, a Warden
+  at peace, a restoration they woke up to, last night's storm or fog, you wearing Elias's coat (Mabel and Agnes),
+  your new gear (Gideon), or you wandering about past midnight. Each remark is said once (weather ones once a day).
+- **West Virginia calendar** (Journal: CALENDAR): the **Pine Holler Ramp Feed** (Spring 14), the **Apple Butter
+  Stir-Off** (Fall 6), **Buckwheat Festival Weekend** (Fall 24-25) and **Old Christmas** (Winter 6, at the gazebo once
+  it's built). The whole town gathers; visit the stall to pitch in once a day (skillets, kettle, supper table, cider
+  and an old story) for seasonal food with buffs, or browse its stock.
+- **Birthdays** for everyone (Elias's counts once he's home), on the calendar and in the morning news. A gift on
+  someone's birthday counts 2.5x and gets a special thank-you.
+- **Field Photo Album** (Journal: PHOTO ALBUM): a framed viewfinder print for every 3-star Gold and every rare variant,
+  stamped with season, day, time, biome and weather, with a field-note caption. X/37 Gold Prints.
+- **A cabin companion**: early on, Barney and Mabel bring a basket to your porch: Buster's hound pup (sniffs out clues
+  and barks toward them), a tuxedo barn cat (leaves gifts on the doormat) or a ridge raven (perches on posts and caws
+  when rare odds are up). Name them; they follow you around the yard and town (the pup and raven come into the
+  wilds too), wait outside doors, sleep by the stove, and enjoy a daily pet (+15 stamina).
+- **Settings** (title screen, or the Journal's last page): text speed, music and sound-effect volume, screen shake.
+
 ## Heart scenes, cryptid bonds & the Restoration Ledger
 - **Heart scenes** (`src/data/heartScenes.ts`, `src/engine/heartScenes.ts`): 26 short scenes, 3 or 4 per townsperson,
   each showing a piece of Elias's story from their side. One plays when you walk into its place at its time with enough

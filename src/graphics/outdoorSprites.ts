@@ -185,6 +185,11 @@ export function bakeOutdoors(): void {
   // ---- Pass B: timber, the lucky clover and townsfolk keepsakes ----
   ICON.timber = icon((p) => { for (const y of [5, 8, 11]) { p.rect(2, y, 12, 3, AMBER); p.hline(2, 13, y, LANTERN); p.px(4, y + 1, RUST); p.px(10, y + 2, RUST); } });
   ICON.lucky_clover = icon((p) => { for (const [x, y] of [[6, 5], [10, 5], [6, 9], [10, 9]]) { p.rect(x - 2, y - 2, 4, 4, MOSS); p.px(x - 1, y - 1, FERN); } p.line(8, 9, 9, 15, FOREST); p.px(8, 7, LANTERN); });
+  ICON.jay_feather = icon((p) => { p.line(4, 14, 11, 2, SHADOW); for (let k = 0; k < 9; k++) { const x = 5 + Math.round(k * 0.7), y = 12 - Math.round(k * 1.2); p.rect(x, y, 3, 1, k % 2 ? TWILIGHT : MIST); } p.px(10, 3, FOG); });
+  ICON.ramp_skillet = plate((p) => { p.ellipse(8, 9, 5, 2.5, AMBER); for (const [x, y] of [[5, 8], [8, 9], [11, 8]]) p.px(x, y, LANTERN); for (const [x, y] of [[6, 9], [9, 8], [10, 10]]) p.px(x, y, MOSS); p.px(7, 7, FERN); });
+  ICON.apple_butter = icon((p) => { p.rect(5, 6, 7, 8, FOG); p.rect(6, 8, 5, 5, CRAN); p.hline(6, 10, 8, RUST); p.rect(5, 4, 7, 2, AMBER); p.hline(5, 11, 4, LANTERN); p.px(10, 9, RED); });
+  ICON.buckwheat_cakes = plate((p) => { for (let k = 0; k < 3; k++) p.ellipse(7, 10 - k * 2, 4, 1.6, k % 2 ? RUST : AMBER); p.ellipse(12, 10, 2, 1.4, CRAN); p.px(7, 5, LANTERN); });
+  ICON.hot_cider = icon((p) => { p.rect(4, 6, 7, 8, MIST); p.rect(5, 7, 5, 6, AMBER); p.hline(5, 9, 7, LANTERN); p.rect(11, 8, 2, 4, MIST); for (const [x, y] of [[6, 3], [8, 2], [7, 4]]) p.px(x, y, FOG); });
   ICON.radio_key = icon((p) => { p.rect(3, 10, 10, 3, RUST); p.hline(3, 12, 10, AMBER); p.line(6, 10, 11, 5, AMBER); p.rect(10, 3, 3, 3, SHADOW); p.px(11, 4, LANTERN); });
   ICON.conductor_whistle = icon((p) => { p.rect(3, 7, 9, 4, AMBER); p.hline(3, 11, 7, LANTERN); p.rect(11, 6, 3, 6, RUST); p.px(5, 9, SHADOW); p.line(2, 9, 0, 7, MIST); });
   ICON.lamphouse_key = icon((p) => { p.ellipse(5, 6, 3, 3, AMBER); p.px(5, 6, VOID); p.line(7, 8, 13, 14, AMBER); p.hline(11, 13, 12, AMBER); p.px(12, 14, AMBER); });

@@ -1,4 +1,7 @@
 /** World renderer: ground autotiles → y-sorted objects/actors → particles → lighting. */
+import { eventNow, eventSpot } from './calendar';
+import { petFrame, heartIcon } from '../graphics/petSprites';
+import { settings } from './settings';
 import { rescueTracks } from './heartScenes';
 import { visitorHere, visitorPos } from './bonds';
 import type { Game } from './game';
@@ -406,7 +409,9 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const blaze = BLAZE[m.id];
   radioCalling = m.id === 'CABIN_YARD' && game.clock.phase() !== 'day' && game.progress.radioDay !== game.clock.day;
   const cam = game.cam;
-  const cx = cam.ix, cy = cam.iy;
+  // Screen shake (thunder, a train whistle), if the player hasn't turned it off.
+  const sk = settings().shake && game.shakeT > game.time ? Math.min(1, game.shakeT - game.time) * 2 : 0;
+  const cx = cam.ix + Math.round(Math.sin(game.time * 61) * sk), cy = cam.iy + Math.round(Math.cos(game.time * 53) * sk);
   const time = game.time;
   const phase = game.clock.phase();
   const night = phase === 'night' || phase === 'witching' || (phase === 'dusk' && game.clock.minutes > 1140);
@@ -624,6 +629,42 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     const over = layers;
     list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); for (const l of over) g.drawImage(l, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
   }
+  // A town gathering's stall (kettle, skillets, griddle, lanterns).
+  const tev = m.id === 'PINE_HOLLOW_TOWN' ? eventNow(game) : null;
+  if (tev) {
+    const [ex, ey] = eventSpot(game, tev);
+    const img = PROP[`ev_${tev.id}`][Math.floor(time * 3) % 2];
+    const dx = ex * 16 - 8 - cx, dy = (ey + 1) * 16 - 32 - cy;
+    list.push({ y: (ey + 1) * 16 - 0.5, fn: () => g.drawImage(img, dx, dy) });
+    if (night || tev.id === 'old_christmas') lights.push({ x: ex * 16 + 8 - cx, y: ey * 16 - cy, r: tev.id === 'old_christmas' ? 60 : 36, flicker: true });
+  }
+  // Your companion
+  const pet = game.progress.pet, comp = game.companion;
+  if (pet && comp.map === m.id) {
+    const sleeping = comp.mode === 'sleep';
+    const flying = pet.kind === 'raven' && comp.moving && !sleeping;
+    const step = Math.floor(time * 7) % 2;
+    const pose = sleeping ? 'sleep' : flying ? (step ? 'fly0' : 'fly1') : comp.moving ? (step ? 'walk1' : 'walk0') : 'sit';
+    const lift = flying ? 7 : comp.perched ? 9 : 0;
+    const img = petFrame(pet.kind, pose, comp.right);
+    const px = Math.round(comp.x) - cx, py = Math.round(comp.y) - cy;
+    list.push({ y: comp.y + 16.2 + (comp.perched ? 2 : 0), fn: () => {
+      g.globalAlpha = 0.3; g.fillStyle = hex(P.VOID); g.fillRect(px + 4, py + 14, 8, 2); g.globalAlpha = 1;
+      g.drawImage(img, px, py - lift);
+      if (sleeping) drawZzz(g, px + 10, py + 2, time);
+      const e = comp.emote;
+      if (e) {
+        const ey = py - lift - 8 - Math.round((1.6 - Math.min(1.6, e.t)) * 3);
+        if (e.kind === 'heart') g.drawImage(heartIcon(), px + 5, ey);
+        else {
+          g.fillStyle = hex(P.FOG); g.fillRect(px + 4, ey - 1, 9, 8); g.fillStyle = hex(P.VOID); g.fillRect(px + 7, ey + 7, 2, 1);
+          if (e.kind === 'bark') { g.fillStyle = hex(P.RED); g.fillRect(px + 8, ey, 1, 4); g.fillRect(px + 8, ey + 5, 1, 1);
+            const [bx, by] = comp.barkDir; g.fillStyle = hex(P.RUST); g.fillRect(px + 8 + bx * 3, ey + 2 + by * 2, 1, 1); g.fillRect(px + 8 + bx * 2, ey + 2 + by, 1, 1); }
+          else { g.fillStyle = hex(P.TWILIGHT); g.fillRect(px + 6, ey + 1, 1, 4); g.fillRect(px + 6, ey + 1, 3, 1); g.fillRect(px + 8, ey + 1, 1, 3); g.fillRect(px + 5, ey + 4, 2, 2); g.fillRect(px + 7, ey + 3, 2, 2); }
+        }
+      }
+    } });
+  }
   // Townsfolk
   for (const npc of game.townsfolk.on(m.id)) {
     const nx = Math.round(npc.x) - 4 - cx, ny = Math.round(npc.y) - 7 - cy;
@@ -772,7 +813,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const view: View = { x0, x1, y0, y1, cx, cy, season, time };
   drawAmbient(game, g, view);
   game.particles.draw(g, cx, cy);
-  if (festival || prep >= 0) {
+  if (festival || prep >= 0 || tev) {
     const S = TOWN_SQUARE;
     for (const yy of [S.y, S.y + S.h - 1]) for (let xx = S.x; xx < S.x + S.w; xx++) g.drawImage(MISC.bunting, xx * 16 - cx, yy * 16 - 14 - cy);
   }
