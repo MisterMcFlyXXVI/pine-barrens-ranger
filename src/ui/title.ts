@@ -11,9 +11,10 @@ import { accountModalOpen, openAccount } from './accountModal';
 import { hash2, touchOn } from '../util';
 import { inRect, panel, Rect } from './panel';
 import { SettingsMenu } from './settingsMenu';
+import { installTipOpen, isInstalled, openInstallTip } from './installTip';
 
-type Opt = 'resume' | 'continue' | 'new' | 'export' | 'import' | 'account' | 'settings';
-const LABEL: Record<Opt, string> = { resume: 'RESUME', continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT', settings: 'SETTINGS' };
+type Opt = 'resume' | 'continue' | 'new' | 'export' | 'import' | 'account' | 'settings' | 'homescreen';
+const LABEL: Record<Opt, string> = { resume: 'RESUME', continue: 'CONTINUE', new: 'NEW GAME', export: 'EXPORT SAVE', import: 'IMPORT SAVE', account: 'ACCOUNT', settings: 'SETTINGS', homescreen: 'HOME SCREEN APP' };
 
 export class TitleScreen {
   private sel = 0;
@@ -28,6 +29,7 @@ export class TitleScreen {
 
   private options(): Opt[] {
     const base: Opt[] = this.save ? ['continue', 'new', 'export', 'import', 'account', 'settings'] : ['new', 'import', 'account', 'settings'];
+    if (!isInstalled()) base.push('homescreen');
     return this.resume ? ['resume', ...base] : base;
   }
 
@@ -55,7 +57,7 @@ export class TitleScreen {
   update(game: Game): void {
     const inp = game.input;
     this.msgT = Math.max(0, this.msgT - 1 / 60);
-    if (accountModalOpen()) return;
+    if (accountModalOpen() || installTipOpen()) return;
     if (this.sub) { this.sub.update(game); if (this.sub.closed) this.sub = null; return; }
     const opts = this.options();
     if (this.sel >= opts.length) this.sel = 0;
@@ -76,6 +78,7 @@ export class TitleScreen {
     const o = opts[this.sel];
     if (o === 'account') { sfx.open(); openAccount(); return; }
     if (o === 'settings') { sfx.open(); this.sub = new SettingsMenu(); return; }
+    if (o === 'homescreen') { sfx.open(); openInstallTip(); return; }
     if (o === 'resume' && this.resume) game.startFromTitle(this.resume);
     else if (o === 'continue' && this.save) game.startFromTitle(this.save, true);
     else if (o === 'new') { if (this.save || this.resume) { this.confirmNew = true; sfx.alert(); } else game.startFromTitle(null); }

@@ -5,7 +5,8 @@ import { Game } from './engine/game';
 import { bindKeyboard } from './input/keyboard';
 import { TouchControls, bindCanvasTaps } from './input/touch';
 import { sfx } from './audio/sfx';
-import { startAccounts } from './ui/accountModal';
+import { startAccounts, accountModalOpen } from './ui/accountModal';
+import { startInstallTip } from './ui/installTip';
 
 function must<T extends HTMLElement>(id: string): T {
   const e = document.getElementById(id);
@@ -51,6 +52,7 @@ function layout(): void {
 
 bindKeyboard(game.input, gesture);
 startAccounts(() => game.reloadTitleSave());
+startInstallTip(() => game.mode === 'title' && !accountModalOpen());
 // Quick-resume: snapshot whenever the app is switched away from or closed, and every 90s as a safety net.
 document.addEventListener('visibilitychange', () => { if (document.hidden) game.snapshot(); });
 window.addEventListener('pagehide', () => game.snapshot());

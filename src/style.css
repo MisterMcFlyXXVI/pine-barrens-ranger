@@ -447,3 +447,11 @@ body {
 body.in-mine .pill.mine-only { display: flex; }
 body.in-mine .pill { width: 46px; }
 body.in-mine .pills { gap: 6px; }
+
+/* Home Screen install instructions (src/ui/installTip.ts), on the account panel's styles. */
+.it-steps { margin: 8px 0; padding-left: 22px; }
+.it-steps li { margin: 6px 0; line-height: 1.35; }
+.it-steps b, .it p b { color: var(--lantern); word-break: normal; }
+.it-ico { width: 15px; height: 17px; vertical-align: -3px; color: var(--lantern); }
+.it-row { display: flex; gap: 8px; margin-top: 10px; }
+.it-row .acct-btn { flex: 1; }
