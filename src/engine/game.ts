@@ -413,6 +413,7 @@ export class Game {
   enterMap(id: MapId, x: number, y: number, dir: Dir): void {
     this.cur = this.getMap(id);
     this.progress.visited.add(id);
+    [x, y] = this.openSpot(x, y);
     this.player.place(x, y, dir);
     this.cur.reveal(x, y, 7);
     this.particles.clear();
@@ -425,6 +426,24 @@ export class Game {
       this.progress.flags.add(`visit_${id}`);
       this.openOverlay(new Dialog([...HOMES[id].welcome, '(Look around -- everything here tells you something about them.)']));
     }
+  }
+
+  /**
+   * Safety net: never put the player outside the map or inside something solid
+   * (a door pointing at a rebuilt room, an old quick-resume). Nearest open tile wins.
+   */
+  private openSpot(x: number, y: number): [number, number] {
+    const m = this.cur;
+    const cx = Math.max(0, Math.min(m.w - 1, x)), cy = Math.max(0, Math.min(m.h - 1, y));
+    if (cx === x && cy === y && !m.blocked(x, y, true)) return [x, y];
+    for (let r = 0; r < Math.max(m.w, m.h); r++) {
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const tx = cx + dx, ty = cy + dy;
+        if (m.inBounds(tx, ty) && !m.blocked(tx, ty, true) && !m.portalAt(tx, ty)) return [tx, ty];
+      }
+    }
+    return [cx, cy];
   }
 
   resize(w: number, h: number): void {

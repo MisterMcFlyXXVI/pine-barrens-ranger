@@ -223,7 +223,7 @@ function buildCabinYard(): MapDef {
     id: 'CABIN_YARD', name: MAP_NAMES.CABIN_YARD, w: W, h: H, indoor: false, wild: true,
     ground: b.ground, objects: b.objects, anchors: b.anchors, structAt: b.structAt, structures: b.structures,
     portals: [
-      { x: 28, y: 18, w: 1, h: 1, to: 'CABIN_INTERIOR', tx: 10, ty: 14, dir: 'up', closedMsg: '' },
+      { x: 28, y: 18, w: 1, h: 1, to: 'CABIN_INTERIOR', tx: 6, ty: 9, dir: 'up', closedMsg: '' },
       { x: 28, y: 0, w: 7, h: 1, to: 'PINE_TRAIL_AND_ORCHARD', tx: 39, ty: 78, dir: 'up', closedMsg: '' },
       { x: 63, y: 31, w: 1, h: 7, to: 'PINE_HOLLOW_TOWN', tx: 1, ty: 36, dir: 'right', closedMsg: '' },
     ],

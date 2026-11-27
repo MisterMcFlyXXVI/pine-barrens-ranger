@@ -379,7 +379,7 @@ export function buildMineL3(): MapDef {
   put(b, 35, 22, O.ORE_CART, 'A coal car full of brass checks, hundreds of them, from every year the mine ran. None of the numbers you are looking for. He collects them.');
   const pages: Array<[number, Pt]> = [[7, [56, 10]], [8, [33, 24]], [9, [33, 45]]];
   for (const [n, [x, y]] of pages) { put(b, x, y, O.LEDGER_PAGE); b.meta.set(b.i(x, y), `page:${n}`); }
-  return level(b, L3, [{ x: 2, y: 4, w: 1, h: 1, to: 'MINE_L2', tx: 52, ty: 44, dir: 'up', closedMsg: '' }]);
+  return level(b, L3, [{ x: 2, y: 4, w: 1, h: 1, to: 'MINE_L2', tx: 53, ty: 44, dir: 'up', closedMsg: '' }]);
 }
 
 export function buildMineL4(): MapDef {
