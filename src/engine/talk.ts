@@ -3,6 +3,7 @@ import { O } from '../data/tiles';
 import { oriTalk } from './orientation';
 import { isBirthday, birthdayLine, eventOn } from './calendar';
 import { barkFor } from './barks';
+import { untranslated, translatePages } from './mine';
 import type { Game } from './game';
 import type { NpcRT } from './townsfolk';
 import { kidsHiding, rescueKids } from './heartScenes';
@@ -239,6 +240,8 @@ export function talkTo(game: Game, npc: NpcRT): void {
       else pages.push('(Omi\'s bakery: Saturdays 9 to 1 in the Town Square, and weekday mornings at the diner till 11. Or knock, once she knows you.)');
       break;
     case 'walter':
+      // He reads Josef's ledger pages to you (old Kurrent script).
+      if (untranslated(game).length) choices.push({ label: 'Read the ledger?', fn: () => translatePages(game) });
       if (tag === 'drying' || tag === 'herbs' || npc.map === 'HOUSE_MEISSGEIER') choices.push({ label: 'Herbs', fn: () => game.openOverlay(new ShopMenu("OPA WALTER'S HERBS", () => HERB_STOCK)) });
       break;
     case 'matthias':

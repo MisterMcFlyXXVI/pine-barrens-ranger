@@ -10,6 +10,8 @@ import type { MapId } from '../data/mapgen';
 import { CRYPTIDS } from '../data/cryptids';
 import { REASONS } from '../data/campaign';
 import type { Reason } from '../data/campaign';
+import { freshMine, loadMine } from '../data/mine';
+import type { MineSave } from '../data/mine';
 
 export interface QuestState {
   stage: number;
@@ -46,6 +48,7 @@ export interface ProgressSave {
   album?: Print[];
   barks?: Record<string, number>;
   pet?: PetState | null;
+  mine?: MineSave;
 }
 
 export interface Track {
@@ -97,6 +100,8 @@ export class Progress {
   barks: Record<string, number> = {};
   /** Your cabin companion (null = none yet). */
   pet: PetState | null = null;
+  /** The Deep Seam (post-epilogue mine expansion). */
+  mine: MineSave = freshMine();
   private trailCache = new Map<string, Track[]>();
 
   constructor() {
@@ -112,6 +117,7 @@ export class Progress {
       reason: this.reason ?? undefined, mail: { ...this.mail }, radioDay: this.radioDay, festRollDay: this.festRollDay, firstFest: this.firstFest,
       days: { ...this.days },
       album: this.album.map((p) => ({ ...p })), barks: { ...this.barks }, pet: this.pet ? { ...this.pet } : null,
+      mine: JSON.parse(JSON.stringify(this.mine)),
     };
   }
 
@@ -141,6 +147,7 @@ export class Progress {
     p.album = (d.album ?? []).map((x) => ({ ...x }));
     p.barks = { ...(d.barks ?? {}) };
     p.pet = d.pet && PET_KINDS.includes(d.pet.kind) ? { ...d.pet } : null;
+    p.mine = loadMine(d.mine);
     // The Archive Basement now opens at 6 donations (was 8): don't announce it twice to older saves.
     if (p.claimed.has(8)) p.claimed.add(6);
     return p;

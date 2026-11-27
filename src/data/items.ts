@@ -143,6 +143,14 @@ const base: ItemDef[] = [
   { id: 'mask_goat', name: 'Goat Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask carved from linden wood: a white billy goat with amber horns. It goes straight to your wardrobe.' },
   { id: 'mask_owl', name: 'Owl Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask: a barred owl with ear tufts and lantern-ring eyes. It goes straight to your wardrobe.' },
   { id: 'mask_bear', name: 'Bear Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask: a black bear with a friendly snout. It goes straight to your wardrobe.' },
+  // ---- The Deep Seam (see MINE_EXPANSION.md) ----
+  { id: 'carbide_pellets', name: 'Carbide Pellets', kind: 'material', price: 0, stack: 99, desc: 'Grey lumps of calcium carbide. Drop one in your headlamp with a splash of water and it hisses out acetylene. (R refills the lamp underground.)' },
+  { id: 'seep_water', name: 'Drip-Seep Water', kind: 'material', price: 0, stack: 20, desc: 'Cold, clean water from a seep in the coal. For your carbide lamp, or a Coal-Chewer\'s dry throat.' },
+  { id: 'hemlock_prop', name: 'Fresh Hemlock Prop', kind: 'placeable', price: 0, stack: 9, desc: 'A green hemlock post, cut to roof height. Wedge it beside a Calcified Prop (select it, press A on the floor) before you pry the tag loose.' },
+  { id: 'miner_biscuit', name: "Miner's Biscuit", kind: 'food', price: 0, stack: 20, edible: 25, desc: '+25 energy. A hard, sweet lard biscuit from the lamp-house cupboard. Warm, it can break a Coal-Chewer\'s trance.' },
+  { id: 'black_powder', name: 'Black Powder Charge', kind: 'keepsake', price: 0, stack: 9, desc: 'A paper cartridge of black powder with a copper lead. One for each Master Timber Crib.' },
+  { id: 'blasting_box', name: 'Hand-Crank Blasting Box', kind: 'keepsake', price: 0, stack: 1, desc: 'Wire the four Master Timber Cribs, then crank it at the ore-cart lift. The Deep Seam closes for good.' },
+  { id: 'mine_ledger', name: 'Black-Edged Mine Ledger', kind: 'keepsake', price: 0, stack: 1, desc: 'The company ledger of No. 3, 1909-1914, its edges burned black. Josef Meissgeier wrote in the margins in German script. Opa Walter can read it. (Journal: MINE LEDGER.)' },
   { id: 'display_pedestal', name: 'Cabin Display Pedestal', kind: 'placeable', price: 0, stack: 9, desc: 'Place inside your cabin to show off a specimen.' },
 
   // ---- Whistle-Stop Diner food buffs ----

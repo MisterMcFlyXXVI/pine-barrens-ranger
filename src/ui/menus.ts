@@ -4,6 +4,7 @@ import { PhotoAlbum } from './album';
 import { goldCount } from '../engine/album';
 import { SettingsMenu } from './settingsMenu';
 import { EVENTS } from '../data/calendar';
+import { LEDGER, MINERS } from '../data/mine';
 import { seasonIndex, dayOfSeason, eventOn, birthdaysOn, friendName } from '../engine/calendar';
 import { PETS } from '../data/pets';
 import { bondWord } from '../engine/pet';
@@ -455,14 +456,18 @@ export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
-  private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls'] as const;
-  private static readonly PAGES = JournalMenu.IDS.length;
+  private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls', 'mineledger'] as const;
+  /** The pages you have: the MINE LEDGER only once you've geared up in the Lamp House. */
+  private static idsFor(game: Game): ReadonlyArray<typeof JournalMenu.IDS[number]> {
+    return JournalMenu.IDS.filter((id) => id !== 'mineledger' || game.progress.mine.kit);
+  }
   /** The page's action button (Photo Album, Settings), for A and taps. */
   private action: { rect: Rect; open: () => void } | null = null;
 
   update(game: Game): void {
     const inp = game.input;
-    const n = JournalMenu.PAGES;
+    const n = JournalMenu.idsFor(game).length;
+    if (this.page >= n) this.page = 0;
     for (const t of inp.taps) if (tapMore(game, this.mores, t)) return;
     const act = this.action;
     if (act && (inp.pressed('a') || inp.taps.some((t) => inRect(act.rect, t.x, t.y)))) { sfx.open(); act.open(); return; }
@@ -485,15 +490,33 @@ export class JournalMenu implements Overlay {
     const x = Math.floor((game.w - w) / 2), y = Math.max(2, Math.floor((game.h - h) / 2) - 12);
     panel(g, x, y, w, h, 'paper');
     this.mores = [];
-    const titles = ['CAMPAIGN', 'FIELD JOURNAL', 'QUEST LOG', 'MATERIALS LIST', 'TOWNSFOLK', 'CALENDAR', 'PHOTO ALBUM', 'ALMANAC & KIT', 'CONTROLS & SETTINGS'];
-    drawText(g, titles[this.page], x + 5, y + 5, P.CRAN);
+    const ids = JournalMenu.idsFor(game);
+    const titles: Record<string, string> = { campaign: 'CAMPAIGN', journal: 'FIELD JOURNAL', quests: 'QUEST LOG', materials: 'MATERIALS LIST', folks: 'TOWNSFOLK', calendar: 'CALENDAR', album: 'PHOTO ALBUM', almanac: 'ALMANAC & KIT', controls: 'CONTROLS & SETTINGS', mineledger: 'BLACK-EDGED MINE LEDGER' };
+    if (this.page >= ids.length) this.page = 0;
+    drawText(g, titles[ids[this.page]], x + 5, y + 5, P.CRAN);
     this.action = null;
-    drawTextRight(g, `< ${this.page + 1}/${JournalMenu.PAGES} >`, x + w - 5, y + 5, P.RUST);
+    drawTextRight(g, `< ${this.page + 1}/${ids.length} >`, x + w - 5, y + 5, P.RUST);
     const lx = x + 6;
     let ly = y + 16;
     const line = (s: string, c: number = P.RUST) => { drawText(g, s, lx, ly, c); ly += 8; };
-    const id = JournalMenu.IDS[this.page];
+    const id = ids[this.page];
     if (id === 'calendar') { this.drawCalendar(game, g, x, y, w, h); return; }
+    if (id === 'mineledger') {
+      const s = game.progress.mine;
+      const out = MINERS.filter((mm) => s.tags[mm.id] === 'out').length;
+      line(`PAGES ${s.pages.length}/${LEDGER.length}  READ ${s.translated.length}  TAGS OUT ${out}/12`, P.CRAN);
+      for (const pg of LEDGER) {
+        if (ly > y + h - 16) break;
+        const found = s.pages.includes(pg.id), read = s.translated.includes(pg.id);
+        const label = !found ? `PAGE ${pg.id}: ???` : read ? `PAGE ${pg.id}: ${pg.text[0]}` : `PAGE ${pg.id}: (old German script. Ask Opa Walter.)`;
+        const t = wrapText(label, w - 12)[0];
+        drawText(g, t, lx, ly, read ? P.FOREST : found ? P.RUST : P.MIST);
+        if (read) this.mores.push({ rect: { x: lx - 2, y: ly - 2, w: w - 10, h: 9 }, title: `LEDGER PAGE ${pg.id}`, body: pg.text.map((tx) => ({ text: tx, color: P.SHADOW })) });
+        ly += 9;
+      }
+      wrapText(s.sealed ? 'The Deep Seam is sealed. Josef\'s hand is closed.' : 'Tap a translated page to read it all.', w - 12).forEach((l) => line(l, P.FOREST));
+      return;
+    }
     if (id === 'album') {
       const gold = goldCount(game), rare = game.progress.album.filter((p) => p.variant !== 'normal').length;
       line(`${gold} / ${CRYPTIDS.length} GOLD PRINTS`, P.CRAN);

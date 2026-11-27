@@ -84,6 +84,34 @@ const PROJECT: Record<string, Lines> = {
     agnes: 'Danny\'s check came down off the lamp-house board. Elias held it all night. Thank you, dear.',
   },
 };
+/** The Deep Seam: when a townsperson's own kin comes OUT on the 1914 board. */
+const KIN: Record<string, [string, string]> = {
+  pippa: ['calloway', 'Dewey Calloway was my great-great-uncle. He was a BRAKEMAN. At seventeen! Grandma Ruth says I have his chin. I\'m going to be a brakeman too. Of a handcar.'],
+  ruth: ['haddix', 'Silas Haddix. Earl\'s granddaddy. Earl used to say his people were "still down there." I never knew he meant it so plain. Thank you, honey.'],
+  sam: ['haddix', 'Grandma cried about Silas Haddix. The good kind. I made her tea. I did it wrong. She drank it anyway.'],
+  agnes: ['vance', 'Clement Vance. Our great-uncle. Mother kept his chalk in a matchbox. I\'m putting it in the Society\'s case, next to the board. Thank you, dear.'],
+  vance: ['vance', 'Clement went back in for his men. That\'s all the family ever knew about him. That, and now this: he came out.'],
+  walter: ['kessler', 'Anselm Kessler. Josef\'s apprentice. Josef wrote about him in every letter home until 1914. Then never again. Now he is OUT. Josef can stop waiting.'],
+  matthias: ['kessler', 'A timber apprentice, nineteen. Josef\'s apprentice. I keep thinking: that would have been me. I\'m carving him a dovetail box.'],
+  liesl: ['kessler', 'Walter cried this morning, for the first time since \'78. For a boy he never met. I made him a stollen. That is what I can do.'],
+};
+const SEALED: Lines = {
+  _: 'Did you feel that, a few days back? Like the whole hill sighed. Gideon says the hum is gone.',
+  gideon: 'The hum\'s gone. Forty years I could feel it through my boots. Now it\'s just a hill. I slept nine hours.',
+  walter: 'You closed Josef\'s hand. The mountain has its tithe of quiet now, and it is a good quiet. Come up the bald with me Tuesday.',
+  ruth: 'They say you brought every one of them out of that hill. Earl would have shaken your hand till it fell off.',
+  vance: 'You sealed the Deep Seam. I went up to the lamp house at dawn. The board\'s all OUT. Somebody hung mint over it. Walter, I expect.',
+  agnes: 'The 1914 board is coming to the Society. All twelve on OUT. I\'m writing the placard myself, and it is going to be long.',
+  clara: 'The static on the ridge has a new floor since the mine went quiet. I can hear the creek in my headphones now.',
+  barnaby: 'The ore-cart lift! First thing on those rails in eighty years with somebody alive in it. Proud of you.',
+};
+const LAPEL: Lines = {
+  _: 'That\'s an old No. 3 check on your collar, isn\'t it? Polished up nice.',
+  walter: 'You wear it! Gut. 312. I hung it there the morning I walked out. Now it walks out with you every day.',
+  gideon: 'Walter\'s check. I soldered the pin on. Didn\'t think he\'d ever give it to anybody. Wear it straight.',
+  ruth: 'Is that Walter\'s 312? Oh, honey. Earl carried him out of that hill. And now you carry his check. That\'s how it goes round.',
+  vance: 'Walter\'s brass. He offered it to me first, you know. I told him it belonged on somebody who came out of that mine on their own feet.',
+};
 const STORM: Lines = {
   _: 'Some storm last night, eh? Thought the roof was coming off.',
   barnaby: 'Storm took a limb off the big oak by the station. Missed the platform by a hair. Old girl\'s lucky.',
@@ -164,7 +192,13 @@ export function barkFor(game: Game, id: string): string | null {
     const d = p.days[`m_${flag}`];
     if (d !== undefined && day > d && day - d <= 3 && !said(flag)) return say(flag, pick(lines, id));
   }
+  // The Deep Seam: kin brought OUT, the seam sealed (after the finale only).
+  const kin = KIN[id];
+  if (kin && p.mine.tags[kin[0] as keyof typeof p.mine.tags] === 'out' && !said(`kin_${kin[0]}`)) return say(`kin_${kin[0]}`, kin[1]);
+  const sealedDay = p.days.m_seam_sealed;
+  if (sealedDay !== undefined && day - sealedDay <= 5 && !said('sealed')) return say('sealed', pick(SEALED, id));
   // What you're wearing / carrying.
+  if (game.look.outfit === 'lapel_tag' && !said('lapel')) return say('lapel', pick(LAPEL, id));
   if (game.look.outfit === 'elias_coat' && !said('coat')) return say('coat', pick(COAT, id));
   if (id === 'gideon') for (const [item, line] of Object.entries(GEAR)) if (ITEMS[item] && game.keepsake(item) && !said(`gear_${item}`)) return say(`gear_${item}`, line);
   // Weather and the hour.

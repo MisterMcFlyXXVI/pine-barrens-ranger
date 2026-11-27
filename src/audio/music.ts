@@ -6,7 +6,7 @@
  */
 import { sfx } from './sfx';
 
-export type TrackId = 'title' | 'cabin' | 'town' | 'woods' | 'bog' | 'ridge' | 'night' | 'interior' | 'encounter' | 'festival';
+export type TrackId = 'title' | 'cabin' | 'town' | 'woods' | 'bog' | 'ridge' | 'night' | 'interior' | 'encounter' | 'festival' | 'mine';
 
 interface Note { s: number; m: number; l: number; v?: number }
 interface Voice { wave: OscillatorType; gain: number; notes: Note[]; pluck?: boolean; detune?: number }
@@ -126,6 +126,8 @@ const SPECS: Record<TrackId, Spec> = {
   interior: { seed: 71, bpm: 96, root: 53, mode: MAJOR, prog: [0, 3, 4, 0, 5, 3, 4, 0], bass: 'walk', arp: 'up', melody: 'lyric', drums: 'none', arpWave: 'triangle', melodyWave: 'triangle', melodyGain: 0.2 },
   // Encounters: not battle music. Through the camcorder you hold your breath: heartbeat, crickets, wind, tape hiss.
   encounter: { seed: 81, bpm: 66, root: 50, mode: MINOR, prog: [0, 0, 5, 5, 3, 3, 1, 1], bass: 'none', arp: 'sparse', melody: 'none', drums: 'ambient', arpWave: 'triangle' },
+  // The Deep Seam: a low drone, water dripping and a slow heartbeat. No melody.
+  mine: { seed: 314, bpm: 54, root: 45, mode: MINOR, prog: [0, 0, 1, 1, 0, 0, 5, 5], bass: 'drone', arp: 'none', melody: 'none', drums: 'drips' },
   // Folklore Festival fiddle reel.
   festival: { seed: 91, bpm: 132, root: 62, mode: MIXO, prog: [0, 0, 6, 6, 0, 0, 3, 4], bass: 'boomchick', arp: 'roll', melody: 'busy', drums: 'reel', melodyGain: 0.11 },
 };

@@ -280,6 +280,31 @@ class Sfx {
   /* ---- encounter cues ---- */
   alert(): void { this.tone('square', 880, 1760, 0.06, 0.09); this.tone('square', 1760, 1760, 0.1, 0.07, 0.07); }
   shutter(): void { this.noise(0.04, 0.2, 'highpass', 5000); this.tone('square', 2000, 400, 0.05, 0.06, 0.04); }
+  /* ---- The Deep Seam ---- */
+  /** A drop of water off the roof into a puddle. */
+  drip(): void { const f = 1400 + Math.random() * 900; this.tone('sine', f, f * 0.55, 0.12, 0.035); this.tone('sine', f * 1.5, f * 0.7, 0.05, 0.012, 0.02); }
+  /** Old timber taking weight. */
+  creak(): void { const f = 150 + Math.random() * 60; this.tone('sawtooth', f, f * 0.82, 0.55, 0.018); this.noise(0.5, 0.025, 'bandpass', 420, 260, 6); }
+  /** A pick on coal, far away down a drift. */
+  pickClink(): void { for (let k = 0; k < 3; k++) this.tone('square', 2100 + Math.random() * 300, 1900, 0.03, 0.012, k * 0.42); }
+  /** The Foreman's brass shift whistle, flat and wavering. */
+  whistle(): void { this.tone('sawtooth', 880, 830, 0.9, 0.05); this.tone('square', 932, 870, 0.9, 0.035); this.tone('sine', 466, 440, 0.9, 0.03); this.noise(0.9, 0.03, 'bandpass', 1800, 1500, 3); }
+  /** Brass tags clinking in your pocket. */
+  tagClink(): void { this.tone('triangle', 2600, 2500, 0.05, 0.03); this.tone('triangle', 3100, 3000, 0.05, 0.022, 0.05); }
+  /** The canary, happy. */
+  canary(): void { for (let k = 0; k < 3; k++) { const f = 2900 + Math.random() * 500; this.tone('sine', f, f * 1.15, 0.06, 0.03, k * 0.08); } }
+  /** The canary, silent, rattling its bars. */
+  cageRattle(): void { for (let k = 0; k < 4; k++) this.tone('square', 1300 + k * 40, 1250, 0.02, 0.025, k * 0.05); }
+  /** Sounding Bar on solid slate. */
+  tapRing(): void { this.tone('triangle', 1760, 1700, 0.5, 0.09); this.tone('sine', 3520, 3400, 0.3, 0.03); }
+  /** Sounding Bar on something hollow. */
+  tapThud(): void { this.tone('sine', 140, 80, 0.25, 0.16); this.noise(0.18, 0.08, 'lowpass', 500, 150, 2); }
+  /** The roof coming in. */
+  caveIn(): void { this.noise(1.6, 0.22, 'lowpass', 600, 60, 1); this.tone('sawtooth', 70, 40, 1.4, 0.08); for (let k = 0; k < 6; k++) this.noise(0.08, 0.1, 'bandpass', 900, 500, 2, 0.1 + k * 0.18); }
+  /** A Coal-Chewer's ember-throat rasp. */
+  chew(): void { this.noise(0.2, 0.04, 'bandpass', 700, 400, 5); this.tone('sawtooth', 95, 80, 0.2, 0.02); }
+  /** The blasting box's crank, then the shot. */
+  crank(): void { for (let k = 0; k < 6; k++) this.tone('square', 220 + k * 60, 200 + k * 60, 0.06, 0.05, k * 0.09); }
   trustChime(): void { [784, 988, 1175].forEach((f, i) => this.tone('triangle', f, f, 0.2, 0.08, i * 0.07)); }
   fanfare(): void {
     [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => this.tone('square', f, f, i === 7 ? 0.5 : 0.11, 0.07, i * 0.11));

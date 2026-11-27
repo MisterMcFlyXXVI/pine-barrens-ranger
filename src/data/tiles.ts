@@ -37,6 +37,17 @@ export const T = {
   CHECKER: 30,
   MARBLE: 31,
   STAIRS: 32,
+  // ---- The Deep Seam (mine expansion) ----
+  COAL_FLOOR: 33,
+  /** Solid coal rib (tunnel wall). */
+  COAL_RIB: 34,
+  MINE_RAIL: 35,
+  /** Man-trip safety alcove cut into the rib: the Foreman walks past anyone in one. */
+  ALCOVE: 36,
+  /** Waste-rock gob pile (solid). */
+  GOB: 37,
+  /** Lamp House plank floor. */
+  LAMP_FLOOR: 38,
 } as const;
 
 /** Wadeable water: blocked unless the player owns Bog Waders. */
@@ -56,7 +67,7 @@ export const SLOW_GROUND: Readonly<Record<number, number>> = {
 };
 
 export const SOLID_GROUND: ReadonlySet<number> = new Set<number>([
-  T.VOID, T.WATER, T.WALL_TOP, T.WALL_FACE, T.WALL_BASE, T.WALL_SIDE, T.CLIFF,
+  T.VOID, T.WATER, T.WALL_TOP, T.WALL_FACE, T.WALL_BASE, T.WALL_SIDE, T.CLIFF, T.COAL_RIB, T.GOB,
 ]);
 
 export const O = {
@@ -194,6 +205,42 @@ export const O = {
   // ---- The Meissgeiers ----
   /** A painted barn star on a post in your yard (the Snallygaster ward). */
   BARN_STAR: 118,
+  // ---- The Deep Seam (mine expansion) ----
+  /** A 1914 miner turned to anthracite, holding up the roof. */
+  CALCIFIED: 119,
+  /** A fresh hemlock prop you wedged in. */
+  HEMLOCK_PROP: 120,
+  /** An old timber post (taps RING). */
+  MINE_POST: 121,
+  /** Sealed crosscut rubble wall. */
+  RUBBLE: 122,
+  /** A tin dinner bucket (a spirit's, or just lore). */
+  BUCKET: 123,
+  /** Chalk tally marks on the rib. */
+  CHALK: 124,
+  /** A loose page of the Black-Edged Mine Ledger. */
+  LEDGER_PAGE: 125,
+  /** Drip-seep water. */
+  SEEP: 126,
+  /** A tin of carbide pellets. */
+  CARBIDE: 127,
+  /** Master Timber Crib (Level 3). */
+  CRIB: 128,
+  /** Lift cage / ore-cart lift between levels. */
+  LIFT: 129,
+  /** The 1914 In-and-Out Board. */
+  INOUT_BOARD: 130,
+  /** The Lamp House locker (the Mine Kit). */
+  LOCKER: 131,
+  /** Timber rack: fresh hemlock props. */
+  TIMBER_RACK: 132,
+  ORE_CART: 133,
+  /** Brattice cloth curtain (decor, walkable-looking but solid). */
+  BRATTICE: 134,
+  /** First-aid box (the respirator). */
+  FIRST_AID: 135,
+  /** Biscuit cupboard. */
+  CUPBOARD: 136,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -212,7 +259,7 @@ export type Interact =
   | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
-  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar';
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar' | 'mine';
 
 export interface Drop {
   item: string;
@@ -286,6 +333,24 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.RED_SPRUCE]: { name: 'Red Spruce', solid: true },
   [O.SKUNK_CABBAGE]: { name: 'Skunk Cabbage', solid: false },
   [O.SNARE]: { name: 'Snare Trap', solid: true, interact: 'snare' },
+  [O.CALCIFIED]: { name: 'Calcified Prop', solid: true, interact: 'mine' },
+  [O.HEMLOCK_PROP]: { name: 'Hemlock Prop', solid: true, interact: 'mine' },
+  [O.MINE_POST]: { name: 'Timber Post', solid: true, interact: 'mine' },
+  [O.RUBBLE]: { name: 'Sealed Crosscut', solid: true, interact: 'mine' },
+  [O.BUCKET]: { name: 'Dinner Bucket', solid: true, interact: 'mine' },
+  [O.CHALK]: { name: 'Chalk Marks', solid: true, interact: 'mine' },
+  [O.LEDGER_PAGE]: { name: 'Ledger Page', solid: false, interact: 'mine' },
+  [O.SEEP]: { name: 'Drip-Seep', solid: true, interact: 'mine' },
+  [O.CARBIDE]: { name: 'Carbide Tin', solid: true, interact: 'mine' },
+  [O.CRIB]: { name: 'Master Timber Crib', solid: true, interact: 'mine' },
+  [O.LIFT]: { name: 'Lift Cage', solid: true, interact: 'mine' },
+  [O.INOUT_BOARD]: { name: 'In-and-Out Board', solid: true, interact: 'mine', fw: 2 },
+  [O.LOCKER]: { name: 'Lamp-House Locker', solid: true, interact: 'mine' },
+  [O.TIMBER_RACK]: { name: 'Timber Rack', solid: true, interact: 'mine' },
+  [O.ORE_CART]: { name: 'Ore Car', solid: true, interact: 'mine' },
+  [O.BRATTICE]: { name: 'Brattice Curtain', solid: true, interact: 'mine' },
+  [O.FIRST_AID]: { name: 'First-Aid Box', solid: true, interact: 'mine' },
+  [O.CUPBOARD]: { name: 'Biscuit Cupboard', solid: true, interact: 'mine' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
   [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
   [O.THISTLE]: { name: 'Thistle', solid: false },
@@ -318,7 +383,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.WATER_TOWER]: { name: 'Water Tower', solid: true, interact: 'sign', fw: 2, fh: 2 },
   [O.TIPPLE]: { name: 'Coal Tipple', solid: true, interact: 'sign', fw: 3, fh: 2 },
   [O.MINE_CART]: { name: 'Mine Cart', solid: true, interact: 'sign' },
-  [O.LAMP_HOUSE]: { name: 'Lamp House', solid: true, interact: 'sign', fw: 2, fh: 2 },
+  [O.LAMP_HOUSE]: { name: 'Lamp House', solid: true, interact: 'mine', fw: 2, fh: 2 },
   [O.DOG]: { name: 'Old Hound', solid: true, interact: 'dog' },
   [O.WALL_FRAME]: { name: 'Picture', solid: true },
   [O.MODEL_TRAIN]: { name: 'Model Railroad', solid: true, interact: 'sign', fw: 2 },

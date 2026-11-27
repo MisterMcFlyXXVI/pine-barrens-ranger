@@ -396,6 +396,22 @@ function drawHat(p: Pen, h: HatDef, view: 'down' | 'up' | 'left', hy: number): v
     case 'mask':
       drawMask(p, h, view, hy);
       return;
+    case 'minercap':
+      // Hard-boiled leather cap with a brass lamp bracket on the front.
+      p.rect(x0, hy - 2, x1 - x0 + 1, 4, h.main);
+      p.hline(x0 + 1, x1 - 1, hy - 2, h.shade);
+      p.hline(x0 - 1, x1 + 1, hy + 1, h.shade);
+      if (view === 'down') { p.rect(11, hy - 1, 2, 2, h.accent); p.px(11, hy - 1, P.LANTERN); }
+      else if (side) { p.rect(7, hy - 1, 2, 2, h.accent); p.px(7, hy - 1, P.LANTERN); }
+      return;
+    case 'respirator':
+      // Wet-wool pad over nose and mouth, round goggles, a strap round the back.
+      if (view === 'up') { p.hline(8, 15, hy + 3, P.SHADOW); p.hline(8, 15, hy + 5, h.shade); return; }
+      if (side) { p.rect(7, hy + 5, 3, 3, h.main); p.px(7, hy + 7, h.shade); p.rect(8, hy + 3, 2, 2, h.accent); p.px(8, hy + 3, P.FOG); p.hline(10, 14, hy + 4, P.SHADOW); return; }
+      p.rect(9, hy + 5, 6, 3, h.main); p.hline(9, 14, hy + 7, h.shade); p.px(11, hy + 6, h.shade); p.px(12, hy + 6, h.shade);
+      p.hline(8, 15, hy + 4, P.SHADOW);
+      p.rect(9, hy + 3, 2, 2, h.accent); p.rect(13, hy + 3, 2, 2, h.accent); p.px(9, hy + 3, P.FOG); p.px(13, hy + 3, P.FOG);
+      return;
   }
 }
 

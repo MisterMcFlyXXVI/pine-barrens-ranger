@@ -4,7 +4,7 @@
  */
 import type { Dir } from '../util';
 
-export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'dex' | 'bag' | 'map' | 'mute';
+export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'dex' | 'bag' | 'map' | 'mute' | 'shutter' | 'tap' | 'refill';
 
 const DIR_ACTIONS: readonly Action[] = ['up', 'down', 'left', 'right'];
 const REPEAT_DELAY = 0.32;

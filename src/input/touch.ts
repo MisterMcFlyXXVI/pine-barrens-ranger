@@ -139,6 +139,9 @@ export class TouchControls {
     this.bindButton(el('div', 'pill', pills, 'DEX'), 'dex');
     this.bindButton(el('div', 'pill', pills, 'BAG'), 'bag');
     this.bindButton(el('div', 'pill', pills, 'MAP'), 'map');
+    // Underground only (body.in-mine): headlamp shutter and the Sounding Bar.
+    this.bindButton(el('div', 'pill mine-only', pills, 'SHUT'), 'shutter');
+    this.bindButton(el('div', 'pill mine-only', pills, 'TAP'), 'tap');
   }
 
   /** Track a D-pad pointer; `null` = engaged but resting in the centre deadzone. */

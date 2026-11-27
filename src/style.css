@@ -441,3 +441,9 @@ body {
 }
 .acct-note { padding: 8px; border-radius: 6px; background: var(--pine); color: var(--lantern); font-size: 13px; }
 .acct-note.bad { background: var(--cran); color: var(--fog); }
+
+/* The Deep Seam: headlamp SHUT and Sounding Bar TAP pills, shown only underground. */
+.pill.mine-only { display: none; background: var(--shadow); color: var(--amber); }
+body.in-mine .pill.mine-only { display: flex; }
+body.in-mine .pill { width: 46px; }
+body.in-mine .pills { gap: 6px; }

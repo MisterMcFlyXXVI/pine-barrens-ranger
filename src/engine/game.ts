@@ -72,6 +72,8 @@ import { WorldMap, handcarUnlocked } from '../ui/worldmap';
 import { LINE_CLEARABLE, REPAIRS, STOPS, stopFlag } from '../data/handcar';
 import { craftedNeed, haveCount, Need, needsWatch } from './materials';
 import { renderWorld } from './render';
+import { mineTick, mineArrive, mineInteract, placeHemlock } from './mine';
+import { isDeepSeam, MINE_LEVELS } from '../data/mine';
 import { drawHud, hotbarHit } from '../ui/hud';
 import { checkSnares, waterAt, WEAPONS } from './outdoors';
 import { Wildlife } from './wildlife';
@@ -877,6 +879,7 @@ export class Game {
       this.campaignT -= dt;
       if (this.campaignT <= 0) { this.campaignT = 0.5; campaignTick(this); heartTick(this); bondsTick(this); awfulTick(this); adoptionTick(this); oriTick(this); needsWatch.tick(this); }
       this.updatePlayer(dt);
+      mineTick(this, dt);
       this.wildlife.update(this, dt);
       this.updateAmbience(dt);
     }
@@ -945,6 +948,7 @@ export class Game {
   /** Background music that fits the moment. */
   private musicTrack(): TrackId {
     if (this.mode === 'title') return 'title';
+    if (this.cur && isDeepSeam(this.cur.id)) return 'mine';
     const top = this.overlays[this.overlays.length - 1];
     if (top instanceof Encounter) return 'encounter';
     if (top instanceof StoryPanels || top instanceof FinaleScene) return 'title';
@@ -1060,9 +1064,22 @@ export class Game {
     if (portal && portal.to === 'COAL_MINE' && funded(this, 'mine') && this.msgCd <= 0) {
       this.msgCd = 1.5;
       p.chain = false;
-      this.progress.flags.add('mine');
+      // The town's adit is the drift mouth: first the teaser, then (kitted out) straight down to Level 1.
+      if (!this.progress.flags.has('mine') || this.cur.id !== 'PINE_HOLLOW_TOWN') {
+        this.progress.flags.add('mine');
+        sfx.door();
+        this.openOverlay(new Dialog(this.cur.id === 'PINE_HOLLOW_TOWN' ? [...MINE_TEASE] : ['This back way into No. 3 caved in long ago. The way down is the Lamp House on the hill above town.']));
+        return;
+      }
+      if (!this.progress.mine.kit) { this.notice('Gear up at the Lamp House locker first (face the Lamp House up the hill and press A).'); return; }
       sfx.door();
-      this.openOverlay(new Dialog([...MINE_TEASE]));
+      const L1 = MINE_LEVELS.MINE_L1;
+      this.transition(() => this.enterMap('MINE_L1', L1.arrive[0], L1.arrive[1], 'up'));
+      return;
+    }
+    if (portal && portal.to === 'MINE_L3' && this.progress.mine.sealed) {
+      p.chain = false;
+      if (this.msgCd <= 0) { this.msgCd = 1.5; this.notice('The manway down to Level 3 ends in a wall of fallen rock. The Deep Seam is closed for good.'); }
       return;
     }
     if (portal && portal.requires === 'home' && isHome(portal.to)) {
@@ -1123,6 +1140,7 @@ export class Game {
   }
 
   private onArrive(x: number, y: number): void {
+    mineArrive(this, x, y);
     const portal = this.cur.portalAt(x, y);
     if (portal && BUILT_MAPS.has(portal.to)) {
       sfx.door();
@@ -1363,6 +1381,7 @@ export class Game {
       this.toast('Display pedestal placed. Face it and press A to show a specimen.');
       return;
     }
+    if (id === 'hemlock_prop') { placeHemlock(this, tx, ty); return; }
     if (id === 'barn_star') {
       const ok = m.id === 'CABIN_YARD' && m.obj(tx, ty) === O.NONE && !m.blocked(tx, ty) && !m.portalAt(tx, ty) && m.plotIndex(tx, ty) < 0 && m.ground(tx, ty) !== T.PATH;
       if (!ok) { sfx.error(); this.notice('Hang the barn star on open ground in your cabin yard (off the path and the garden).'); return; }
@@ -1622,6 +1641,7 @@ export class Game {
     }
     const npc = this.npcFacing(tx, ty);
     if (npc) { talkTo(this, npc); return true; }
+    if (mineInteract(this, tx, ty)) return true;
     if (visitorAt(this, tx, ty)) return true;
     if (this.progress.pet && this.companion.at(this, tx, ty)) { petPet(this); return true; }
     if (eventStallAt(this, tx, ty)) return true;
@@ -1690,6 +1710,8 @@ export class Game {
       case 'ledger':
         openLedger(this, 'museum');
         return true;
+      case 'mine':
+        return false;
       case 'barnstar':
         sfx.blip();
         this.openOverlay(new Dialog(['Your painted barn star: eight points, red and gold, in a ring of tulips. The Snallygaster gives a yard with a star a wide berth, Omi says. (Snallygaster encounters start calmer while it stands.)'], [

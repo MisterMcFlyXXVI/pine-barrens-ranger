@@ -247,6 +247,27 @@ Handy URL flags for trying things out:
 - Weather never locks you out: winter brings cold rain and thundersnow, and a storm always comes within about ten
   days in any season (the Thunderbird, The Awful and rain cryptids stay reachable). Winter wilds have their own finds.
 
+## The Deep Seam (after the ending)
+A non-combat folk-horror chapter under No. 3. See `MINE_EXPANSION.md` for the full design.
+- **Opens** after the dawn epilogue, once Ledger project P4 (Mine & Lamp House, with Gideon's Lamp-House Key) is
+  funded. Face the Lamp House on the hill above town and press A.
+- **The Mine Kit** from the Lamp House locker: carbide headlamp with a **shutter hood** (F / SHUT pill), a canary
+  that goes quiet near gas, a fire-boss **Sounding Bar** (T / TAP pill: RING or HOLLOW THUD), and a Davy safety lamp
+  that burns blue-green near firedamp. Refill the headlamp with Carbide Pellets + Drip-Seep Water (R, or tap the
+  lamp on the mine HUD).
+- **Three levels**: the Drift Mouth & Main Haulageway, the Gob Piles & Room-and-Pillar workings, and the Deep Face
+  & the Foreman's Tally Chamber.
+- **Twelve lost miners** of the 1914 sealed shift, still IN on the In-and-Out Board:
+  - 5 **Calcified Props**: shore with a hemlock prop, then pry the tag.
+  - 4 **Coal-Chewers**: shutter closed, then offer seep water, a pepperoni roll or a miner's biscuit.
+  - 3 **Sealed Crosscuts**: find the hollow keystone, then wear the wet-wool respirator to reach the bucket.
+- **Banking**: hang each tag on OUT in the Lamp House for a short memory of that miner. Carried tags clink and
+  draw the Foreman. Pass out and you drop them where you fell.
+- **The Foreman** hunts open light and loud taps. Hide in man-trip alcoves. With all 12 out, wire the four Master
+  Timber Cribs and crank the blasting box at the ore-cart lift to seal the Deep Seam for good.
+- **Josef Meissgeier's ledger** (German script): Opa Walter translates it. Outfits: miner's coveralls and leather
+  cap, the wet-wool respirator, the fire-boss oilskin, and Walter's restored brass lapel tag.
+
 ## The Meissgeiers & the old feast days
 - A German family at the end of the east lane, in a half-timbered house with a painted barn star on the gable:
   - **Omi Liesl** (baker): bakery stall in the Town Square on Saturdays 9-1, bread at the diner weekday mornings.
@@ -326,5 +347,5 @@ Handy URL flags for trying things out:
   - **P3 Park Gazebo** (12 Timber, 4 Crushed Quartz, 450g): a lantern-lit gazebo on the park's west lawn. Sunday
     afternoon porch music (1-5 PM); sitting in it once a Sunday restores all your stamina.
   - **P4 Mine & Lamp House** (after the ending, with Gideon's Lamp-House Key; 5 Iron Nails, 500g): lights the lamp
-    house and opens the No. 3 mine gate (the underground expansion teaser).
+    house and opens the No. 3 mine gate, and the Lamp House: the way down into the Deep Seam.
 - **Title screen**: New Game (asks before replacing a save), Continue, Export Save (downloads a JSON file), Import Save (choose a JSON file).

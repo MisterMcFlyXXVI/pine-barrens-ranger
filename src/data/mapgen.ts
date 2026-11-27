@@ -24,6 +24,10 @@ export type MapId =
   | 'STORE_LOFT'
   | 'DINER_ROOM'
   | 'HOUSE_MEISSGEIER'
+  | 'LAMP_HOUSE'
+  | 'MINE_L1'
+  | 'MINE_L2'
+  | 'MINE_L3'
   | 'EXPANSION_RAIL';
 
 export interface Portal {

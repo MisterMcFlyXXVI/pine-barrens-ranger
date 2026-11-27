@@ -11,6 +11,8 @@ const KEYMAP: Record<string, Action> = {
   KeyI: 'bag', KeyB: 'bag',
   KeyP: 'map',
   KeyM: 'mute',
+  // The Deep Seam: headlamp shutter, Sounding Bar, refill the carbide.
+  KeyF: 'shutter', KeyT: 'tap', KeyR: 'refill',
 };
 
 /** Binds WASD/Arrows, Space/E interact, Shift/Esc cancel+sprint, 1-9 hotbar, Tab dex, M mute. */

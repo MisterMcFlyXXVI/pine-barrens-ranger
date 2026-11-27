@@ -1,6 +1,9 @@
 /** World renderer: ground autotiles → y-sorted objects/actors → particles → lighting. */
 import { eventNow, eventSpot, eventLook } from './calendar';
 import { CANDLE_TREES, candleSeason } from '../data/calendar';
+import { MG, MO } from '../graphics/mineSprites';
+import { isMineMap } from '../data/mine';
+import { mineDrawables, drawMineOverlay, drawMineHud, drawLampHouseTint, cribWired } from './mineRender';
 import { petFrame, heartIcon } from '../graphics/petSprites';
 import { settings } from './settings';
 import { rescueTracks } from './heartScenes';
@@ -131,6 +134,18 @@ function drawGround(g: CanvasRenderingContext2D, m: MapRuntime, x: number, y: nu
     case T.DOORMAT: g.drawImage(GROUND.doormat[0], sx, sy); return;
     case T.DOOR: g.drawImage(GROUND.door[0], sx, sy); return;
     case T.HEARTH: g.drawImage(GROUND.hearth[0], sx, sy); return;
+    // ---- The Deep Seam ----
+    case T.COAL_FLOOR: g.drawImage(pick(MG.floor, h), sx, sy); return;
+    case T.COAL_RIB: {
+      const below = m.ground(x, y + 1);
+      const face = below === T.COAL_FLOOR || below === T.MINE_RAIL || below === T.ALCOVE;
+      g.drawImage(face ? pick(MG.ribFace, h) : pick(MG.ribTop, h), sx, sy);
+      return;
+    }
+    case T.MINE_RAIL: g.drawImage(m.ground(x - 1, y) === T.MINE_RAIL || m.ground(x + 1, y) === T.MINE_RAIL ? MG.railH[0] : MG.railV[0], sx, sy); return;
+    case T.ALCOVE: g.drawImage(MG.alcove[0], sx, sy); return;
+    case T.GOB: g.drawImage(pick(MG.gob, h), sx, sy); return;
+    case T.LAMP_FLOOR: g.drawImage(pick(MG.lampFloor, h), sx, sy); return;
     default: g.drawImage(GROUND.void[0], sx, sy);
   }
 }
@@ -148,6 +163,8 @@ const flags = { grant: false, gift: false, station: false, mine: false, neon: fa
 let stopFixed = false;
 /** Set each frame: 0 Spring, 1 Summer, 2 Fall, 3 Winter (outdoors only for seasonal looks). */
 let season = 0;
+/** The game being drawn (for the few object sprites that depend on progress). */
+let mineGame: Game | null = null;
 /** Set each frame: someone is calling on the porch radio tonight. */
 let radioCalling = false;
 
@@ -325,6 +342,25 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.CHIME: return OBJ.chime[Math.floor(time * 1.5 + h) % 2];
     case O.PYLON: return OBJ.pylon[Math.floor(time * 6) % 2];
     case O.ROD_BASE: return OBJ.rodbase[0];
+    // ---- The Deep Seam ----
+    case O.CALCIFIED: return MO.calcified[Math.floor(time * 1.5 + h * 2) % 2];
+    case O.HEMLOCK_PROP: return MO.hemlock[0];
+    case O.MINE_POST: return MO.post[0];
+    case O.RUBBLE: return pick(MO.rubble, h);
+    case O.BUCKET: return MO.bucket[0];
+    case O.CHALK: return MO.chalk[0];
+    case O.LEDGER_PAGE: return MO.page[0];
+    case O.SEEP: return MO.seep[Math.floor(time * 2 + h * 3) % 2];
+    case O.CARBIDE: return MO.carbide[0];
+    case O.CRIB: return MO.crib[mineGame && cribWired(mineGame, x, y) ? 1 : 0];
+    case O.LIFT: return MO.lift[0];
+    case O.INOUT_BOARD: return MO.board[0];
+    case O.LOCKER: return MO.locker[0];
+    case O.TIMBER_RACK: return MO.rack[0];
+    case O.ORE_CART: return MO.cart[0];
+    case O.BRATTICE: return MO.brattice[Math.floor(time * 1.2) % 2];
+    case O.FIRST_AID: return MO.firstAid[0];
+    case O.CUPBOARD: return MO.cupboard[0];
     default: return null;
   }
 }
@@ -401,6 +437,7 @@ function drawTool(g: CanvasRenderingContext2D, tool: ToolKind, dir: Dir, f: numb
 
 export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const m = game.cur;
+  mineGame = game;
   stopFixed = game.stopRepaired(m.id);
   const railBits = STOPS.get(m.id) ?? null;
   season = m.def.indoor ? 1 : Math.max(0, SEASONS.indexOf(game.clock.season as typeof SEASONS[number]));
@@ -818,6 +855,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       if (flip) { g.save(); g.translate(sx + 24, sy); g.scale(-1, 1); g.drawImage(spr, 0, 0); g.restore(); } else g.drawImage(spr, sx, sy);
     } });
   }
+  mineDrawables(game, g, cx, cy, time, list);
   list.sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
 
@@ -834,6 +872,9 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
   const outdoors = !m.def.indoor;
   if (outdoors) game.weatherFx.drawTint(g, game.w, game.h, wthr);
 
+  // ---- The Deep Seam: its own darkness instead of the day/night tint ----
+  if (isMineMap(m.id)) { drawMineOverlay(game, g, cx, cy, time); drawMineHud(game, g); return; }
+  if (m.id === 'LAMP_HOUSE') { drawLampHouseTint(game, g, time); drawMineHud(game, g); return; }
   // ---- Lighting ----
   const ph = game.clock.phase();
   if (ph !== 'day') {

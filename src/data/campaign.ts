@@ -361,5 +361,5 @@ export const MINE_TEASE: readonly string[] = [
   'Far below, a lantern flickers where no one should be. Something down there knocks on the rails, three times, slow and patient.',
   'Chalked on the first timber, in a careful railroad hand: "WHAT WENT UP THE RIDGE ON THE \'78 TRAIN CAME BACK DOWN HERE. -E.V."',
   'Whatever was in Barney\'s growling crate, it\'s down there still, and it\'s been listening to the town above it for a long time.',
-  'BELOW PINE HOLLOW: a new chapter beneath No. 3. Coming in a future expansion.',
+  'BELOW PINE HOLLOW: THE DEEP SEAM. The Lamp House up the hill is open now, and the lift goes down. (Face the Lamp House and press A.)',
 ];
