@@ -223,6 +223,8 @@ Handy URL flags for trying things out:
 - **Your name**: Barney asks it on the drive up; friends at 3+ hearts sometimes greet you by it; it comes up in heart
   scenes, Agnes's 24-specimen letter, the porch radio after the ending, the finale (Indrid Cold and Elias) and the
   epilogue. Everyone else still calls you "Ranger". Dialogue text can use `{name}`.
+- **Portraits & voices**: when a townsperson talks, their face appears beside the text with a name plate, and their
+  words come in their own voice (Gideon low and slow, Pippa high and quick, Indrid Cold an eerie hum).
 - **The cabin mirror**: the wardrobe now offers "Look in the mirror" to change your look any time. Saves from before the
   creator open it once on load.
 

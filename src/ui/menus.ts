@@ -1,4 +1,6 @@
 /** Modal menus: dialog boxes, bag, seed catalog, wardrobe, journal/dex, sleep summary. */
+import { speakerOf, speakerSprite, speakerName, voiceOf, stripLabel } from './speaker';
+import type { SpeakerId } from './speaker';
 import { fillName } from '../data/appearance';
 import { foresightText, bondsMade } from '../engine/bonds';
 import { HEART_SCENES } from '../data/heartScenes';
@@ -44,6 +46,30 @@ export interface Choice {
   fn: () => void;
 }
 
+/** Portrait box size (px): the head and shoulders of a 24x24 sprite at 2x. */
+const PORTRAIT = 26;
+
+/** The speaker's face in a frame, with a name plate; their head bobs a pixel while they talk. */
+function drawPortrait(game: Game, g: CanvasRenderingContext2D, who: SpeakerId, x: number, y: number, talking: boolean): void {
+  const spr = speakerSprite(game, who, Math.floor(game.time * 2) % 2);
+  if (!spr) return;
+  g.fillStyle = hex(P.VOID); g.fillRect(x - 1, y - 1, PORTRAIT + 2, PORTRAIT + 2);
+  g.fillStyle = hex(who === 'indrid' ? P.PINE : P.TWILIGHT); g.fillRect(x, y, PORTRAIT, PORTRAIT);
+  g.fillStyle = hex(P.MIST); g.fillRect(x, y + PORTRAIT - 6, PORTRAIT, 6);
+  const bob = talking && Math.floor(game.time * 8) % 2 ? 1 : 0;
+  g.save();
+  g.beginPath(); g.rect(x, y, PORTRAIT, PORTRAIT); g.clip();
+  // Head and shoulders: a 13x13 window of the sprite, doubled (Indrid is taller: show more of him).
+  if (who === 'indrid') g.drawImage(spr, 2, 0, 20, 20, x - 2, y + bob, 30, 30);
+  else g.drawImage(spr, 5, 0, 14, 13, x - 1, y + 1 + bob, 28, 26);
+  g.restore();
+  const name = speakerName(who);
+  const nw = textWidth(name) + 6;
+  g.fillStyle = hex(P.VOID); g.fillRect(x - 1, y - 10, nw + 2, 9);
+  g.fillStyle = hex(P.SHADOW); g.fillRect(x, y - 9, nw, 7);
+  drawText(g, name, x + 3, y - 8, P.LANTERN);
+}
+
 export class Dialog implements Overlay {
   closed = false;
   private page = 0;
@@ -56,9 +82,13 @@ export class Dialog implements Overlay {
 
   constructor(pages: string[], choices?: Choice[]) {
     // Dialogue can say {name}: the player's name, or "Ranger" if they never gave one.
-    this.pages = pages.map(fillName);
+    const filled = pages.map(fillName);
     this.choices = choices?.map((c) => ({ ...c, label: fillName(c.label) }));
+    this.speakers = filled.map(speakerOf);
+    this.pages = filled.map((pg, i) => (this.speakers[i] ? stripLabel(pg) : pg));
   }
+  /** Who says each page (null = narration). */
+  private readonly speakers: Array<SpeakerId | null>;
 
   update(game: Game, dt: number): void {
     const inp = game.input;
@@ -66,7 +96,13 @@ export class Dialog implements Overlay {
     if (this.shown < text.length) {
       this.shown = Math.min(text.length, this.shown + dt * 70);
       this.blipAcc += dt;
-      if (this.blipAcc > 0.05) { this.blipAcc = 0; sfx.type(); }
+      const voice = voiceOf(this.speakers[this.page]);
+      // Speakers "talk" a syllable every few letters; narration ticks like a typewriter.
+      if (voice ? this.blipAcc > 0.075 : this.blipAcc > 0.05) {
+        this.blipAcc = 0;
+        if (!voice) sfx.type();
+        else if (text[Math.floor(this.shown)] !== ' ') sfx.voice(voice[0], voice[1], voice[2]);
+      }
       if (anyConfirm(game) || inp.pressed('b')) this.shown = text.length;
       return;
     }
@@ -96,11 +132,13 @@ export class Dialog implements Overlay {
     }
   }
 
-  private box(game: Game): Rect & { lines: string[] } {
+  private box(game: Game): Rect & { lines: string[]; pad: number } {
     const w = Math.min(game.w - 8, 236);
-    const lines = wrapText(this.pages[this.page], w - 12);
-    const h = Math.max(3, lines.length) * 7 + 10;
-    return { x: Math.floor((game.w - w) / 2), y: game.h - h - 26, w, h, lines };
+    // Room for the speaker's portrait on the left.
+    const pad = this.speakers[this.page] && speakerSprite(game, this.speakers[this.page]!, 0) ? PORTRAIT + 6 : 0;
+    const lines = wrapText(this.pages[this.page], w - 12 - pad);
+    const h = Math.max(pad ? 4 : 3, lines.length) * 7 + 10;
+    return { x: Math.floor((game.w - w) / 2), y: game.h - h - 26, w, h, lines, pad };
   }
 
   private choiceRects(game: Game): Rect[] {
@@ -115,12 +153,14 @@ export class Dialog implements Overlay {
   draw(game: Game, g: CanvasRenderingContext2D): void {
     const b = this.box(game);
     panel(g, b.x, b.y, b.w, b.h);
+    const who = this.speakers[this.page];
+    if (who && b.pad) drawPortrait(game, g, who, b.x + 4, b.y + 4, this.shown < this.pages[this.page].length);
     let left = Math.floor(this.shown);
     b.lines.forEach((line, k) => {
       if (left <= 0) return;
       const vis = line.slice(0, left);
       left -= line.length + 1;
-      drawText(g, vis, b.x + 6, b.y + 6 + k * 7, P.FOG);
+      drawText(g, vis, b.x + 6 + b.pad, b.y + 6 + k * 7, P.FOG);
     });
     const done = this.shown >= this.pages[this.page].length;
     const last = this.page === this.pages.length - 1;

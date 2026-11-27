@@ -6,7 +6,7 @@ export type Surface = 'grass' | 'wood' | 'bog' | 'sand';
 
 const MUTE_KEY = 'pbr_muted';
 
-type Wave = OscillatorType;
+export type Wave = OscillatorType;
 
 class Sfx {
   private ac: AudioContext | null = null;
@@ -197,6 +197,11 @@ class Sfx {
   /* ---- UI ---- */
   blip(): void { this.tone('square', 880, 880, 0.03, 0.05); }
   type(): void { this.tone('square', 1200 + Math.random() * 120, 1200, 0.015, 0.025); }
+  /** A speaker's typing voice: their pitch, wobbling a little like speech. */
+  voice(wave: Wave, f: number, lilt: number): void {
+    const k = 1 + (Math.random() * 2 - 1) * lilt;
+    this.tone(wave, f * k, f * k * (Math.random() < 0.3 ? 0.92 : 1.02), 0.04, wave === 'square' ? 0.022 : 0.04);
+  }
   confirm(): void { this.tone('square', 660, 660, 0.05, 0.07); this.tone('square', 990, 990, 0.08, 0.07, 0.05); }
   cancel(): void { this.tone('square', 520, 520, 0.05, 0.06); this.tone('square', 350, 350, 0.08, 0.06, 0.05); }
   error(): void { this.tone('square', 140, 120, 0.16, 0.08); this.tone('square', 147, 125, 0.16, 0.05); }
