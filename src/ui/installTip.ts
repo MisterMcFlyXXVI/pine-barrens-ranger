@@ -88,6 +88,32 @@ function steps(p: Platform): string[] {
   }
 }
 
+type Tab = 'ios' | 'android' | 'computer';
+const TABS: ReadonlyArray<[Tab, string]> = [['ios', 'iPHONE / iPAD'], ['android', 'ANDROID'], ['computer', 'COMPUTER']];
+
+function tabFor(p: Platform): Tab {
+  if (p === 'ios') return 'ios';
+  if (p === 'android' || p === 'samsung' || p === 'firefox-android') return 'android';
+  return 'computer';
+}
+
+/** Steps for a tab: the detected browser's own steps when it's that tab, else every browser's. */
+function tabSteps(tab: Tab, p: Platform): string[] {
+  if (tabFor(p) === tab && p !== 'desktop-other') return steps(p);
+  if (tab === 'ios') return steps('ios');
+  if (tab === 'android') return [
+    `<b>Chrome:</b> tap the menu ${DOTS} at the top right, then <b>Add to Home screen</b> or <b>Install app</b>, then <b>Install</b>.`,
+    '<b>Samsung Internet:</b> tap the menu <b>&#9776;</b> at the bottom right, then <b>Add page to</b> &gt; <b>Home screen</b>.',
+    `<b>Firefox:</b> tap the menu ${DOTS}, then <b>Add app to Home screen</b> (or <b>Install</b>).`,
+    'Open <b>PH Ranger</b> from your Home Screen or app drawer.',
+  ];
+  return [
+    `<b>Chrome / Edge:</b> click the <b>install icon</b> at the right end of the address bar, or the menu ${DOTS} &gt; <b>Install</b>.`,
+    '<b>Safari on a Mac:</b> <b>File &gt; Add to Dock</b>.',
+    'Open <b>Pine Holler Ranger</b> from your desktop, Start menu, Dock or Applications.',
+  ];
+}
+
 function close(never: boolean): void {
   if (never) { try { localStorage.setItem(KEY, 'never'); } catch { /* storage blocked */ } }
   root?.remove();
@@ -108,7 +134,9 @@ export function openInstallTip(auto = false): void {
   root = document.createElement('div');
   root.className = 'acct-backdrop';
   root.addEventListener('pointerdown', (e) => { if (e.target === root) close(false); });
-  const list = steps(p).map((s) => `<li>${s}</li>`).join('');
+  let tab = tabFor(p);
+  const list = () => tabSteps(tab, p).map((s) => `<li>${s}</li>`).join('');
+  const tabs = () => TABS.map(([id, label]) => `<button type="button" class="it-tab${id === tab ? ' on' : ''}" data-tab="${id}" aria-pressed="${id === tab}">${label}</button>`).join('');
   const separate = p === 'ios' || p === 'mac-safari'
     ? 'On Apple devices the Home Screen app keeps its <b>own</b> save, separate from this browser tab.'
     : 'The installed app may keep its own save, separate from this browser tab.';
@@ -117,7 +145,8 @@ export function openInstallTip(auto = false): void {
       <h2 id="it-h">PLAY IT AS AN APP</h2>
       <p>Add <b>Pine Holler Ranger</b> to your ${p.startsWith('desktop') || p === 'mac-safari' ? 'computer' : 'Home Screen'}. It opens full-screen with no browser bars, runs smoother, and your progress can't be lost to a closed tab.</p>
       ${deferred ? '<button type="button" class="acct-btn primary tall" data-act="install">INSTALL NOW</button><p class="acct-or">or do it by hand:</p>' : ''}
-      <ol class="it-steps">${list}</ol>
+      <div class="it-tabs" role="group" aria-label="Device">${tabs()}</div>
+      <ol class="it-steps">${list()}</ol>
       <p class="acct-small">${separate} ${hasSave
         ? 'You already have a save here: before switching, use <b>EXPORT SAVE</b> on the title screen, then <b>IMPORT SAVE</b> in the app (or sign in to an <b>ACCOUNT</b> in both).'
         : 'Starting fresh? Install first, then begin your game in the app.'}</p>
@@ -128,6 +157,13 @@ export function openInstallTip(auto = false): void {
       </div>
     </div>`;
   root.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest('[data-tab]')?.getAttribute('data-tab') as Tab | null;
+    if (t && root) {
+      tab = t;
+      root.querySelector('.it-tabs')!.innerHTML = tabs();
+      root.querySelector('.it-steps')!.innerHTML = list();
+      return;
+    }
     const act = (e.target as HTMLElement).closest('[data-act]')?.getAttribute('data-act');
     if (act === 'ok') close(false);
     else if (act === 'never') close(true);

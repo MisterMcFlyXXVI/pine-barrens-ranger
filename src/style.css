@@ -455,3 +455,11 @@ body.in-mine .pills { gap: 6px; }
 .it-ico { width: 15px; height: 17px; vertical-align: -3px; color: var(--lantern); }
 .it-row { display: flex; gap: 8px; margin-top: 10px; }
 .it-row .acct-btn { flex: 1; }
+
+.it-tabs { display: flex; gap: 4px; margin: 10px 0 4px; }
+.it-tab {
+  flex: 1; min-height: 34px; padding: 4px 2px; border-radius: 6px; cursor: pointer;
+  border: 2px solid var(--pine); background: transparent; color: var(--mist);
+  font: inherit; font-size: 11px; font-weight: bold; letter-spacing: 1px;
+}
+.it-tab.on { background: var(--forest); color: var(--lantern); border-color: var(--moss); }
