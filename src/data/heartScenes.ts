@@ -49,6 +49,7 @@ const NIGHT = (t: SceneTime) => between(t, h(20), h(26));
 export const SCENE_CAST: Record<HeartScene['who'], string[]> = {
   agnes: ['agnes'], barnaby: ['barnaby'], mabel: ['mabel'], gideon: ['gideon'], clara: ['clara'],
   pippa: ['pippa'], sam: ['sam'], toby: ['toby'], ruth: ['ruth'], kids: ['pippa', 'sam'],
+  liesl: ['liesl'], matthias: ['matthias'], walter: ['walter'],
 };
 
 export const HEART_SCENES: readonly HeartScene[] = [
@@ -188,24 +189,24 @@ export const HEART_SCENES: readonly HeartScene[] = [
     ],
   },
   {
-    id: 'ruth2', hint: 'Her parlor, a rainy afternoon', who: 'ruth', hearts: 2, map: 'HOUSE_RUTH', when: (t) => t.wet && AFTERNOON(t), title: 'Walter\'s lamp tag',
+    id: 'ruth2', hint: 'Her parlor, a rainy afternoon', who: 'ruth', hearts: 2, map: 'HOUSE_RUTH', when: (t) => t.wet && AFTERNOON(t), title: 'Earl\'s lamp tag',
     lines: [
       'Rain on the windows. Ruth opens a cedar box on the table and turns it toward you.',
-      'Inside: a brass tag, stamped 312. PINE HOLLOW No. 3.',
+      'Inside: a brass tag, stamped 47. PINE HOLLOW No. 3.',
       'RUTH: "Each miner hung his tag on the lamp-house board going in and took it back coming out. If your tag was still on the board at the end of shift, they knew to come looking."',
-      'RUTH: "Walter came out every day for thirty-one years. The morning of the collapse, he was home sick. Danny Vance took his shift." She closes the box. "Elias knows. He\'s never once held it against me. That\'s the kind of man he is."',
+      'RUTH: "Earl came out every day for thirty-one years. March of \'78 he went back in, on the rescue crew, three days digging. He carried Walter Meissgeier out on his back. He couldn\'t get to Danny Vance." She closes the box. "He never forgave himself for that. Elias never once held it against him. That\'s the kind of man Elias is."',
     ],
   },
   {
     id: 'ruth3', hint: 'Town Park, dusk', who: 'ruth', hearts: 4, map: 'PINE_HOLLOW_TOWN', near: [38, 30, 6], when: DUSK, title: 'Music across the hollow',
     post: [
       "Ruth settles onto a bench in the Town Park and listens. Faint, from the direction of Agnes's porch, a harmonica.",
-      "RUTH: \"Sound carries in a hollow. Walter used to say that's why folks here sing so much -- so the dead can hear us.\"",
+      "RUTH: \"Sound carries in a hollow. Earl used to say that's why folks here sing so much -- so the dead can hear us.\"",
       "RUTH: \"Three years that harmonica played from the ridge, honey. Danny's songs. Now it plays from Agnes's porch.\" She pats your hand. \"The dead can hear it just the same. So can we.\"",
     ],
     lines: [
       'Ruth settles onto a bench in the Town Park and listens. Faint, from somewhere up the ridge, a harmonica.',
-      'RUTH: "Sound carries in a hollow. You can hear a man whistling three ridges over if the air\'s still. Walter used to say that\'s why folks here sing so much -- so the dead can hear us."',
+      'RUTH: "Sound carries in a hollow. You can hear a man whistling three ridges over if the air\'s still. Earl used to say that\'s why folks here sing so much -- so the dead can hear us."',
       'RUTH: "That harmonica\'s been playing evenings for three years now. Same four songs. Danny\'s songs." She pats your hand. "Somebody up there misses this town something terrible, {name}, honey."',
     ],
   },
@@ -343,6 +344,110 @@ export const HEART_SCENES: readonly HeartScene[] = [
       'Tied to it, a note in a railroad hand: "SPARE CRANK. RELAY CHECKED TO RIDGE SIDING. IF BARNEY\'S ASLEEP, PUMP IT YOURSELF. -E.V."',
       'TOBY: "He left it where a trackman would look! You should have it, {name}. You\'re out on the line more than anybody."',
       '(You received the Spare Handcar Crank.)',
+    ],
+  },
+  /* ---------------- Omi Liesl Meissgeier ---------------- */
+  {
+    id: 'liesl1', hint: 'Her bakery stall, Saturday morning', who: 'liesl', hearts: 1, map: 'PINE_HOLLOW_TOWN', near: [42, 31, 5],
+    when: (t) => t.weekday === 'Sat' && !t.wet && between(t, h(9), h(13)), give: ['springerle', 3], title: 'The springerle molds',
+    lines: [
+      'Omi Liesl waves you round behind her stall and sets a dark wooden board in your hands. Carved into it, in reverse, a hare running through tulips.',
+      'OMI LIESL: "My great-grandfather cut this in 1891, on the ship, with a pocketknife, so his bride would have something to bake with in America. Pear wood. A hundred and thirty years of flour in the cracks."',
+      'She rolls out a sheet of pale anise dough, presses the mold into it, lifts. The hare is there, every whisker. "You see? The board remembers. You only have to be patient enough to let it."',
+      'OMI LIESL: "Take these. They must dry overnight before baking, or the picture puffs away. Like most good things, Schatz."',
+    ],
+  },
+  {
+    id: 'liesl2', hint: 'Her garden, a dry afternoon', who: 'liesl', hearts: 2.5, map: 'PINE_HOLLOW_TOWN', near: [58, 55, 5],
+    when: (t) => !t.wet && between(t, h(14), h(16)), flag: 'taught_barnstar', title: 'The barn star',
+    lines: [
+      'Omi Liesl has a round board propped against her fence and a pot of red paint. She is painting a star: eight points, tulips round the rim.',
+      'OMI LIESL: "My mother\'s people came from Frederick County, Maryland. The German farmers there called it the Schneller Geist. The quick ghost. You call it Snallygaster."',
+      'OMI LIESL: "It came down on the barns at night, they said, and took what it liked. So they painted stars on the barns. Seven points, eight points. And it went somewhere else. My mother painted one on every house she ever lived in. So do I."',
+      'She hands you the brush. "Now you. Nobody believes it works. Everybody paints one anyway. That is how you know it is wise."',
+      '(You can paint a Barn Star at the Porch Workbench, on the BLUEPRINTS tab. Raise it in your yard and Snallygaster encounters start calmer.)',
+    ],
+  },
+  {
+    id: 'liesl3', hint: 'Her kitchen, evening', who: 'liesl', hearts: 4, map: 'HOUSE_MEISSGEIER', when: (t) => between(t, h(18), h(20)), give: ['stollen', 3], title: 'The sourdough crock',
+    lines: [
+      'Omi Liesl lifts the cloth off a brown stoneware crock. Inside, something bubbles slowly and smells of apples and beer.',
+      'OMI LIESL: "My grandmother\'s sourdough. It came over in 1891 in her lap, on the ship. It went to Lancaster, to Maryland, to Pennsylvania, then here. Every morning of my life, somebody in this family has fed it."',
+      'OMI LIESL: "In \'78, after the mine, Walter would not eat. Not for days. So I baked. Every morning, bread on the table, whether he ate it or not. One morning he took a piece. That is all a baker can do, Schatz. Put the bread on the table and wait."',
+      'She spoons a little of the starter into a jar and closes your hands around it. "Now some of it lives with you. Feed it. And when somebody up on that ridge will not eat, you know what to do."',
+    ],
+  },
+  /* ---------------- Matthias Meissgeier ---------------- */
+  {
+    id: 'matthias1', hint: 'His carving porch, a dry morning', who: 'matthias', hearts: 1, map: 'PINE_HOLLOW_TOWN', near: [61, 55, 5],
+    when: (t) => !t.wet && between(t, h(8), h(12)), flag: 'taught_masks', title: 'The oldest mask',
+    lines: [
+      'Matthias holds up a mask so old the paint is almost gone: a horned face with a crack across one cheek, the wood gone silver.',
+      'MATTHIAS: "Omi\'s great-grandfather\'s. At Fasnacht, back in the Black Forest, the Narren put these on and chased winter out of the village with bells. You weren\'t you, behind it. You were the goat. Or the bear. Or winter\'s enemy."',
+      'MATTHIAS: "I was a quiet kid. Like, really quiet. The first time I put one on, I yelled so loud the whole street turned around. Omi cried. Good crying."',
+      'He hands you a knife and a linden block. "Here. Big cuts first, eyes last. The eyes are where it wakes up." (You can carve Fasnacht masks at the Porch Workbench, on the BLUEPRINTS tab.)',
+    ],
+  },
+  {
+    id: 'matthias2', hint: 'His carving porch, dusk', who: 'matthias', hearts: 2.5, map: 'PINE_HOLLOW_TOWN', near: [61, 55, 5], when: DUSK, title: 'Elias\'s knife',
+    lines: [
+      'Matthias is turning a little bone-handled knife over in his fingers. The blade is worn to a sliver.',
+      'MATTHIAS: "Elias\'s. When I was twelve I stopped talking for most of a year. Mom and Dad were... it was a bad year. Elias came by Opa\'s porch, sat down, handed me this and a block of pine, and started whittling. Didn\'t say a word. Neither did I. For weeks."',
+      'MATTHIAS: "Then one day I said, \'Your owl looks like a potato.\' And he laughed so hard he fell off the step."',
+      'MATTHIAS: "His hands got shaky, the last few winters. He was carving a Sheepsquatch in Gideon\'s shop and couldn\'t finish it. I offered. He said some things a man has to finish himself." He folds the knife. "He never came back for this, either. I keep it sharp. In case."',
+    ],
+    post: [
+      'Matthias is turning a little bone-handled knife over in his fingers. The blade is worn to a sliver.',
+      'MATTHIAS: "Elias\'s. When I was twelve I stopped talking for most of a year. Elias came by Opa\'s porch, handed me this and a block of pine, and started whittling. Didn\'t say a word. Neither did I. For weeks. Then one day I said, \'Your owl looks like a potato,\' and he laughed so hard he fell off the step."',
+      'MATTHIAS: "He finished the Sheepsquatch, up there in the warden cabin. Hands shaking the whole way. Some things a man has to finish himself, he said."',
+      'MATTHIAS: "He came by yesterday and saw this on my bench. I went to give it back. He closed my hand on it and said, \'Keep it, son. Your owls are better than mine now.\'" He grins. "They are. Don\'t tell him I agreed."',
+    ],
+  },
+  {
+    id: 'matthias3', hint: 'His house, evening', who: 'matthias', hearts: 4, map: 'HOUSE_MEISSGEIER', when: (t) => between(t, h(19), h(22)), wear: 'ranger_mask', title: 'The Ranger\'s mask',
+    lines: [
+      'Matthias puts something behind his back when you come in, then gives up and holds it out.',
+      'A mask, carved in dark green linden: a stag, with small amber antlers and a face that is calm, and watchful, and very still.',
+      'MATTHIAS: "Every Fasnacht mask is somebody. The goat is mischief. The bear is strength. The owl is Agnes. This one\'s you. Something that goes quiet into the woods and the woods let it."',
+      'MATTHIAS: "I think the shy ones will like it. A face that doesn\'t move. Try it." (The Ranger\'s Mask is in your wardrobe. Skittish cryptids start a little calmer when you wear it.)',
+    ],
+  },
+  /* ---------------- Opa Walter Meissgeier ---------------- */
+  {
+    id: 'walter1', hint: 'The High Bald on Radio Ridge, a picking morning (Tue/Fri)', who: 'walter', hearts: 1, map: 'RADIO_RIDGE_AND_CROSSROADS', near: [31, 17, 7],
+    when: (t) => (t.weekday === 'Tue' || t.weekday === 'Fri') && !t.wet && MORNING(t), give: ['mountain_mint', 3], title: 'The High Bald',
+    lines: [
+      'Opa Walter is on his knees in the meadow grass at the top of the ridge, a canvas satchel open beside him, wind in his beard.',
+      'OPA WALTER: "You found me! Come, come. This is a bald. No trees, only grass and flowers and sky, right on top of the mountain. Nobody knows why. I think God wanted somewhere to sit down."',
+      'He pinches a silvery leaf and holds it under your nose. Peppermint and pepper. "Mountain mint. One in five, that is the rule. Take one stem, leave four. The mountain keeps the rest, and next year there are more."',
+      'OPA WALTER: "In the Allgaeu I picked gentian and arnica on meadows like this, when I was a boy, with cowbells all around. Here it is mint and bee balm and the wind. Close enough. Close enough that I can breathe."',
+    ],
+  },
+  {
+    id: 'walter2', hint: 'The foot of the mine road, dusk', who: 'walter', hearts: 2.5, map: 'PINE_HOLLOW_TOWN', near: [50, 18, 5], when: DUSK, title: 'Check 312',
+    lines: [
+      'Opa Walter is standing at the bottom of the mine road, leaning on his walking stick, looking up the hill at the dark lamp house. He doesn\'t go any further.',
+      'OPA WALTER: "Sixteen years I worked No. 3. March of \'78, my knee was bad, and Danny Vance said, \'Walter, take my spot by the portal, I\'ll go to the face.\' Just like that. Like trading a sandwich."',
+      'OPA WALTER: "The roof came in at ten past eight. I was close enough to the portal to see daylight. Earl Haddix dug me out with his hands. Gideon too. Fourteen of us they got out. Danny was the fifteenth."',
+      'OPA WALTER: "My check is still on that board. 312. I hung it there that morning and I never went back for it. That man stayed down there with Danny. This one swore to God he would never again go anywhere he could not see the sky."',
+      'He turns away from the hill, toward the ridge, already pink with evening. "So I go up instead. Every week. As high as my knees will carry me. Elias never once said a hard word to me. Not once. I think that is the heaviest thing I carry."',
+    ],
+    post: [
+      'Opa Walter is standing at the bottom of the mine road, leaning on his walking stick, looking up the hill at the dark lamp house.',
+      'OPA WALTER: "Sixteen years I worked No. 3. March of \'78, Danny Vance traded me his place at the face because my knee was bad. The roof came in. Earl Haddix dug me out. Nobody could reach Danny."',
+      'OPA WALTER: "My check is still on that board. 312. I swore I would never again go anywhere I could not see the sky. So I go up the mountains instead."',
+      'OPA WALTER: "Elias came to my porch last week. Sat in Liesl\'s chair, which nobody does. He said: \'Walter, Danny would have traded with you a hundred times. He\'d be glad it was you that walked out.\' Then he ate three of Liesl\'s donuts and went home." He wipes his eyes, unembarrassed. "When they open that lamp house, I think I will walk up and take my check down. I think I can, now."',
+    ],
+  },
+  {
+    id: 'walter3', hint: 'The old grade post on the High Bald, a picking day', who: 'walter', hearts: 4, map: 'RADIO_RIDGE_AND_CROSSROADS', near: [37, 15, 6],
+    when: (t) => (t.weekday === 'Tue' || t.weekday === 'Fri') && !t.wet && between(t, h(7), h(15, 30)), give: ['herb_satchel', 1], title: 'The high line',
+    lines: [
+      'Opa Walter is sitting against the old C&O grade post at the edge of the bald, where the roadbed climbs on into fog and dark red spruce.',
+      'OPA WALTER: "The Spruce Knob branch. When I came here, the Shay engines still climbed this, gears grinding, up to Bald Knob. Up there it is cold even in July. Red spruce, moss as deep as your knee, flowers I have no English name for."',
+      'OPA WALTER: "Wild ginseng on the north slopes, Ruth\'s \'sang.\' Three prongs or more, you may dig it, and you plant the red berries right there in the hole. Leave the mountain richer than you found it. That is the only rule I really believe in."',
+      'He unbuckles the satchel from his shoulder: waxed canvas, a bone-handled digging knife, the smell of mint and woodsmoke. "Forty years this went up the mountain with me. Now it goes with you. You will find more up here with it. I put good luck in the seams."',
+      'OPA WALTER: "And when Barney gets the old line running again, up to the high country, you go first. Then you come back and tell an old man what grows up there now." (You received Opa\'s Herb Satchel: two more herbs on the High Bald each day.)',
     ],
   },
 ];

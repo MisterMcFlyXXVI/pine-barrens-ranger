@@ -98,6 +98,7 @@ const base: ItemDef[] = [
   { id: 'conductor_whistle', name: "Barney's Conductor Whistle", kind: 'keepsake', price: 0, stack: 1, desc: 'Brass, worn smooth. Blow it at any repaired handcar stop and Barney comes running, any hour.' },
   { id: 'lamphouse_key', name: 'Lamp-House Key', kind: 'keepsake', price: 0, stack: 1, desc: 'The key to the old Pine Hollow No. 3 lamp house. Gideon kept it 19 years. (Town Restoration: the Mine.)' },
   { id: 'binocular_strap', name: "Elias's Binocular Strap", kind: 'keepsake', price: 0, stack: 1, desc: 'Leather, initialed E.V. With it slung round your neck you spot one more cryptid clue at a time.' },
+  { id: 'herb_satchel', name: "Opa's Herb Satchel", kind: 'keepsake', price: 0, stack: 1, desc: 'Waxed canvas, smelling of mint and woodsmoke, with a bone-handled digging knife. Carry it and the High Bald on Radio Ridge gives up two more herbs a day.' },
   { id: 'handcar_crank', name: 'Spare Handcar Crank', kind: 'keepsake', price: 0, stack: 1, desc: 'Elias\'s spare, with a relay note in his hand. Pump the handcar yourself, any hour of the day or night.' },
   { id: 'charred_wood', name: 'Charred Wood', kind: 'material', price: 10, stack: 99, desc: 'Lightning-scorched timber. Lure: Hodag.' },
   { id: 'crushed_quartz', name: 'Crushed Quartz', kind: 'material', price: 30, stack: 99, desc: 'Glittering crystal grit from broken rocks.' },
@@ -138,6 +139,10 @@ const base: ItemDef[] = [
   { id: 'lightning_rod', name: 'Copper Lightning Rod', kind: 'placeable', price: 0, stack: 9, desc: 'Place on Radio Ridge. Calls down storms\' guardian.' },
   { id: 'antler_chime', name: 'Bone & Antler Chime', kind: 'placeable', price: 0, stack: 9, desc: 'Place in the Old Growth. Rings in the witching fog.' },
   { id: 'tesla_pylon', name: 'Tesla Coil Pylon', kind: 'placeable', price: 0, stack: 9, desc: 'Forces Static-Charged variants and draws electric cryptids nearby.' },
+  { id: 'barn_star', name: 'Painted Barn Star', kind: 'placeable', price: 0, stack: 9, desc: 'A hex sign: an eight-point star in a ring of tulips. Raise it on open ground in your cabin yard: while it stands, Snallygaster encounters start calmer (-15 Startle). Omi Liesl\'s mother swore by them.' },
+  { id: 'mask_goat', name: 'Goat Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask carved from linden wood: a white billy goat with amber horns. It goes straight to your wardrobe.' },
+  { id: 'mask_owl', name: 'Owl Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask: a barred owl with ear tufts and lantern-ring eyes. It goes straight to your wardrobe.' },
+  { id: 'mask_bear', name: 'Bear Mask', kind: 'keepsake', price: 0, stack: 1, desc: 'A Fasnacht mask: a black bear with a friendly snout. It goes straight to your wardrobe.' },
   { id: 'display_pedestal', name: 'Cabin Display Pedestal', kind: 'placeable', price: 0, stack: 9, desc: 'Place inside your cabin to show off a specimen.' },
 
   // ---- Whistle-Stop Diner food buffs ----
@@ -160,6 +165,18 @@ const base: ItemDef[] = [
   { id: 'apple_butter', name: 'Spiced Apple Butter', kind: 'food', price: 40, stack: 20, edible: 35, buff: 'lucky', desc: '+35 energy. Lucky: double Rare Variant odds today. Stirred all day in a copper kettle.' },
   { id: 'buckwheat_cakes', name: 'Buckwheat Cakes & Sausage', kind: 'food', price: 50, stack: 20, edible: 90, buff: 'calm', desc: '+90 energy. Steady Nerves: +20% Trust gains today. Buckwheat Festival supper.' },
   { id: 'hot_cider', name: 'Old Christmas Hot Cider', kind: 'food', price: 30, stack: 20, edible: 40, buff: 'stealth', desc: '+40 energy. Stealth: -25% Startle gains today. Mulled with cinnamon and a little black pepper.' },
+  // ---- The Meissgeiers: Omi's bakery, Opa's high-country herbs, the old feast days ----
+  { id: 'fastnacht_donut', name: 'Fastnacht Donut', kind: 'food', price: 25, stack: 20, edible: 50, buff: 'haul', desc: '+50 energy. Long Haul: tools cost 1 energy today. Square, potato-dough, fried in lard the night before Lent. Omi Liesl\'s are dusted in sugar.' },
+  { id: 'stollen', name: 'Christmas Stollen', kind: 'food', price: 60, stack: 20, edible: 70, buff: 'calm', desc: '+70 energy. Steady Nerves: +20% Trust gains today. Dense with cranberries and candied peel, folded like a swaddled baby. Omi\'s recipe came over in 1891.' },
+  { id: 'springerle', name: 'Springerle', kind: 'food', price: 35, stack: 20, edible: 30, buff: 'stealth', desc: '+30 energy. Stealth: -25% Startle gains today. Anise cookies pressed from carved wooden molds. This one shows a hare.' },
+  { id: 'lebkuchen', name: 'Lebkuchen', kind: 'food', price: 40, stack: 20, edible: 40, buff: 'lucky', desc: '+40 energy. Lucky: double Rare Variant odds today. Honey-spice gingerbread, iced with a little lantern.' },
+  { id: 'pork_sauerkraut', name: 'Pork & Sauerkraut', kind: 'food', price: 55, stack: 20, edible: 85, buff: 'lucky', desc: '+85 energy. Lucky: double Rare Variant odds today. New Year\'s Day supper: the pig roots forward, so the year goes forward.' },
+  { id: 'alpine_tea', name: "Opa's Mountain Tea", kind: 'food', price: 45, stack: 20, edible: 35, buff: 'calm', desc: '+35 energy. Steady Nerves: +20% Trust gains today. Mountain mint and bee balm from the high meadows, dried in Opa Walter\'s rafters.' },
+  { id: 'mountain_mint', name: 'Mountain Mint', kind: 'forage', price: 22, stack: 99, edible: 4, desc: 'Silvery, peppery mint from the high meadows on Radio Ridge. Opa Walter dries it for tea.' },
+  { id: 'bee_balm', name: 'Bee Balm', kind: 'forage', price: 26, stack: 99, desc: 'Ragged scarlet flower heads from the ridge-top meadows. Hummingbirds and Opa Walter both go out of their way for it.' },
+  { id: 'turks_cap', name: "Turk's-Cap Lily", kind: 'forage', price: 34, stack: 99, desc: 'Orange, freckled, petals swept back like a lantern. Grows only up high where the spruce starts.' },
+  { id: 'wild_ginseng', name: 'Wild Ginseng Root', kind: 'forage', price: 220, stack: 99, desc: '"Sang." A forked root from the cool north slopes. Worth a fortune; Opa Walter says to plant the red berries back where you found it.' },
+  { id: 'painted_egg', name: 'Painted Egg', kind: 'forage', price: 0, stack: 99, desc: 'A hard-boiled egg dyed with onion skins and beet juice, hidden in the orchard by the Osterhase. Turn them in at the egg-hunt basket.' },
   { id: 'ghost_chili', name: 'Ghost Pepper Chili', kind: 'food', price: 40, stack: 20, edible: 50, buff: 'calm', desc: '+50 energy. Steady Nerves: +20% Trust gains today.' },
 ];
 

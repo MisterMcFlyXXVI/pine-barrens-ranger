@@ -1,7 +1,7 @@
 /** NPC conversations: greetings, chat & rumors, quest offers / progress / hand-ins, role menus. */
 import { O } from '../data/tiles';
 import { oriTalk } from './orientation';
-import { isBirthday, birthdayLine } from './calendar';
+import { isBirthday, birthdayLine, eventOn } from './calendar';
 import { barkFor } from './barks';
 import type { Game } from './game';
 import type { NpcRT } from './townsfolk';
@@ -10,7 +10,7 @@ import { Dialog, Choice } from '../ui/menus';
 import { DonateMenu, MerchantMenu, ShopMenu, StoreMenu } from '../ui/shops';
 import { QUESTS, QuestDef } from '../data/quests';
 import { rumorFor } from '../data/npcs';
-import { DINER_MENU, STORE_STOCK, UPGRADES } from '../data/economy';
+import { DINER_MENU, STORE_STOCK, UPGRADES, BAKERY_STOCK, HERB_STOCK } from '../data/economy';
 import { ITEMS } from '../data/items';
 import { stars } from './dex';
 import { sfx } from '../audio/sfx';
@@ -109,12 +109,25 @@ function completeQuest(game: Game, q: QuestDef): string[] {
   return lines;
 }
 
+/** Matthias shows you how to carve a Fasnacht mask (Workbench BLUEPRINTS tab). */
+function teachMasks(game: Game): void {
+  game.progress.flags.add('taught_masks');
+  sfx.trustChime();
+  game.openOverlay(new Dialog([
+    'Matthias: "You want to learn? Really? Okay. Okay! Sit."',
+    'He puts a block of linden in your hands and a knife in the other. "Don\'t carve a face. Find the one that\'s already in there. Big cuts first. Eyes last. The eyes are where it wakes up."',
+    'An hour later you have something with two eyes, a nose, and a great deal of attitude. Matthias holds it up to the light. "A goat. Definitely a goat. A good one!"',
+    '(You can carve Goat, Owl and Bear Fasnacht masks at the Porch Workbench, on the BLUEPRINTS tab. They go straight to your wardrobe.)',
+  ]));
+}
+
 /** Main entry: the player pressed A facing this NPC. */
 /** How each friend says hello once they know you. */
 const NAME_HELLO: Record<string, string> = {
   agnes: 'Good afternoon, {name}, dear.', barnaby: 'Well, if it isn\'t {name}!', mabel: '{name}! Sit down, hon, you look starved.',
   gideon: '{name}.', clara: 'This is WKPB, and that\'s {name} walking in!', pippa: '{name}! Club meeting! Sort of!',
   sam: 'Hi, {name}.', toby: 'Hey, {name}!', ruth: 'There\'s my {name}.',
+  liesl: 'Ah, {name}! Come, come, the oven is hot.', matthias: 'Hey, {name}.', walter: 'Gruss Gott, {name}!',
 };
 
 export function talkTo(game: Game, npc: NpcRT): void {
@@ -220,6 +233,17 @@ export function talkTo(game: Game, npc: NpcRT): void {
       // Shop at the counter, or while he's working the anvil out by the store.
       if (npc.map === 'STORE_INT' || tag === 'anvil') choices.push({ label: 'Shop', fn: () => game.openOverlay(new StoreMenu(STORE_STOCK)) });
       else pages.push(tag === 'lunch' ? '(The Outfitter\'s closed for lunch till 1.)' : tag === 'fishing' ? '(The Outfitter closes Sunday afternoons.)' : '(The Outfitter is open 8 to 5, lunch 12 to 1. Late afternoons, Gideon works his anvil outside the store.)');
+      break;
+    case 'liesl':
+      if (tag === 'bakery' || npc.map === 'HOUSE_MEISSGEIER') choices.push({ label: 'Bakery', fn: () => game.openOverlay(new ShopMenu("OMI LIESL'S BAKERY", () => BAKERY_STOCK)) });
+      else pages.push('(Omi\'s bakery: Saturdays 9 to 1 in the Town Square, and weekday mornings at the diner till 11. Or knock, once she knows you.)');
+      break;
+    case 'walter':
+      if (tag === 'drying' || tag === 'herbs' || npc.map === 'HOUSE_MEISSGEIER') choices.push({ label: 'Herbs', fn: () => game.openOverlay(new ShopMenu("OPA WALTER'S HERBS", () => HERB_STOCK)) });
+      break;
+    case 'matthias':
+      // He'll show you how to carve a Fasnacht mask once he knows you a little (or any time on Fasnacht).
+      if (!p.flags.has('taught_masks') && (hearts(game, 'matthias') >= 1 || eventOn(game.clock.day)?.id === 'fasnacht')) choices.push({ label: 'Carve a mask?', fn: () => teachMasks(game) });
       break;
     case 'ezri':
     case 'pike':

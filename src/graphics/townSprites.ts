@@ -437,18 +437,19 @@ function museum(night: boolean): Canv {
 
 function house(night: boolean, seed: number): Canv {
   const W = 96, H = 96;
-  // 0 lilac (Agnes), 1 white & cranberry (Miller-Thorne), 2 butter yellow (Finch), 3 sage (Calloway), 4 brick red (Ruth)
-  const roofs = [[P.TWILIGHT, P.SHADOW], [P.CRAN, P.SHADOW], [P.FOREST, P.PINE], [P.TWILIGHT, P.SHADOW], [P.PINE, P.SHADOW]];
-  const walls = [[P.MOON, P.VIOLET], [P.FOG, P.MIST], [P.LANTERN, P.AMBER], [P.FERN, P.MOSS], [P.RUST, P.CRAN]];
-  const [rf, rs] = roofs[seed % 5];
-  const [wl, ws] = walls[seed % 5];
-  const { c, p } = facade(W, H, 44, wl, ws, rf, rs, 1320 + seed, [0.5, 0.75, 1, 0.4, 0.7][seed % 5]);
+  // 0 lilac (Agnes), 1 white & cranberry (Miller-Thorne), 2 butter yellow (Finch), 3 sage (Calloway), 4 brick red (Ruth), 5 half-timbered (Meissgeier)
+  const roofs = [[P.TWILIGHT, P.SHADOW], [P.CRAN, P.SHADOW], [P.FOREST, P.PINE], [P.TWILIGHT, P.SHADOW], [P.PINE, P.SHADOW], [P.RUST, P.CRAN]];
+  const walls = [[P.MOON, P.VIOLET], [P.FOG, P.MIST], [P.LANTERN, P.AMBER], [P.FERN, P.MOSS], [P.RUST, P.CRAN], [P.FOG, P.MIST]];
+  const [rf, rs] = roofs[seed % 6];
+  const [wl, ws] = walls[seed % 6];
+  const { c, p } = facade(W, H, 44, wl, ws, rf, rs, 1320 + seed, [0.5, 0.75, 1, 0.4, 0.7, 0.3][seed % 6]);
+  if (seed === 5) fachwerk(p, W, H);
   chimneyStack(p, seed === 1 || seed === 4 ? 18 : 70, 2, 20);
   atticWindow(p, 48, 18, night);
-  const curtain = [P.CRAN, P.TWILIGHT, P.RED, P.LANTERN, P.FOG][seed % 5];
+  const curtain = [P.CRAN, P.TWILIGHT, P.RED, P.LANTERN, P.FOG, P.RED][seed % 6];
   window4(p, 12, 60, night, 18, 14, curtain);
-  flowerBox(p, 13, 75, 16, [P.RED, P.LANTERN, P.VIOLET, P.RED, P.LANTERN][seed % 5]);
-  door(p, 38, 66, 30, [P.RUST, P.FOREST, P.TWILIGHT, P.CRAN, P.FOREST][seed % 5]);
+  flowerBox(p, 13, 75, 16, [P.RED, P.LANTERN, P.VIOLET, P.RED, P.LANTERN, P.RED][seed % 6]);
+  door(p, 38, 66, 30, [P.RUST, P.FOREST, P.TWILIGHT, P.CRAN, P.FOREST, P.FOREST][seed % 6]);
   const small = glow(night, 'main');
   p.rect(70, 60, 14, 14, P.AMBER); p.rect(72, 62, 10, 10, small ? P.LANTERN : night ? P.SHADOW : P.MIST);
   if (curtain >= 0) { p.vline(72, 62, 71, curtain); p.vline(81, 62, 71, curtain); }
@@ -460,7 +461,29 @@ function house(night: boolean, seed: number): Canv {
   if (seed === 2) ivy(p, 88, H - 1, 36, 6, 1328, 2, W - 3);
   if (seed === 3) ivy(p, 8, H - 1, 30, 6, 1329, 2, W - 3);
   if (seed === 4) { ivy(p, 6, H - 1, 58, 10, 1330, 2, W - 3); ivy(p, W - 8, H - 1, 40, 8, 1334, 2, W - 3); }
+  if (seed === 5) { barnStar(p, 77, 51, 6); ivy(p, 6, H - 1, 26, 4, 1335, 2, W - 3); }
   return outline(c);
+}
+
+/** Dark timber framing over pale plaster (posts, rails and braces that stay clear of the windows and door). */
+function fachwerk(p: Pen, W: number, H: number): void {
+  const T = P.SHADOW;
+  for (const x of [3, 34, 62, W - 4]) p.rect(x - 1, 45, 2, H - 46, T);
+  p.rect(2, 45, W - 4, 2, T); p.rect(2, 57, 36, 2, T); p.rect(60, 57, W - 62, 2, T); p.rect(2, H - 3, W - 4, 2, T);
+  for (let k = 0; k < 10; k++) { p.px(5 + k, 47 + k, T); p.px(6 + k, 47 + k, T); p.px(32 - k, 47 + k, T); p.px(33 - k, 47 + k, T); }
+  for (let k = 0; k < 10; k++) { p.px(64 + k, 47 + k, T); p.px(65 + k, 47 + k, T); p.px(W - 6 - k, 47 + k, T); p.px(W - 7 - k, 47 + k, T); }
+  for (let k = 0; k < 30; k++) { p.px(5 + Math.floor(k * 0.9), 64 + k, T); }
+  for (let k = 0; k < 10; k++) p.px(30 - k, 76 + k, T);
+}
+
+/** A Pennsylvania Dutch hex sign: an eight-point star in a ring. */
+export function barnStar(p: Pen, cx: number, cy: number, r: number): void {
+  p.ellipse(cx, cy, r + 1, r + 1, P.SHADOW); p.ellipse(cx, cy, r, r, P.LANTERN);
+  for (let a = 0; a < 8; a++) {
+    const t = (a / 8) * Math.PI * 2;
+    for (let k = 1; k < r; k++) p.px(Math.round(cx + Math.cos(t) * k), Math.round(cy + Math.sin(t) * k), a % 2 ? P.AMBER : P.RED);
+  }
+  p.px(cx, cy, P.CRAN);
 }
 
 function station(night: boolean, restored: boolean): Canv {
@@ -664,7 +687,7 @@ export function bakeTown(): void {
   STRUCT.diner = bakeArt('diner', diner);
   STRUCT.store = bakeArt('store', store);
   STRUCT.museum = bakeArt('museum', museum);
-  STRUCT.house = [0, 1, 2, 3, 4].flatMap((k) => bakeArt(`house${k}`, (n) => house(n, k)));
+  STRUCT.house = [0, 1, 2, 3, 4, 5].flatMap((k) => bakeArt(`house${k}`, (n) => house(n, k)));
   STRUCT.station = [...bakeArt('station0', (n) => station(n, false)), ...bakeArt('station1', (n) => station(n, true))];
   STRUCT.mineBoarded = [mineBoarded()];
   STRUCT.mineOpen = [mineOpen()];

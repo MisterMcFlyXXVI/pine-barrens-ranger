@@ -77,7 +77,7 @@ export function applyRestoration(game: Game): void {
     m.def.anchors.set(i, anchor);
   }
   m.objects[anchor] = O.GAZEBO;
-  m.def.signs.set(anchor, 'THE PINE HOLLOW GAZEBO. Raised by the whole town. A brass plate on the rail: "FOR WALTER, DANNY, AND EVERYBODY ELSE WHO WENT DOWN THE HILL. WE\'RE STILL PLAYING."');
+  m.def.signs.set(anchor, 'THE PINE HOLLOW GAZEBO. Raised by the whole town. A brass plate on the rail: "FOR EARL, DANNY, AND EVERYBODY ELSE WHO WENT DOWN THE HILL. WE\'RE STILL PLAYING."');
 }
 
 /** Friday Night Story Hour at the diner (P1): friendship counts double. */

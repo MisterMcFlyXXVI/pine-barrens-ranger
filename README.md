@@ -247,6 +247,27 @@ Handy URL flags for trying things out:
 - Weather never locks you out: winter brings cold rain and thundersnow, and a storm always comes within about ten
   days in any season (the Thunderbird, The Awful and rain cryptids stay reachable). Winter wilds have their own finds.
 
+## The Meissgeiers & the old feast days
+- A German family at the end of the east lane, in a half-timbered house with a painted barn star on the gable:
+  - **Omi Liesl** (baker): bakery stall in the Town Square on Saturdays 9-1, bread at the diner weekday mornings.
+    Sells Fastnacht donuts, springerle, lebkuchen and stollen.
+  - **Matthias** (her grandson, a woodcarver taught by Elias): carves on his porch, helps Gideon at the forge Tue/Thu.
+    He'll teach you to carve Fasnacht masks (goat, owl, bear), which go straight into your wardrobe.
+  - **Opa Walter** (herbalist and hiker from the Allgaeu Alps): he worked No. 3 until the March '78 cave-in, when Danny
+    Vance traded him his place at the face. He never went underground again; he climbs the mountains instead. Tuesdays
+    and Fridays he picks herbs on the **High Bald** atop Radio Ridge (mountain mint, bee balm, Turk's-cap lily, and wild
+    ginseng in the woods), and sells dried herbs from his porch. His check, No. 312, still hangs in the lamp house.
+- Each has 5 hearts, gift tastes, rewards and three heart scenes (the barn-star recipe, the Ranger's Mask, Opa's herb
+  satchel and the old Spruce Knob branch that climbs on into the high country).
+- Ruth's late husband is **Earl** Haddix, who dug Walter out of the cave-in.
+- New gatherings: **New Year's Pork & Sauerkraut** (Winter 1, Lucky), **St. Martin's Lantern Walk** (Fall 11, dusk,
+  friendship with everyone walking), **Belsnickel Night** (Fall 26: Walter in furs; Gideon goes as Krampus, which is
+  only a costume), **Fasnacht** (Winter 26: masks, donuts, burn Old Man Winter and the rest of winter turns mild) and
+  the **Osterhase Egg Hunt** (Spring 20: painted eggs hidden around the orchard; bring them to the basket in the square).
+- Candlelit Christmas trees stand in every home, the diner, the museum, your cabin and the square from Fall 22
+  until Old Christmas.
+- **Painted Barn Star** (taught by Omi Liesl): raise it in your cabin yard and Snallygaster encounters start calmer.
+
 ## A living world
 - **Townsfolk notice things**: before their usual hello they'll bring up your first Mothman, a rare variant, a Warden
   at peace, a restoration they woke up to, last night's storm or fog, you wearing Elias's coat (Mabel and Agnes),

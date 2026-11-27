@@ -47,7 +47,7 @@ export const PROJECTS: readonly Project[] = [
     pitch: 'Raise a lantern-lit gazebo on the west lawn of the Town Park. Sunday afternoons the town would bring out fiddles and banjos, and a rest in the gazebo restores you fully.',
     done: [
       'The whole town turns out for the raising: Gideon on the ridgepole, Pippa and Sam handing up pegs, Ruth directing everybody from a lawn chair. By evening there are lanterns strung all round the eaves.',
-      'RUTH: "Sundays, we play. That\'s how it was, and that\'s how it\'s going to be again." She pats the rail. "Walter would\'ve liked this."',
+      'RUTH: "Sundays, we play. That\'s how it was, and that\'s how it\'s going to be again." She pats the rail. "Earl would\'ve liked this."',
       '(Sunday afternoons 1-5 PM: porch music in the park. Sit in the gazebo once a Sunday to restore all your stamina.)',
     ],
   },
@@ -56,7 +56,7 @@ export const PROJECTS: readonly Project[] = [
     mats: [['iron_nail', 5]], gold: 500,
     pitch: 'Re-light the No. 3 lamp house and take the boards off the mine gate, so the town can finally go and bring its people\'s names back up. Needs Gideon\'s Lamp-House Key, and the story\'s end.',
     done: [
-      'Gideon turns the old key. The lamp-house door groans open on rows of brass checks, still hanging where the men left them. One by one, Agnes, Ruth and Gideon take them down: 312. 47. Danny\'s, 118.',
+      'Gideon turns the old key. The lamp-house door groans open on rows of brass checks, still hanging where the men left them. One by one they take them down. Opa Walter, who has not been up this hill since \'78, reaches for 312, his own, and holds it a long time. Agnes takes Danny\'s, 118.',
       'The lamps come on. Then the boards come off the gate, and cool air breathes out of the hill, and somewhere far down in the dark, very faintly, something hums.',
       '(The mine gate is open. The tunnels are still being shored up: the underground expansion opens in a future update.)',
     ],

@@ -15,7 +15,7 @@ import { shell, wrap } from './town';
 import type { FriendId } from './friends';
 import type { Dir } from '../util';
 
-export type HomeId = 'HOUSE_VANCE' | 'HOUSE_FINCH' | 'HOUSE_MILLER' | 'HOUSE_CALLOWAY' | 'HOUSE_RUTH' | 'STORE_LOFT' | 'DINER_ROOM';
+export type HomeId = 'HOUSE_VANCE' | 'HOUSE_FINCH' | 'HOUSE_MILLER' | 'HOUSE_CALLOWAY' | 'HOUSE_RUTH' | 'STORE_LOFT' | 'DINER_ROOM' | 'HOUSE_MEISSGEIER';
 
 export interface HomeDef {
   id: HomeId;
@@ -56,6 +56,11 @@ export const HOMES: Record<HomeId, HomeDef> = {
     knock: 'Ruth calls from inside, kindly: "Bless you for stopping, honey, but I\'m not decent. Come back another time."',
     welcome: ['Ruth: "Samuel talks about you every night at supper. Every. Night. Come sit by the fire."', 'Sam goes very red and pretends to look for something.'],
   },
+  HOUSE_MEISSGEIER: {
+    id: 'HOUSE_MEISSGEIER', name: 'The Meissgeier House', residents: ['liesl', 'matthias', 'walter'], friends: ['liesl', 'matthias', 'walter'],
+    knock: 'The smell of anise and woodsmoke through the door. Omi Liesl calls out: "Not now, Schatz, the dough is rising! Find me at the bakery stall Saturday!"',
+    welcome: ['Omi Liesl: "Come in, come in! Shoes off, the floor is new since 1962. Sit, eat. You are too thin. Everybody is too thin."', 'Opa Walter lifts his pipe in greeting from under a ceiling hung with drying herbs. Matthias nods from his carving bench and goes back to his chisel.'],
+  },
   STORE_LOFT: {
     id: 'STORE_LOFT', name: "Toby's Loft", residents: ['toby'], friends: ['toby'],
     knock: 'Toby\'s voice from up the stairs: "Uh, it\'s -- really messy up here. Like, really. Maybe another day?"',
@@ -85,6 +90,9 @@ export const HOME_SPOTS: Record<string, HomeSpot> = {
   ruth: { map: 'HOUSE_RUTH', sit: [4, 6, 'left'], bedSide: [2, 9], bed: [1, 9], morning: [13, 4, 'up'] },
   sam: { map: 'HOUSE_RUTH', sit: [11, 7, 'up'], bedSide: [13, 9], bed: [14, 9], morning: [12, 7, 'up'] },
   toby: { map: 'STORE_LOFT', sit: [5, 5, 'up'], bedSide: [9, 6], bed: [10, 6], morning: [7, 4, 'up'] },
+  liesl: { map: 'HOUSE_MEISSGEIER', sit: [3, 7, 'up'], bedSide: [2, 9], bed: [1, 9], morning: [2, 4, 'up'] },
+  walter: { map: 'HOUSE_MEISSGEIER', sit: [5, 7, 'up'], bedSide: [4, 9], bed: [3, 9], morning: [12, 4, 'up'] },
+  matthias: { map: 'HOUSE_MEISSGEIER', sit: [10, 7, 'up'], bedSide: [15, 9], bed: [16, 9], morning: [14, 4, 'up'] },
   clara: { map: 'DINER_ROOM', sit: [4, 4, 'up'], bedSide: [9, 6], bed: [10, 6], morning: [7, 5, 'up'] },
 };
 
@@ -208,6 +216,29 @@ export function buildRuth(): MapDef {
   frame(b, 3, 'quilt', 'A framed quilt square in the Bear\'s Paw pattern. "My mother\'s," says Ruth. "She said the bears in these hills had better manners back then."');
   frame(b, 11, 'photo', 'A photo of the Pine Hollow No. 3 crew, 1958. Ruth points at one face without saying anything. Sam has his ears.');
   return house(b, 'HOUSE_RUTH', 8, [33, 56]);
+}
+
+export function buildMeissgeier(): MapDef {
+  const b = shell(18, 11, T.FLOOR, 9);
+  b.rectG(8, 5, 5, 3, T.RUG);
+  put(b, 1, 3, O.STOVE, 'A brick bake oven Matthias built into the old kitchen chimney. Omi Liesl fires it at four every morning. The whole street wakes up hungry.');
+  for (const x of [2, 3, 4]) put(b, x, 3, O.COUNTER, ['A floured board and a bowl of potato dough under a towel. Fastnacht dough, or bread, or both. With Omi it is usually both.', 'Springerle molds, carved pear wood, black with a hundred years of flour: a hare, a stag, a tulip, a train engine (that one is new; Matthias carved it for Barney).', 'A tin labeled "NICHT FUER MATTHIAS." It is mostly empty.'][x - 2]);
+  put(b, 5, 3, O.SHELF, 'Crocks of sauerkraut, weighted with river stones, and a row of jars: apple butter, pickled beets, "Opa\'s honey (DO NOT)."');
+  put(b, 9, 3, O.FIREPLACE, 'A tiled stove-front set into the fireplace, green glazed tiles brought over in a trunk in 1891. Every tile has a different flower.', 2, 1);
+  put(b, 12, 3, O.PLANT, 'Bundles of herbs hang from the beam: mountain mint, bee balm, yarrow, and one plant Opa Walter refuses to name. "For the stomach," is all he says.');
+  put(b, 14, 3, O.CRATE, 'Matthias\'s carving bench: chisels laid out by size, a half-finished goat mask with amber horns, and linden shavings curling everywhere.');
+  put(b, 15, 3, O.SHELF, 'A wall of Fasnacht masks: goat, owl, bear, fox, a grinning moon. The oldest is cracked across one cheek. "Omi\'s great-grandfather\'s," says Matthias. "Black Forest, by way of Lancaster County."');
+  put(b, 16, 3, O.BOOKSHELF, 'A Lutheran hymnal, a herbal in German with pressed flowers between every page, and "Woodcarving for the Beginner" with E.V. written inside the cover.');
+  put(b, 4, 6, O.TABLE, 'A scrubbed pine table under a cross-stitch runner. Three cups, three plates, and always a fourth, "in case."');
+  put(b, 3, 6, O.CHAIR, 'Omi Liesl\'s chair, with a cushion embroidered with tulips and a date: 1891.');
+  put(b, 5, 6, O.CHAIR, 'Opa Walter\'s chair. A pipe rack on the arm and a walking stick carved with every mountain he has climbed. It is running out of room.');
+  put(b, 1, 8, O.BED, 'Omi Liesl\'s side: a featherbed so thick you could lose a cat in it. Percival has, twice, visiting.', 1, 2);
+  put(b, 3, 8, O.BED, 'Opa Walter\'s side, by the window, so he can see the ridge first thing and decide if it is a picking day.', 1, 2);
+  put(b, 16, 8, O.BED, 'Matthias\'s narrow bed under the eaves, and a shelf of tiny carved animals, one for every cryptid in the Dex. He is up to thirty-one.', 1, 2);
+  frame(b, 3, 'star', 'A painted barn star: eight points, red and gold, ringed with tulips. "For luck, and for the Snallygaster," says Omi. "Mostly for the Snallygaster."');
+  frame(b, 7, 'clock', 'A cuckoo clock from the Black Forest. The cuckoo has been replaced with a small carved Mothman. Matthias will not say when this happened.');
+  frame(b, 12, 'photo', 'A photograph: a young man on an alpine meadow, a rucksack of flowers, snow peaks behind. Written on the back: "Allgaeu, 1952 -- Walter, before." The ink has been gone over twice in pencil.');
+  return house(b, 'HOUSE_MEISSGEIER', 9, [59, 54]);
 }
 
 export function buildLoft(): MapDef {

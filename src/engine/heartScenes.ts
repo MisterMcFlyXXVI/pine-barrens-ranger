@@ -73,6 +73,7 @@ function header(s: HeartScene): string {
 
 const FRIEND_NAMES: Record<string, string> = {
   agnes: 'Agnes', barnaby: 'Barney', mabel: 'Mabel', gideon: 'Gideon', clara: 'Clara', pippa: 'Pippa', sam: 'Sam', toby: 'Toby', ruth: 'Ruth',
+  liesl: 'Omi Liesl', matthias: 'Matthias', walter: 'Opa Walter',
 };
 
 /** Step the townsfolk in the scene in beside you. */

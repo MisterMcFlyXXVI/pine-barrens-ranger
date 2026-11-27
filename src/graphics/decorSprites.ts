@@ -369,6 +369,10 @@ function wallFrame(kind: string): Canv {
       case 'poster': p.rect(3, 2, 10, 12, TWILIGHT); p.ellipse(8, 7, 3, 3, FOG); p.px(7, 7, RED); p.px(9, 7, RED); p.hline(4, 11, 11, LANTERN); break;
       case 'quilt': box(2, 2, 12, 12, AMBER); for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if ((x + y) % 4 === 0 || (x - y + 10) % 4 === 0) p.px(3 + x, 3 + y, (x < 5) === (y < 5) ? RED : TWILIGHT); break;
       case 'window': p.ellipse(8, 8, 5, 5, AMBER); p.ellipse(8, 8, 4, 4, MIST); p.vline(8, 4, 12, RUST); p.hline(4, 12, 8, RUST); p.px(6, 6, FOG); break;
+      case 'star':
+        p.ellipse(8, 8, 6, 6, SHADOW); p.ellipse(8, 8, 5, 5, LANTERN);
+        for (let a = 0; a < 8; a++) { const t = (a / 8) * Math.PI * 2; for (let k = 1; k < 5; k++) p.px(Math.round(8 + Math.cos(t) * k), Math.round(8 + Math.sin(t) * k), a % 2 ? AMBER : RED); }
+        break;
       default: box(3, 3, 10, 9);
     }
   });
@@ -442,6 +446,57 @@ function eventProp(kind: string, f: number): Canv {
       for (let k = 0; k < 3; k++) p.px(6 + k * 4, 12 - ((f + k) % 2), FOG);
       return;
     }
+    if (kind === 'new_year') {
+      // A big crock of sauerkraut and a pork roast on the trestle table.
+      p.rect(1, 21, 30, 3, AMBER); p.hline(1, 30, 21, LANTERN); p.vline(3, 24, 30, RUST); p.vline(28, 24, 30, RUST);
+      p.rect(4, 12, 10, 9, FOG); p.hline(4, 13, 12, MOON); p.hline(4, 13, 15, TWILIGHT); p.rect(5, 10, 8, 2, LANTERN); for (const x of [6, 9, 11]) p.px(x, 10, FERN);
+      p.ellipse(22, 18, 6, 3, RUST); p.hline(17, 27, 16, AMBER); p.px(21, 17, CRAN); p.px(24, 18, CRAN); p.rect(16, 19, 12, 2, FOG);
+      for (let k = 0; k < 3; k++) p.px(7 + k * 3, 7 - ((f + k) % 2), FOG);
+      return;
+    }
+    if (kind === 'st_martin') {
+      // Paper lanterns on sticks stuck in a hay bale, and a basket of lebkuchen.
+      p.rect(6, 24, 20, 7, AMBER); p.hline(6, 25, 24, LANTERN); for (let x = 8; x < 26; x += 4) p.vline(x, 25, 30, RUST);
+      const cols = [RED, LANTERN, TWILIGHT, MOSS, VIOLET];
+      for (let k = 0; k < 5; k++) { const x = 5 + k * 5, y = 6 + (k % 2) * 4; p.vline(x + 1, y + 5, 24, SHADOW); p.ellipse(x + 1, y + 2, 2, 2.5, cols[k]); p.px(x + 1, y + 2, (f + k) % 2 ? LANTERN : MOON); }
+      return;
+    }
+    if (kind === 'belsnickel') {
+      // The Belsnickel's sack spilling apples and nuts, a bundle of birch switches, his cowbell.
+      p.ellipse(14, 24, 9, 6, AMBER); p.ellipse(14, 22, 7, 4, LANTERN); p.rect(11, 14, 6, 6, AMBER); p.hline(11, 16, 16, RUST);
+      for (const [x, y] of [[6, 28], [9, 29], [22, 28], [19, 29]] as Array<[number, number]>) { p.rect(x, y, 2, 2, (x + y) % 2 ? RED : CRAN); }
+      for (const [x, y] of [[13, 29], [16, 29]] as Array<[number, number]>) p.px(x, y, RUST);
+      for (let k = 0; k < 4; k++) p.line(25 + k, 30, 27 + k * 1.5, 8, k % 2 ? FOG : MIST);
+      p.rect(2, 12 + f, 5, 5, AMBER); p.hline(2, 6, 12 + f, LANTERN); p.px(4, 17 + f, SHADOW);
+      return;
+    }
+    if (kind === 'fasnacht' || kind === 'fasnacht_burnt') {
+      // Old Man Winter on the woodpile (or what's left of him).
+      for (let y = 26; y < 31; y++) p.hline(4 + (y - 26), 27 - (y - 26), y, (y % 2) ? RUST : AMBER);
+      if (kind === 'fasnacht') {
+        p.vline(16, 8, 26, AMBER); p.hline(10, 22, 14, AMBER);
+        p.rect(12, 13, 9, 11, MIST); p.vline(16, 13, 23, TWILIGHT);
+        p.rect(13, 4, 7, 7, LANTERN); p.px(14, 6, VOID); p.px(18, 6, VOID);
+        p.rect(13, 9, 7, 5, MOON); p.px(15, 14, MOON); p.px(17, 15, MOON);
+        p.hline(12, 20, 3, SHADOW); p.rect(13, 1, 7, 2, SHADOW);
+        p.rect(20, 16, 6, 4, FOG); p.px(21, 17, SHADOW); p.px(23, 17, SHADOW);
+      } else {
+        for (const [x, y] of [[8, 24], [12, 22], [16, 20], [20, 22], [24, 24], [14, 18], [18, 17]] as Array<[number, number]>) {
+          p.rect(x, y + f, 2, 3, (x + f) % 3 ? RED : AMBER); p.px(x, y - 1 - f, LANTERN);
+        }
+        for (let k = 0; k < 4; k++) p.px(10 + k * 4, 10 - ((f + k) % 3), MIST);
+      }
+      return;
+    }
+    if (kind === 'osterhase') {
+      // A moss-lined basket of painted eggs and Matthias's wooden hare (with antlers, at Pippa's insistence).
+      p.ellipse(13, 25, 10, 5, AMBER); p.hline(3, 23, 22, RUST); for (let x = 5; x < 23; x += 3) p.vline(x, 22, 29, RUST);
+      p.line(4, 22, 13, 12, RUST); p.line(22, 22, 13, 12, RUST);
+      p.hline(5, 21, 21, MOSS);
+      for (const [x, y, c] of [[7, 19, RED], [11, 18, TWILIGHT], [15, 19, LANTERN], [19, 19, VIOLET], [9, 20, MOSS]] as Array<[number, number, number]>) { p.ellipse(x, y, 2, 2.5, c); p.px(x, y, MOON); }
+      p.rect(25, 18, 4, 8, AMBER); p.rect(26, 13, 3, 5, AMBER); p.vline(26, 8, 12, LANTERN); p.vline(28, 8, 12, LANTERN); p.px(25, 7, LANTERN); p.px(29, 7, LANTERN); p.px(27, 15, VOID);
+      return;
+    }
     // Old Christmas: a ring of tin lanterns on posts around a pot of hot cider.
     for (const [x, y] of [[3, 14], [27, 14], [8, 6], [22, 6]] as Array<[number, number]>) {
       p.vline(x + 1, y + 4, 30, SHADOW); p.rect(x, y, 3, 4, (f + x) % 2 ? LANTERN : AMBER); p.px(x + 1, y - 1, SHADOW);
@@ -450,6 +505,29 @@ function eventProp(kind: string, f: number): Canv {
     fire(13, 30);
     for (let k = 0; k < 3; k++) p.px(13 + k * 3, 18 - ((f + k) % 2), FOG);
   }, 32, 32, true);
+}
+
+/** A painted barn star on a cedar post (the Snallygaster ward). */
+function barnStarPost(): Canv {
+  return art((p) => {
+    p.rect(7, 12, 2, 12, RUST); p.vline(8, 12, 23, AMBER);
+    p.ellipse(8, 7, 7, 7, SHADOW); p.ellipse(8, 7, 6, 6, LANTERN);
+    for (let a = 0; a < 8; a++) { const t = (a / 8) * Math.PI * 2; for (let k = 1; k < 6; k++) p.px(Math.round(8 + Math.cos(t) * k), Math.round(7 + Math.sin(t) * k), a % 2 ? AMBER : RED); }
+    p.px(8, 7, CRAN);
+  }, 16, 24, true);
+}
+
+/** A little fir with real candles on its branches (the old German way), and a straw star on top. */
+function candleTree(f: number): Canv {
+  return art((p) => {
+    p.rect(6, 27, 5, 4, RUST); p.hline(6, 10, 27, AMBER); p.vline(8, 24, 27, SHADOW);
+    for (let y = 4; y < 25; y++) { const w = Math.floor((y - 3) * 0.32) + 1; p.hline(8 - w, 8 + w, y, (y % 4 === 0) ? FOREST : PINE); if (y % 4 === 1) { p.px(8 - w, y, FOREST); p.px(8 + w, y, FOREST); } }
+    for (const [x, y] of [[8, 7], [5, 12], [11, 13], [4, 19], [12, 18], [8, 16], [6, 23], [10, 22]] as Array<[number, number]>) {
+      p.px(x, y, MOON); p.px(x, y - 1, (x + y + f) % 2 ? LANTERN : AMBER); if ((x + f) % 3 === 0) p.px(x, y - 2, LANTERN);
+    }
+    for (const [x, y] of [[6, 10], [10, 16], [7, 20]] as Array<[number, number]>) p.px(x, y, RED);
+    p.px(8, 1, LANTERN); p.hline(7, 9, 2, LANTERN); p.px(8, 3, LANTERN); p.px(6, 2, AMBER); p.px(10, 2, AMBER);
+  }, 16, 32, true);
 }
 
 /** The town gazebo (Restoration Ledger P3): 3 tiles wide, pointed roof, lanterns under the eaves. */
@@ -616,7 +694,7 @@ export function bakeDecor(): void {
   PROP.minecart = [mineCart()];
   PROP.lamphouse = [lampHouse(false), lampHouse(true)];
   PROP.dog = [dog(0), dog(1)];
-  for (const k of ['photo', 'clock', 'sampler', 'map', 'rods', 'drawing', 'poster', 'quilt', 'window']) PROP[`frame_${k}`] = [wallFrame(k)];
+  for (const k of ['photo', 'clock', 'sampler', 'map', 'rods', 'drawing', 'poster', 'quilt', 'window', 'star']) PROP[`frame_${k}`] = [wallFrame(k)];
   PROP.modeltrain = [0, 1, 2, 3, 4, 5, 6, 7].map(modelTrain);
   PROP.radiorig = [radioRig(0), radioRig(1)];
   PROP.porchradio = [porchRadio(false), porchRadio(true)];
@@ -624,6 +702,9 @@ export function bakeDecor(): void {
   PROP.gazebo = [gazebo(false), gazebo(true)];
   for (const k of ['ramp_feed', 'apple_butter', 'buckwheat', 'old_christmas']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
   PROP.ledger = [ledgerStand()];
+  for (const k of ['new_year', 'st_martin', 'belsnickel', 'fasnacht', 'fasnacht_burnt', 'osterhase']) PROP[`ev_${k}`] = [eventProp(k, 0), eventProp(k, 1)];
+  PROP.barnstar = [barnStarPost()];
+  PROP.candletree = [candleTree(0), candleTree(1)];
   for (const k of ['pie', 'cider', 'lantern', 'crafts']) PROP[`stall_${k}`] = [stall(0, k), stall(1, k), stall(2, k)];
   DECAL.puddle = [puddle(1), puddle(2), puddle(3)];
   DECAL.leaves = [leafLitter(5), leafLitter(17), leafLitter(29)];

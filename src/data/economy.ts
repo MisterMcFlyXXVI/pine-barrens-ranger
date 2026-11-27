@@ -13,6 +13,8 @@ export interface Recipe {
   blueprint?: string;
   /** Where it's made: the Porch Workbench (default) or the cabin stove. */
   station?: 'stove';
+  /** Taught by a townsperson instead of bought: the story flag that unlocks it, and who teaches it. */
+  taught?: { flag: string; by: string };
 }
 
 /** Standard Porch Workbench recipes (CLAUDE.md §6) + a couple of quality-of-life extras. */
@@ -43,6 +45,12 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'r_silver', out: 'silver_bell', qty: 1, inputs: [['silver_silk', 2], ['crushed_quartz', 1], ['iron_nail', 1]] },
   { id: 'r_radio', out: 'static_radio', qty: 1, inputs: [['scrap_copper', 1], ['battery_pack', 1]] },
   { id: 'r_cider', out: 'apple_cider', qty: 1, inputs: [['wild_apple', 2], ['sweet_sap', 1]] },
+  // Taught by the Meissgeiers (folk crafts: on the BLUEPRINTS tab, locked until you learn them)
+  { id: 't_mask_goat', out: 'mask_goat', qty: 1, inputs: [['timber', 1], ['charred_wood', 1], ['plant_fiber', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },
+  { id: 't_mask_owl', out: 'mask_owl', qty: 1, inputs: [['timber', 1], ['pine_resin', 1], ['plant_fiber', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },
+  { id: 't_mask_bear', out: 'mask_bear', qty: 1, inputs: [['timber', 1], ['charred_wood', 2]], taught: { flag: 'taught_masks', by: 'MATTHIAS' } },
+  { id: 't_barnstar', out: 'barn_star', qty: 1, inputs: [['timber', 2], ['pine_resin', 1], ['cranberries', 1]], taught: { flag: 'taught_barnstar', by: 'OMI LIESL' } },
+  { id: 'c_tea', out: 'alpine_tea', qty: 2, station: 'stove', inputs: [['mountain_mint', 1], ['bee_balm', 1]], taught: { flag: 'taught_tea', by: 'OPA WALTER' } },
   // Merchant blueprints
   { id: 'bp_lunar', out: 'lunar_dew', qty: 1, inputs: [['moonberry', 2], ['silver_silk', 1], ['mineral_salt', 1]], blueprint: 'bp_lunar' },
   { id: 'bp_incense', out: 'brimstone_incense', qty: 1, inputs: [['pine_resin', 2], ['sulfur_crust', 1], ['catnip_mint', 1]], blueprint: 'bp_incense' },
@@ -147,6 +155,15 @@ export const GIFT_STOCK: readonly ShopEntry[] = [
 ];
 
 /** Whistle-Stop Diner menu (Mabel). Food buffs last the rest of the day. */
+/** Omi Liesl's bakery (Saturday stall in the square, weekday mornings at the diner, or at home). */
+export const BAKERY_STOCK: readonly ShopEntry[] = [
+  { id: 'fastnacht_donut', cost: 45 }, { id: 'springerle', cost: 55 }, { id: 'lebkuchen', cost: 65 }, { id: 'stollen', cost: 100 },
+];
+/** Opa Walter's dried herbs (on his porch, up on the bald, or at home). */
+export const HERB_STOCK: readonly ShopEntry[] = [
+  { id: 'mountain_mint', cost: 40 }, { id: 'bee_balm', cost: 45 }, { id: 'turks_cap', cost: 60 }, { id: 'alpine_tea', cost: 75 },
+];
+
 export const DINER_MENU: readonly ShopEntry[] = [
   { id: 'black_coffee', cost: 40 }, { id: 'pancakes', cost: 90 }, { id: 'cranberry_pie', cost: 120 },
   { id: 'ghost_chili', cost: 150 }, { id: 'pepperoni_roll', cost: 60 }, { id: 'soup_beans', cost: 110 },

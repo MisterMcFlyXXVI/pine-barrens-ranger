@@ -23,6 +23,7 @@ export type MapId =
   | 'HOUSE_RUTH'
   | 'STORE_LOFT'
   | 'DINER_ROOM'
+  | 'HOUSE_MEISSGEIER'
   | 'EXPANSION_RAIL';
 
 export interface Portal {
@@ -70,6 +71,10 @@ export interface ForageGroup {
   spots: number[];
   table: string[];
   count: number;
+  /** Keepsake that adds two more finds to this group (Opa Walter's herb satchel). */
+  boost?: string;
+  /** Only spawns while this is in the day's boosts (e.g. "event:osterhase"). */
+  only?: string;
 }
 
 export interface MapDef {

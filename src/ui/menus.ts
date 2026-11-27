@@ -575,7 +575,7 @@ export class JournalMenu implements Overlay {
       if (shown < list.length) drawText(g, `+${list.length - shown} MORE: SEE THE WORKBENCH LIST TAB`, lx, bottom, P.CRAN);
     } else if (page === 3) {
       // Townsfolk friendships: hearts, today's gift, and (on tap) tastes found + rewards.
-      const names: Record<FriendId, string> = { mabel: 'MABEL', gideon: 'GIDEON', agnes: 'AGNES', barnaby: 'BARNEY', clara: 'DR. OKAFOR', pippa: 'PIPPA', sam: 'SAM', toby: 'TOBY', ruth: 'RUTH' };
+      const names: Record<FriendId, string> = { mabel: 'MABEL', gideon: 'GIDEON', agnes: 'AGNES', barnaby: 'BARNEY', clara: 'DR. OKAFOR', pippa: 'PIPPA', sam: 'SAM', toby: 'TOBY', ruth: 'RUTH', liesl: 'OMI LIESL', matthias: 'MATTHIAS', walter: 'OPA WALTER' };
       for (const id of Object.keys(names) as FriendId[]) {
         const h = hearts(game, id);
         const st = friendState(game, id);
@@ -597,10 +597,10 @@ export class JournalMenu implements Overlay {
             return { text: seen ? `Memory: "${s.title}"` : `${s.hearts}<3 memory: ${open ? s.hint : '???'}`, color: seen ? P.FOREST : open ? P.CRAN : P.RUST };
           }),
         ];
-        this.mores.push({ rect: { x: lx - 2, y: ly - 2, w: w - 10, h: 10 }, title: names[id], body });
-        ly += 10;
+        this.mores.push({ rect: { x: lx - 2, y: ly - 2, w: w - 10, h: 9 }, title: names[id], body });
+        ly += 9;
       }
-      ly += 2;
+      ly += 1;
       wrapText('Hold something and talk to give it as a gift. Tap a name to see what they like.', w - 12).forEach((l) => line(l, P.FOREST));
     } else if (page === 4) {
       const c = game.clock;
@@ -668,7 +668,10 @@ export class JournalMenu implements Overlay {
     }
     let ly = gy + 8 + 5 * ch + 2;
     const rows: Array<[string, number]> = [];
-    for (const e of EVENTS) if (e.season === season) rows.push([`${e.days.join('-')}: ${e.name.toUpperCase()} (${e.place.toUpperCase()})`, P.CRAN]);
+    const evs = EVENTS.filter((e) => e.season === season).sort((a, b) => a.days[0] - b.days[0]);
+    // Busy seasons list names only (the stall tells you the hours).
+    for (const e of evs) rows.push([evs.length > 2 ? `${e.days.join('-')}: ${e.name.toUpperCase()}` : `${e.days.join('-')}: ${e.name.toUpperCase()} (${e.place.toUpperCase()})`, P.CRAN]);
+    if (season === 2) rows.push(['22+: CANDLE TREES IN EVERY WINDOW (TILL OLD CHRISTMAS)', P.AMBER]);
     const bd = [] as string[];
     for (let d = 1; d <= 28; d++) for (const b of birthdaysOn(season, d)) if (b !== 'vance' || finale) bd.push(`${d} ${friendName(b).toUpperCase()}`);
     if (bd.length) rows.push([`BIRTHDAYS: ${bd.join(', ')}`, P.RED]);

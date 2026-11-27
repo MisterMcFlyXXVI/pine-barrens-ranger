@@ -1,5 +1,6 @@
 /** World renderer: ground autotiles → y-sorted objects/actors → particles → lighting. */
-import { eventNow, eventSpot } from './calendar';
+import { eventNow, eventSpot, eventLook } from './calendar';
+import { CANDLE_TREES, candleSeason } from '../data/calendar';
 import { petFrame, heartIcon } from '../graphics/petSprites';
 import { settings } from './settings';
 import { rescueTracks } from './heartScenes';
@@ -312,6 +313,7 @@ function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number,
     case O.LAMP_HOUSE: return PROP.lamphouse[night && flags.mine ? 1 : 0];
     case O.GAZEBO: return PROP.gazebo[night ? 1 : 0];
     case O.LEDGER: return PROP.ledger[0];
+    case O.BARN_STAR: return PROP.barnstar[0];
     case O.DOG: return PROP.dog[Math.floor(time * 0.7 + h * 3) % 2];
     case O.WALL_FRAME: return (PROP[`frame_${m.def.meta?.get(m.idx(x, y)) ?? 'photo'}`] ?? PROP.frame_photo)[0];
     case O.MODEL_TRAIN: return PROP.modeltrain[Math.floor(time * 3) % 8];
@@ -629,14 +631,23 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
     const over = layers;
     list.push({ y: (s.y + s.h) * 16, fn: () => { g.drawImage(simg, dx, dy); for (const l of over) g.drawImage(l, dx, dy); if (quilt) g.drawImage(quilt, dx + Math.floor(simg.width / 2) - 6, dy + QUILT_Y); } });
   }
+  // Candlelit Christmas trees, Fall 22 through Old Christmas.
+  const cday = ((game.clock.day - 1) % 28) + 1, cseason = Math.floor((game.clock.day - 1) / 28) % 4;
+  if (candleSeason(cseason, cday)) for (const [tx, ty] of CANDLE_TREES[m.id] ?? []) {
+    const img = PROP.candletree[Math.floor(time * 3 + tx) % 2];
+    const dx = tx * 16 - cx, dy = (ty + 1) * 16 - 32 - cy;
+    list.push({ y: (ty + 1) * 16 - 0.5, fn: () => g.drawImage(img, dx, dy) });
+    if (night || m.def.indoor) lights.push({ x: tx * 16 + 8 - cx, y: ty * 16 - cy, r: 30, flicker: true });
+  }
   // A town gathering's stall (kettle, skillets, griddle, lanterns).
   const tev = m.id === 'PINE_HOLLOW_TOWN' ? eventNow(game) : null;
   if (tev) {
     const [ex, ey] = eventSpot(game, tev);
-    const img = PROP[`ev_${tev.id}`][Math.floor(time * 3) % 2];
+    const burnt = tev.id === 'fasnacht' && game.progress.days.fasnacht_burn === game.clock.day;
+    const img = PROP[`ev_${burnt ? 'fasnacht_burnt' : tev.id}`][Math.floor(time * 3) % 2];
     const dx = ex * 16 - 8 - cx, dy = (ey + 1) * 16 - 32 - cy;
     list.push({ y: (ey + 1) * 16 - 0.5, fn: () => g.drawImage(img, dx, dy) });
-    if (night || tev.id === 'old_christmas') lights.push({ x: ex * 16 + 8 - cx, y: ey * 16 - cy, r: tev.id === 'old_christmas' ? 60 : 36, flicker: true });
+    if (night || tev.id === 'old_christmas' || burnt) lights.push({ x: ex * 16 + 8 - cx, y: ey * 16 - cy, r: tev.id === 'old_christmas' || burnt ? 60 : tev.id === 'st_martin' ? 50 : 36, flicker: true });
   }
   // Your companion
   const pet = game.progress.pet, comp = game.companion;
@@ -677,7 +688,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
         continue;
       }
       // Tucked in: just the head on the pillow, quilt pulled up to the chin.
-      const head = personFrame(npc.def.body, npc.def.look, 'down', 0, 'walk');
+      const head = personFrame(npc.def.body, eventLook(game, npc.def.id, npc.def.look), 'down', 0, 'walk');
       const bed = OBJ.bed[0];
       list.push({ y: (npc.ty + 1) * 16 + 0.5, fn: () => {
         g.drawImage(head, 5, 0, 14, 12, bx + 1, by + 1, 14, 12);
@@ -693,7 +704,7 @@ export function renderWorld(game: Game, g: CanvasRenderingContext2D): void {
       list.push({ y: npc.y + 16.4, fn: () => g.drawImage(img, Math.round(npc.x) - 2 - cx, Math.round(npc.y) + 2 - cy) });
       continue;
     }
-    const img = personFrame(npc.def.body, npc.def.look, npc.dir, npc.frame, 'walk');
+    const img = personFrame(npc.def.body, eventLook(game, npc.def.id, npc.def.look), npc.dir, npc.frame, 'walk');
     const fishing = npc.stop?.tag === 'fishing' && npc.map === npc.stop.map && !npc.moving;
     list.push({
       y: npc.y + 16.4,

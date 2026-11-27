@@ -197,6 +197,34 @@ export function bakeOutdoors(): void {
   ICON.lamphouse_key = icon((p) => { p.ellipse(5, 6, 3, 3, AMBER); p.px(5, 6, VOID); p.line(7, 8, 13, 14, AMBER); p.hline(11, 13, 12, AMBER); p.px(12, 14, AMBER); });
   ICON.binocular_strap = icon((p) => { p.rect(3, 6, 4, 6, SHADOW); p.rect(9, 6, 4, 6, SHADOW); p.px(4, 7, MIST); p.px(10, 7, MIST); p.hline(6, 9, 8, SHADOW); p.line(3, 5, 8, 1, RUST); p.line(13, 5, 8, 1, RUST); });
   ICON.handcar_crank = icon((p) => { p.line(3, 13, 11, 5, RUST); p.rect(10, 3, 4, 3, SHADOW); p.rect(2, 12, 3, 3, AMBER); p.rect(9, 9, 5, 4, FOG); p.hline(10, 12, 10, SHADOW); });
+  // ---- The Meissgeiers: bakery, herbs, eggs, masks, the barn star ----
+  ICON.fastnacht_donut = icon((p) => { p.rect(3, 5, 10, 8, AMBER); p.hline(3, 12, 5, LANTERN); p.vline(3, 5, 12, RUST); p.hline(3, 12, 12, RUST); p.rect(7, 8, 2, 2, RUST); for (const [x, y] of [[5, 6], [10, 7], [6, 10], [11, 10], [9, 6]]) p.px(x, y, MOON); });
+  ICON.stollen = icon((p) => { p.ellipse(8, 9, 6, 3.5, LANTERN); p.ellipse(8, 8, 5, 2.5, MOON); p.hline(4, 12, 10, AMBER); for (const [x, y] of [[5, 9], [8, 10], [11, 9], [7, 11]]) p.px(x, y, CRAN); p.px(10, 10, MOSS); p.hline(5, 11, 6, MOON); });
+  ICON.springerle = icon((p) => { p.rect(3, 4, 10, 9, MOON); p.rect(4, 5, 8, 7, FOG); p.hline(3, 12, 12, MIST); p.px(6, 7, MIST); p.px(7, 6, MIST); p.px(7, 8, MIST); p.rect(8, 8, 3, 2, MIST); p.px(9, 10, MIST); p.px(10, 7, MIST); });
+  ICON.lebkuchen = icon((p) => { p.ellipse(8, 8, 6, 5, RUST); p.ellipse(8, 8, 5, 4, AMBER); p.ellipse(8, 8, 5, 4, RUST); p.ellipse(8, 7, 4, 3, AMBER); p.rect(7, 5, 3, 4, MOON); p.px(8, 4, MOON); p.px(8, 6, LANTERN); for (const [x, y] of [[4, 8], [12, 8], [6, 11], [10, 11]]) p.px(x, y, MOON); });
+  ICON.pork_sauerkraut = plate((p) => { p.ellipse(6, 9, 4, 2, LANTERN); for (const [x, y] of [[4, 9], [6, 8], [7, 10], [5, 10]]) p.px(x, y, FERN); p.ellipse(11, 9, 3, 2, RUST); p.hline(9, 13, 8, AMBER); p.px(11, 9, CRAN); });
+  ICON.alpine_tea = icon((p) => { p.rect(4, 7, 7, 7, FOG); p.rect(5, 8, 5, 5, MOSS); p.hline(5, 9, 8, FERN); p.rect(11, 9, 2, 3, FOG); p.px(7, 10, RED); for (const [x, y] of [[6, 4], [8, 3], [7, 5], [9, 5]]) p.px(x, y, FOG); });
+  ICON.mountain_mint = icon((p) => { p.vline(8, 5, 14, FOREST); for (const [x, y, d] of [[8, 6, -1], [8, 6, 1], [8, 9, -1], [8, 9, 1], [8, 12, -1], [8, 12, 1]]) { p.rect(d < 0 ? x - 4 : x + 1, y, 3, 2, MOSS); p.px(d < 0 ? x - 3 : x + 2, y, FERN); } p.rect(7, 3, 3, 2, MOON); p.px(8, 2, FOG); });
+  ICON.bee_balm = icon((p) => { p.vline(8, 9, 15, FOREST); p.rect(5, 11, 3, 1, MOSS); p.rect(9, 12, 3, 1, MOSS); for (let a = 0; a < 10; a++) { const t = (a / 10) * Math.PI * 2; p.line(8, 6, Math.round(8 + Math.cos(t) * 4), Math.round(6 + Math.sin(t) * 4), a % 2 ? RED : CRAN); } p.px(8, 6, CRAN); });
+  ICON.turks_cap = icon((p) => { p.vline(8, 7, 15, FOREST); p.rect(9, 11, 3, 1, MOSS); for (const [dx, dy] of [[-4, -1], [4, -1], [-3, 2], [3, 2], [0, -3]]) p.line(8, 6, 8 + dx, 6 + dy, AMBER); p.px(4, 6, RUST); p.px(12, 6, RUST); for (const [x, y] of [[6, 5], [10, 6], [7, 7]]) p.px(x, y, VOID); p.vline(8, 7, 10, LANTERN); });
+  ICON.wild_ginseng = icon((p) => { p.line(8, 6, 7, 12, LANTERN); p.line(7, 12, 4, 15, LANTERN); p.line(7, 12, 10, 15, LANTERN); p.line(8, 9, 12, 11, AMBER); p.vline(8, 2, 6, FOREST); for (const [x, y] of [[5, 2], [11, 2], [8, 1]]) { p.rect(x - 1, y, 3, 2, MOSS); } p.px(8, 3, RED); p.px(9, 4, RED); p.px(7, 4, RED); });
+  ICON.painted_egg = icon((p) => { p.ellipse(8, 9, 4, 5.5, CRAN); p.ellipse(8, 9, 3, 4.5, RED); p.hline(5, 11, 8, LANTERN); p.hline(5, 11, 11, TWILIGHT); for (const x of [6, 9]) p.px(x, 9, MOON); p.px(7, 5, MOON); });
+  ICON.barn_star = icon((p) => {
+    p.ellipse(8, 8, 7, 7, SHADOW); p.ellipse(8, 8, 6, 6, LANTERN);
+    for (let a = 0; a < 8; a++) { const t = (a / 8) * Math.PI * 2; for (let k = 1; k < 6; k++) p.px(Math.round(8 + Math.cos(t) * k), Math.round(8 + Math.sin(t) * k), a % 2 ? AMBER : RED); }
+    p.px(8, 8, CRAN);
+  });
+  ICON.herb_satchel = icon((p) => { p.rect(3, 7, 10, 7, AMBER); p.hline(3, 12, 7, LANTERN); p.rect(3, 6, 10, 2, RUST); p.line(4, 6, 8, 1, RUST); p.line(12, 6, 8, 1, RUST); p.px(6, 5, MOSS); p.px(7, 4, FERN); p.px(10, 5, RED); p.rect(7, 9, 2, 2, SHADOW); });
+  const maskIcon = (face: number, shade: number, horn: number, kind: 'goat' | 'owl' | 'bear') => icon((p) => {
+    p.ellipse(8, 9, 5, 5.5, face); p.hline(4, 12, 13, shade);
+    if (kind === 'goat') { p.line(5, 4, 2, 1, horn); p.line(11, 4, 14, 1, horn); p.px(2, 2, horn); p.px(14, 2, horn); p.rect(7, 13, 2, 3, face); }
+    if (kind === 'owl') { p.px(4, 4, shade); p.px(12, 4, shade); p.rect(4, 7, 3, 3, horn); p.rect(10, 7, 3, 3, horn); p.px(8, 11, AMBER); p.px(8, 12, AMBER); }
+    if (kind === 'bear') { p.rect(3, 3, 3, 3, face); p.rect(11, 3, 3, 3, face); p.rect(6, 10, 5, 3, horn); p.hline(7, 9, 10, VOID); }
+    p.px(5, 8, VOID); p.px(11, 8, VOID);
+  });
+  ICON.mask_goat = maskIcon(FOG, MIST, AMBER, 'goat');
+  ICON.mask_owl = maskIcon(RUST, CRAN, LANTERN, 'owl');
+  ICON.mask_bear = maskIcon(SHADOW, VOID, RUST, 'bear');
   // ---- tools & ammo ----
   ICON.fishing_rod = icon((p) => { p.line(3, 14, 13, 2, RUST); p.line(4, 14, 14, 2, AMBER); p.rect(3, 11, 2, 2, SHADOW); p.line(14, 2, 14, 9, FOG); p.px(14, 10, RED); });
   ICON.hunting_bow = icon((p) => { for (let y = 2; y <= 14; y++) p.px(Math.round(5 + Math.sin(((y - 2) / 12) * Math.PI) * 5), y, RUST); p.vline(5, 2, 14, FOG); p.rect(8, 7, 3, 3, AMBER); });

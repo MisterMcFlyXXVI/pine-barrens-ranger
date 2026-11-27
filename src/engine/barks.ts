@@ -37,7 +37,7 @@ const WARDEN: Lines = {
   agnes: 'The {cryptid}. Elias spent years trying to get close to it, and you did it by being kind. I don\'t know whether to laugh or cry, dear.',
   gideon: '{cryptid}, settled. I can sleep without the forge lit, maybe.',
   barnaby: 'The {cryptid}, at peace with us. Elias always said they only wanted manners. He\'ll want to hear it from you.',
-  ruth: 'Ruth heard you made peace with the {cryptid}. My Walter always said the old ones just wanted manners.',
+  ruth: 'Ruth heard you made peace with the {cryptid}. My Earl always said the old ones just wanted manners.',
   clara: 'The static on the ridge dropped twelve decibels the night you logged the {cryptid}. I\'m not saying that\'s connected. I\'m saying it\'s data.',
 };
 const COAT: Lines = {
@@ -60,7 +60,7 @@ const PROJECT: Record<string, Lines> = {
   proj_neon: {
     _: 'Did you see the diner sign last night? E-A-T, all three letters. I about drove into the ditch.',
     mabel: 'Hon, I stood in the street last night and just looked at it. All three letters. Story Hour this Friday, and you\'re coming.',
-    ruth: 'The EAT sign\'s lit. Walter proposed to me under that sign. The A was out then, too.',
+    ruth: 'The EAT sign\'s lit. Earl proposed to me under that sign. The A was out then, too.',
     toby: 'The neon\'s on! I can see it from my loft window. I counted the buzzes. There are a lot.',
   },
   proj_station: {
@@ -78,7 +78,9 @@ const PROJECT: Record<string, Lines> = {
   mine_open: {
     _: 'The lamp house is lit. First time since \'78. People keep walking up the hill just to look at it.',
     gideon: 'I put my hand on the boards last night. The hum\'s still there. But it doesn\'t sound lonely anymore.',
-    ruth: 'They brought Walter\'s tag down off the board. It\'s in my cedar box now, where it belongs.',
+    ruth: 'Walter Meissgeier walked up that hill and took his own check down off the board. First time since \'78. Earl would\'ve been so proud of him.',
+    walter: 'I took my check down. 312. It hung there since the morning I walked out and Danny did not. When they go down to shore the tunnels, I will stand at the gate. Not in. At the gate. For Danny.',
+    liesl: 'Walter came home from the lamp house and sat in his chair with the check in his hand till the fire went out. Then he said, "So. Tomorrow is a picking day." Nineteen years I waited to hear him say it like that.',
     agnes: 'Danny\'s check came down off the lamp-house board. Elias held it all night. Thank you, dear.',
   },
 };
@@ -90,6 +92,8 @@ const STORM: Lines = {
   clara: 'Did you hear the ridge last night? The static was singing. I got forty minutes of it on tape.',
   ruth: 'My hens are all accounted for after that storm. I went out in my nightgown to check. Don\'t tell anybody.',
   pippa: 'The storm was SO loud. Sam slept under the table.', sam: 'It was a strategic location.',
+  walter: 'Storm on the bald last night. Tomorrow the bee balm will be flat and the mint will be glad of it.',
+  liesl: 'Thunder all night and the dough did not rise. Bread knows when the sky is angry.',
 };
 const FOG: Lines = {
   _: 'That fog last night was thick enough to stand a spoon in.',
@@ -116,6 +120,9 @@ const BIRTHDAY: Lines = {
   toby: 'It\'s my birthday! Nobody ever remembers. That\'s fine. It\'s fine!',
   ruth: 'Eighty-one years today, honey. Every one of them earned.',
   vance: 'Birthday. Agnes threatened me with a cake. I\'m hiding out here.',
+  liesl: 'It is my birthday, Schatz. I baked my own cake. Of course I did. Who else would do it right?',
+  matthias: 'Birthday. Omi made the cake, Opa made the speech, I made the face. You know the face.',
+  walter: 'Today I am eighty-seven. I walked up the ridge this morning to prove it to my knees.',
 };
 
 function pick(lines: Lines, id: string): string { return lines[id] ?? lines._; }

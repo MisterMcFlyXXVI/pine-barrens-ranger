@@ -5,7 +5,7 @@
  * handcar, barney_fishing.
  */
 
-export type FriendId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'ruth';
+export type FriendId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'ruth' | 'liesl' | 'matthias' | 'walter';
 
 export interface HeartReward {
   hearts: number;
@@ -107,8 +107,38 @@ export const FRIENDS: Record<FriendId, FriendDef> = {
     dislikes: ['bog_slime', 'sulfur_egg', 'ghost_pepper'],
     rewards: [
       { hearts: 2, give: [['foraged_egg', 6]], note: 'Half a dozen eggs from Pip and the girls.', lines: ['Ruth presses a basket into your hands. "From the girls. Pip laid the little one. She tries her best."'] },
-      { hearts: 4, give: [['pawpaw_bread', 3]], note: '3 loaves of Pawpaw Bread.', lines: ['Ruth: "Pawpaw bread, honey. Walter\'s mother\'s recipe. You\'re family now, so you get the good pan."'] },
-      { hearts: 5, note: 'Best friends.', lines: ['Ruth: "Walter would\'ve put you to work and fed you twice. I\'m doing my best to keep up the tradition."'] },
+      { hearts: 4, give: [['pawpaw_bread', 3]], note: '3 loaves of Pawpaw Bread.', lines: ['Ruth: "Pawpaw bread, honey. Earl\'s mother\'s recipe. You\'re family now, so you get the good pan."'] },
+      { hearts: 5, note: 'Best friends.', lines: ['Ruth: "Earl would\'ve put you to work and fed you twice. I\'m doing my best to keep up the tradition."'] },
+    ],
+  },
+  liesl: {
+    loves: ['cranberries', 'wild_honeycomb', 'moonberry', 'wild_apple'],
+    likes: ['foraged_egg', 'sweet_corn', 'black_coffee', 'apple_butter', 'pawpaw', 'winterberry'],
+    dislikes: ['bog_slime', 'sulfur_egg', 'ghost_pepper', 'creek_chub'],
+    rewards: [
+      { hearts: 2, give: [['stollen', 2]], note: '2 Christmas Stollen.', lines: ['Omi Liesl wraps a loaf in a tea towel and tucks it under your arm. "Stollen. It keeps a month. It will not last a week. Nobody\'s ever does."'] },
+      { hearts: 4, give: [['springerle', 5], ['lebkuchen', 3]], note: 'Springerle and Lebkuchen from the good tin.', lines: ['Omi: "From the good tin. The one I hide from Matthias. Now you know where it is, so now you are family. Don\'t tell him."'] },
+      { hearts: 5, note: 'Best friends.', lines: ['Omi: "When I first came here I baked for a town that didn\'t know my name. Now I bake for you. That is the whole story of a good life, Schatz."'] },
+    ],
+  },
+  matthias: {
+    loves: ['timber', 'charred_wood', 'whitetail_antler', 'frost_rim_antler'],
+    likes: ['pine_resin', 'wild_acorn', 'pepperoni_roll', 'apple_cider', 'black_coffee'],
+    dislikes: ['bog_slime', 'swamp_moss', 'sulfur_egg'],
+    rewards: [
+      { hearts: 2, give: [['timber', 10]], note: '10 Timber, seasoned linden and cherry.', lines: ['Matthias: "Offcuts. Linden, cherry, a bit of walnut. Too good to burn, too small for me. Make something."'] },
+      { hearts: 4, give: [['lure_totem', 1]], note: 'A Wooden Lure Totem, carved properly.', lines: ['Matthias sets down a totem, the face so finely cut it seems to watch you. "Elias showed me how these go. I just made it better looking. Don\'t tell him that."'] },
+      { hearts: 5, note: 'Best friends.', lines: ['Matthias: "My hands know wood. They didn\'t know people, till Elias. Then you. That\'s two. Omi says that\'s a good start."'] },
+    ],
+  },
+  walter: {
+    loves: ['wild_ginseng', 'chaga', 'bee_balm', 'turks_cap'],
+    likes: ['mountain_mint', 'wild_honeycomb', 'pine_resin', 'black_coffee', 'wild_onion', 'alpine_tea'],
+    dislikes: ['ghost_pepper', 'battery_pack', 'sulfur_egg', 'bog_slime'],
+    rewards: [
+      { hearts: 2, flag: 'taught_tea', give: [['mountain_mint', 3], ['bee_balm', 3]], note: 'Opa\'s Mountain Tea recipe (cabin stove).', lines: ['Opa Walter shakes out a paper twist of dried leaves. "Mountain mint. Bee balm. One and one, in the pot, never boiled. Now you know it. Now you are a little bit Swabian."', '(You can brew Opa\'s Mountain Tea at the cabin stove.)'] },
+      { hearts: 4, give: [['wild_ginseng', 1], ['alpine_tea', 3]], note: 'A ginseng root he dug twenty years ago and never sold.', lines: ['Opa lays a forked root in your palm, wrapped in moss. "Twenty years I kept this one. A man in Elkins offered me a truck for it. A truck! What do I want with a truck? I want to give it to somebody who will plant the berries."'] },
+      { hearts: 5, note: 'Best friends.', lines: ['Opa Walter: "In the old country we say: a friend is somebody who walks up the mountain with you even when there is nothing to pick. We should go up, you and I. Even when there is nothing to pick."'] },
     ],
   },
   toby: {

@@ -1,7 +1,9 @@
 /** Wearable outfits & hats for the modular player renderer. */
 
 export type OutfitStyle = 'jacket' | 'flannel' | 'slicker' | 'cloak' | 'mantle' | 'suit' | 'apron';
-export type HatStyle = 'none' | 'cap' | 'bucket' | 'antlers' | 'goggles' | 'crown' | 'headphones';
+export type HatStyle = 'none' | 'cap' | 'bucket' | 'antlers' | 'goggles' | 'crown' | 'headphones' | 'mask' | 'alpine' | 'kerchief';
+/** Which face a carved Fasnacht mask has. */
+export type MaskFace = 'goat' | 'owl' | 'bear' | 'stag' | 'krampus';
 
 export interface OutfitDef {
   id: string;
@@ -24,6 +26,7 @@ export interface HatDef {
   accent: number;
   starter: boolean;
   source: string;
+  mask?: MaskFace;
 }
 
 export const OUTFITS: readonly OutfitDef[] = [
@@ -50,6 +53,11 @@ export const NPC_OUTFITS: readonly OutfitDef[] = [
   { id: 'npc_ezri', name: 'Apothecary Robe', style: 'cloak', main: 14, shade: 2, trim: 15, accent: 7, starter: false, source: 'npc' },
   { id: 'npc_housecoat', name: 'Housecoat', style: 'apron', main: 13, shade: 12, trim: 7, accent: 11, starter: false, source: 'npc' },
   { id: 'npc_county', name: 'County Windbreaker', style: 'jacket', main: 13, shade: 12, trim: 6, accent: 1, starter: false, source: 'npc' },
+  { id: 'npc_dirndl', name: 'Baker\'s Apron', style: 'apron', main: 6, shade: 13, trim: 10, accent: 11, starter: false, source: 'npc' },
+  { id: 'npc_carver', name: 'Carver\'s Smock', style: 'flannel', main: 3, shade: 2, trim: 8, accent: 7, starter: false, source: 'npc' },
+  { id: 'npc_loden', name: 'Loden Jacket', style: 'jacket', main: 2, shade: 1, trim: 8, accent: 11, starter: false, source: 'npc' },
+  { id: 'npc_furs', name: 'Belsnickel Furs', style: 'cloak', main: 9, shade: 10, trim: 1, accent: 8, starter: false, source: 'npc' },
+  { id: 'npc_krampus', name: 'Krampus Furs', style: 'cloak', main: 0, shade: 1, trim: 10, accent: 11, starter: false, source: 'npc' },
   { id: 'npc_pike', name: 'Machinist Coat', style: 'slicker', main: 12, shade: 1, trim: 8, accent: 7, starter: false, source: 'npc' },
 ];
 
@@ -59,6 +67,14 @@ export const NPC_HATS: readonly HatDef[] = [
   { id: 'npc_explorer', name: 'Explorer Hat', style: 'bucket', main: 8, shade: 9, accent: 3, starter: false, source: 'npc' },
   { id: 'npc_headphones', name: 'Headphones', style: 'headphones', main: 1, shade: 1, accent: 11, starter: false, source: 'npc' },
   { id: 'npc_county_cap', name: 'County Cap', style: 'cap', main: 12, shade: 1, accent: 6, starter: false, source: 'npc' },
+  { id: 'npc_alpine', name: 'Alpine Hat', style: 'alpine', main: 2, shade: 1, accent: 11, starter: false, source: 'npc' },
+  { id: 'npc_kerchief', name: 'Head Kerchief', style: 'kerchief', main: 11, shade: 10, accent: 6, starter: false, source: 'npc' },
+  { id: 'npc_fur_hood', name: 'Fur Hood', style: 'bucket', main: 10, shade: 1, accent: 9, starter: false, source: 'npc' },
+  { id: 'npc_krampus_mask', name: 'Krampus Mask', style: 'mask', mask: 'krampus', main: 0, shade: 1, accent: 7, starter: false, source: 'npc' },
+  { id: 'npc_mask_goat', name: 'Goat Mask', style: 'mask', mask: 'goat', main: 6, shade: 13, accent: 8, starter: false, source: 'npc' },
+  { id: 'npc_mask_owl', name: 'Owl Mask', style: 'mask', mask: 'owl', main: 9, shade: 10, accent: 7, starter: false, source: 'npc' },
+  { id: 'npc_mask_bear', name: 'Bear Mask', style: 'mask', mask: 'bear', main: 1, shade: 0, accent: 9, starter: false, source: 'npc' },
+  { id: 'npc_mask_stag', name: 'Stag Mask', style: 'mask', mask: 'stag', main: 8, shade: 9, accent: 7, starter: false, source: 'npc' },
   { id: 'npc_pike_goggles', name: 'Brass Goggles', style: 'goggles', main: 0, shade: 1, accent: 8, starter: false, source: 'npc' },
 ];
 
@@ -69,6 +85,10 @@ export const HATS: readonly HatDef[] = [
   { id: 'jackalope_cap', name: 'Jackalope Antler Cap', style: 'antlers', main: 9, shade: 10, accent: 7, starter: false, source: 'Historical Society: 5 donations.' },
   { id: 'mothman_goggles', name: 'Mothman Goggles', style: 'goggles', main: 0, shade: 1, accent: 11, starter: false, source: 'Historical Society: 20 donations.' },
   { id: 'antler_crown', name: 'Wendigo Antler Crown', style: 'crown', main: 1, shade: 6, accent: 7, starter: false, source: 'Historical Society: 28 donations.' },
+  { id: 'mask_goat', name: 'Goat Mask', style: 'mask', mask: 'goat', main: 6, shade: 13, accent: 8, starter: false, source: 'Carved at the Workbench (Matthias taught you).' },
+  { id: 'mask_owl', name: 'Owl Mask', style: 'mask', mask: 'owl', main: 9, shade: 10, accent: 7, starter: false, source: 'Carved at the Workbench (Matthias taught you).' },
+  { id: 'mask_bear', name: 'Bear Mask', style: 'mask', mask: 'bear', main: 1, shade: 0, accent: 9, starter: false, source: 'Carved at the Workbench (Matthias taught you).' },
+  { id: 'ranger_mask', name: "Ranger's Mask", style: 'mask', mask: 'stag', main: 3, shade: 2, accent: 7, starter: false, source: 'Carved for you by Matthias, at 4 hearts.' },
 ];
 
 export function outfitById(id: string): OutfitDef {
@@ -88,4 +108,8 @@ export const OUTFIT_PERKS: Readonly<Record<string, string>> = {
   wendigo_mantle: 'Apex Presence: predators never force you to retreat.',
   antler_crown: 'Apex Presence (pairs with the Wendigo Mantle).',
   shimmer_suit: '2x Rare Variant spawns everywhere; 25% off in every shop.',
+  mask_goat: 'Fasnacht: wear it to the parade and folks will play along.',
+  mask_owl: 'Fasnacht: wear it to the parade and folks will play along.',
+  mask_bear: 'Fasnacht: wear it to the parade and folks will play along.',
+  ranger_mask: 'Carved by Matthias. Shy cryptids find a still, masked face less alarming (-5 starting Startle).',
 };

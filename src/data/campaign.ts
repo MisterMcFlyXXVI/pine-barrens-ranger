@@ -260,7 +260,7 @@ export const LETTERS: readonly Letter[] = [
     id: 'ruth21', donations: 21, gift: ['pawpaw_bread', 2],
     pages: [
       'A letter in old-fashioned looping cursive, smelling faintly of cinnamon:',
-      '"Dear Ranger, Sam reads me your Dex out loud at supper. Twenty-one! Walter would have walked you to every one of those creatures himself, and told you lies about the other twenty."',
+      '"Dear Ranger, Sam reads me your Dex out loud at supper. Twenty-one! Earl would have walked you to every one of those creatures himself, and told you lies about the other twenty."',
       '"Pawpaw bread for your pack. My mother\'s recipe. Eat it when you\'re out somewhere quiet and want to feel watched over. -Ruth Haddix"',
     ],
   },

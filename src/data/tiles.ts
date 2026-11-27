@@ -191,6 +191,9 @@ export const O = {
   // ---- Town Restoration Ledger ----
   GAZEBO: 116,
   LEDGER: 117,
+  // ---- The Meissgeiers ----
+  /** A painted barn star on a post in your yard (the Snallygaster ward). */
+  BARN_STAR: 118,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -209,7 +212,7 @@ export type Interact =
   | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
-  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger';
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar';
 
 export interface Drop {
   item: string;
@@ -324,6 +327,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.OLD_TRAP]: { name: 'Rusted Trap', solid: true, interact: 'trap' },
   [O.GAZEBO]: { name: 'Gazebo', solid: true, interact: 'gazebo', fw: 3, fh: 2 },
   [O.LEDGER]: { name: 'Restoration Ledger', solid: true, interact: 'ledger' },
+  [O.BARN_STAR]: { name: 'Painted Barn Star', solid: true, interact: 'barnstar' },
   [O.STOP_SIGN]: { name: 'Handcar Stop', solid: true, interact: 'handcar' },
   [O.TOTEM]: { name: 'Wooden Lure Totem', solid: true, interact: 'mount' },
   [O.ROD]: { name: 'Copper Lightning Rod', solid: true, interact: 'mount' },

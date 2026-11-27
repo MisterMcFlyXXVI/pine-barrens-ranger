@@ -260,14 +260,16 @@ export class CraftMenu extends ListMenu {
   }
   rows(game: Game): Row[] {
     if (this.tabName() === 'LIST') return this.listRows(game);
-    if (this.station === 'stove') return RECIPES.filter((r) => r.station === 'stove').map((r) => this.recipeRow(game, r));
-    if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint && !r.station).map((r) => this.recipeRow(game, r));
+    const taughtRow = (r: Recipe): Row => game.progress.flags.has(r.taught!.flag) ? this.recipeRow(game, r)
+      : { icon: r.out, label: `??? ${ITEMS[r.out].name}`, sub: `TAUGHT BY ${r.taught!.by}`, right: 'LOCKED', dim: true, desc: `A folk recipe. Get to know ${r.taught!.by.split(' ').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ')} and you might be shown how.` };
+    if (this.station === 'stove') return RECIPES.filter((r) => r.station === 'stove').map((r) => r.taught ? taughtRow(r) : this.recipeRow(game, r));
+    if (this.tab === 0) return RECIPES.filter((r) => !r.blueprint && !r.station && !r.taught).map((r) => this.recipeRow(game, r));
     if (this.tab === 1) {
-      return RECIPES.filter((r) => r.blueprint).map((r) => {
+      return [...RECIPES.filter((r) => r.taught && !r.station).map(taughtRow), ...RECIPES.filter((r) => r.blueprint).map((r) => {
         if (game.progress.blueprints.has(r.blueprint!)) return this.recipeRow(game, r);
         const bp = BLUEPRINTS.find((b) => b.id === r.blueprint)!;
         return { icon: r.out, label: `??? ${bp.name}`, sub: `BLUEPRINT: ${bp.merchant === 'ezri' ? 'OLD EZRI' : 'PROF. PIKE'}`, right: 'LOCKED', dim: true, desc: 'Traveling Merchants sell this blueprint on foggy nights and during the Folklore Festival.' };
-      });
+      })];
     }
     return CATALOG_SEEDS.map((id) => buyRow(game, { id, cost: CROP_BY_ID[ITEMS[id].crop ?? '']?.seedPrice ?? 0 }, 'MAIL-ORDER '));
   }

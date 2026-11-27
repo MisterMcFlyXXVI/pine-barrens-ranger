@@ -116,6 +116,10 @@ export function buildTown(): MapDef {
   for (let y = 51; y <= 55; y++) for (let x = 31; x <= 36; x++) b.setO(x, y, O.NONE);
   house(31, 51, 4, "Ruth Haddix's house. Chickens complain from somewhere behind it.");
   b.trail([[55, 37], [55, 44], [54, 47], [51, 47]], 1);
+  // The Meissgeiers, at the end of the east lane: half-timbered, with a barn star on the gable.
+  for (let y = 49; y <= 53; y++) for (let x = 57; x <= 62; x++) b.setO(x, y, O.NONE);
+  house(57, 49, 5, 'The Meissgeier house. Half-timbered, a painted barn star on the gable, and the smell of fresh bread. A carved sign: "BAKERY SATURDAYS -- TOWN SQUARE."');
+  b.trail([[55, 47], [55, 51], [57, 54], [59, 54]], 1);
   b.trail([[27, 49], [27, 53], [28, 57], [33, 57], [33, 56]], 1);
   for (const [x, y] of [[20, 38], [27, 38], [41, 38], [57, 38], [10, 38], [47, 38]]) if (b.g(x, y) !== T.PATH) b.setO(x, y, O.LAMP);
   b.setO(23, 34, O.LAMP); b.setO(49, 34, O.LAMP);
@@ -217,6 +221,7 @@ export function buildTown(): MapDef {
       { x: 40, y: 48, w: 1, h: 1, to: 'HOUSE_MILLER', tx: 9, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
       { x: 51, y: 46, w: 1, h: 1, to: 'HOUSE_CALLOWAY', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
       { x: 33, y: 55, w: 1, h: 1, to: 'HOUSE_RUTH', tx: 8, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
+      { x: 59, y: 53, w: 1, h: 1, to: 'HOUSE_MEISSGEIER', tx: 9, ty: 9, dir: 'up', closedMsg: '', requires: 'home' },
       // MINE_ENTRANCE_PORTAL — stub for the future underground dungeon.
       { x: 54, y: 6, w: 1, h: 1, to: 'COAL_MINE', tx: 0, ty: 0, dir: 'up',
         closedMsg: 'Planks are nailed across the mine adit. Gideon says the town could pay to reopen it someday (the Restoration Ledger, at the Historical Society).',

@@ -5,7 +5,7 @@
 import { oriTick } from './orientation';
 import { recordPrints, goldCount, backfillAlbum } from './album';
 import { markMilestone } from './barks';
-import { morningNews, eveningEventToday, eventNow, eventStallAt } from './calendar';
+import { morningNews, eveningEventToday, eventNow, eventStallAt, winterBeaten, eventOn } from './calendar';
 import { Companion, petPet, petOvernight, adoptionTick } from './pet';
 import { NamePrompt } from '../ui/namePrompt';
 import { onSettings, settings, adoptSaveSettings } from './settings';
@@ -175,7 +175,7 @@ export class Game {
 
   getMap(id: MapId): MapRuntime {
     let m = this.maps.get(id);
-    if (!m) { m = new MapRuntime(id); m.spawnForage(this.clock.day); this.maps.set(id, m); if (this.stopRepaired(id)) this.clearLine(m); }
+    if (!m) { m = new MapRuntime(id); m.spawnForage(this.clock.day, this.forageBoosts()); this.maps.set(id, m); if (this.stopRepaired(id)) this.clearLine(m); }
     return m;
   }
 
@@ -413,7 +413,8 @@ export class Game {
   /* ------------------------------------------------------------ */
 
   private rollDayWeather(): void {
-    this.dayWeather = rollWeather(this.clock.day, Math.floor((this.clock.day - 1) / 28) % 4);
+    // Old Man Winter burned at Fasnacht: the last days of winter roll spring weather.
+    this.dayWeather = rollWeather(this.clock.day, winterBeaten(this) ? 0 : Math.floor((this.clock.day - 1) / 28) % 4);
   }
 
   weatherNow(): Weather {
@@ -496,7 +497,10 @@ export class Game {
     const out = ITEMS[r.out];
     if (out.kind === 'gear' && this.inv.count(r.out) > 0) { sfx.error(); this.toast(`You already have a ${out.name}.`); return; }
     if (!r.inputs.every(([id, n]) => haveCount(this, id) >= n)) { sfx.error(); this.toast('Missing ingredients.'); return; }
-    if (!this.inv.canFit(r.out)) { sfx.error(); this.toast('Your bag is full.'); return; }
+    // Fasnacht masks go straight on the wardrobe hook.
+    const wear = r.out.startsWith('mask_');
+    if (wear && this.wardrobe.has(r.out)) { sfx.error(); this.toast(`You already carved a ${out.name}.`); return; }
+    if (!wear && !this.inv.canFit(r.out)) { sfx.error(); this.toast('Your bag is full.'); return; }
     // The Porch Workbench uses your bag first, then the cabin Storage Crate.
     for (const [id, n] of r.inputs) {
       const fromBag = Math.min(n, this.inv.count(id));
@@ -505,8 +509,8 @@ export class Game {
     }
     // Mabel's skillet (2 hearts): stove meals make two servings.
     const qty = r.station === 'stove' && out.kind === 'food' && this.progress.flags.has('skillet') ? r.qty * 2 : r.qty;
-    const over = this.inv.add(r.out, qty);
-    if (over) this.storage.add(r.out, over);
+    if (wear) this.wardrobe.add(r.out);
+    else { const over = this.inv.add(r.out, qty); if (over) this.storage.add(r.out, over); }
     sfx.harvest();
     this.progress.flags.add('did_craft');
     const left = craftedNeed(this, r.id);
@@ -809,6 +813,13 @@ export class Game {
 
   /** Holding one of Elias's keepsakes (bag or crate). */
   keepsake(id: string): boolean { return haveCount(this, id) > 0; }
+  /** Keepsakes that make forage groups richer. */
+  forageBoosts(): Set<string> {
+    const s = new Set(['herb_satchel'].filter((k) => this.keepsake(k)));
+    const e = eventOn(this.clock.day);
+    if (e) s.add(`event:${e.id}`);
+    return s;
+  }
 
   /** Fade out → run → fade in. */
   transition(cb: () => void): void {
@@ -1352,6 +1363,16 @@ export class Game {
       this.toast('Display pedestal placed. Face it and press A to show a specimen.');
       return;
     }
+    if (id === 'barn_star') {
+      const ok = m.id === 'CABIN_YARD' && m.obj(tx, ty) === O.NONE && !m.blocked(tx, ty) && !m.portalAt(tx, ty) && m.plotIndex(tx, ty) < 0 && m.ground(tx, ty) !== T.PATH;
+      if (!ok) { sfx.error(); this.notice('Hang the barn star on open ground in your cabin yard (off the path and the garden).'); return; }
+      if (m.countPlaced(O.BARN_STAR) >= 1) { sfx.error(); this.notice('One barn star is plenty. The Snallygaster can count.'); return; }
+      m.placeObject(m.idx(tx, ty), O.BARN_STAR);
+      this.inv.removeAt(this.sel, 1);
+      sfx.till();
+      this.toast('Barn star raised. Omi Liesl would approve.');
+      return;
+    }
     const o = MOUNT_OBJECT[id];
     if (!m.def.wild || m.id === 'CABIN_YARD') { sfx.error(); this.notice('Lure mounts only work out in the wilderness regions.'); return; }
     const g = m.ground(tx, ty);
@@ -1668,6 +1689,16 @@ export class Game {
         return true;
       case 'ledger':
         openLedger(this, 'museum');
+        return true;
+      case 'barnstar':
+        sfx.blip();
+        this.openOverlay(new Dialog(['Your painted barn star: eight points, red and gold, in a ring of tulips. The Snallygaster gives a yard with a star a wide berth, Omi says. (Snallygaster encounters start calmer while it stands.)'], [
+          { label: 'Leave it up', fn: () => undefined },
+          { label: 'Take it down', fn: () => {
+            if (!this.inv.canFit('barn_star')) { sfx.error(); this.toast('Your bag is full.'); return; }
+            this.cur.removeObject(this.cur.idx(tx, ty)); this.inv.add('barn_star', 1); sfx.confirm();
+          } },
+        ]));
         return true;
       case 'gazebo':
         gazeboRest(this);
@@ -2149,7 +2180,7 @@ export class Game {
     if (this.unreadLetters().length) lines.push('There\'s a letter waiting in your mailbox.');
     if (this.progress.has('festival') && this.clock.weekday === 'Sun') lines.push('Tonight: the Pine Hollow Folklore Festival in the Town Park!');
     else if (this.dayWeather.evening === 'FOG') lines.push('Fog tonight: the Traveling Merchants may visit the Town Square.');
-    for (const m of this.maps.values()) { m.spawnForage(this.clock.day); checkSnares(m); }
+    for (const m of this.maps.values()) { m.spawnForage(this.clock.day, this.forageBoosts()); checkSnares(m); }
     const gift = petOvernight(this);
     if (gift) lines.push(gift);
     this.player.place(BED_SPAWN.x, BED_SPAWN.y, BED_SPAWN.dir);
@@ -2210,4 +2241,5 @@ export class Game {
 /** How the game refers to each friend in hints. */
 const FRIEND_SHORT: Record<string, string> = {
   agnes: 'Agnes', barnaby: 'Barney', mabel: 'Mabel', gideon: 'Gideon', clara: 'Dr. Okafor', pippa: 'Pippa', sam: 'Sam', toby: 'Toby', ruth: 'Ruth',
+  liesl: 'Omi Liesl', matthias: 'Matthias', walter: 'Opa Walter',
 };

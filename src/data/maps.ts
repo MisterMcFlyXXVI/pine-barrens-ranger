@@ -13,7 +13,7 @@ import { buildPineTrail, buildCranberryBog, buildOldGrowth, buildRadioRidge } fr
 import { buildTown, buildDiner, buildStore, buildMuseum, buildBasement } from './town';
 import { placeStop } from './handcar';
 import { decorate } from './decor';
-import { buildVance, buildFinch, buildMiller, buildCalloway, buildRuth, buildLoft, buildDinerRoom } from './homes';
+import { buildVance, buildFinch, buildMiller, buildCalloway, buildRuth, buildLoft, buildDinerRoom, buildMeissgeier } from './homes';
 
 export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup } from './mapgen';
 
@@ -21,7 +21,7 @@ export type { MapDef, MapId, Portal, Structure, PlotDef, ZoneRect, ForageGroup }
 export const BUILT_MAPS: ReadonlySet<MapId> = new Set<MapId>([
   'CABIN_YARD', 'CABIN_INTERIOR', 'PINE_TRAIL_AND_ORCHARD', 'CRANBERRY_BOG_AND_SPRINGS', 'OLD_GROWTH_AND_SAWMILL', 'RADIO_RIDGE_AND_CROSSROADS',
   'PINE_HOLLOW_TOWN', 'DINER_INT', 'STORE_INT', 'MUSEUM_INT', 'MUSEUM_BASEMENT',
-  'HOUSE_VANCE', 'HOUSE_FINCH', 'HOUSE_MILLER', 'HOUSE_CALLOWAY', 'HOUSE_RUTH', 'STORE_LOFT', 'DINER_ROOM',
+  'HOUSE_VANCE', 'HOUSE_FINCH', 'HOUSE_MILLER', 'HOUSE_CALLOWAY', 'HOUSE_RUTH', 'STORE_LOFT', 'DINER_ROOM', 'HOUSE_MEISSGEIER',
 ]);
 
 export const MAP_NAMES: Record<MapId, string> = {
@@ -44,6 +44,7 @@ export const MAP_NAMES: Record<MapId, string> = {
   HOUSE_RUTH: "Ruth Haddix's House",
   STORE_LOFT: "Toby's Loft",
   DINER_ROOM: "Dr. Okafor's Room",
+  HOUSE_MEISSGEIER: 'The Meissgeier House',
   EXPANSION_RAIL: 'Rail Line',
 };
 
@@ -296,6 +297,7 @@ export function getMapDef(id: MapId): MapDef {
     else if (id === 'HOUSE_RUTH') m = buildRuth();
     else if (id === 'STORE_LOFT') m = buildLoft();
     else if (id === 'DINER_ROOM') m = buildDinerRoom();
+    else if (id === 'HOUSE_MEISSGEIER') m = buildMeissgeier();
     else throw new Error(`Region ${id} is not built yet`);
     decorate(m);
     placeStop(m);

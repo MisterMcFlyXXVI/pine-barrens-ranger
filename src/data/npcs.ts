@@ -12,7 +12,7 @@ import { CRYPTIDS, CryptidDef } from './cryptids';
 import { ITEMS } from './items';
 import { HOME_SPOTS } from './homes';
 
-export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ruth' | 'inspector' | 'ezri' | 'pike' | 'vance';
+export type NpcId = 'agnes' | 'barnaby' | 'mabel' | 'gideon' | 'clara' | 'pippa' | 'sam' | 'toby' | 'buster' | 'ruth' | 'inspector' | 'ezri' | 'pike' | 'vance' | 'liesl' | 'matthias' | 'walter';
 
 export interface Stop {
   map: MapId;
@@ -93,7 +93,15 @@ const FEST: Record<string, Stop> = {
   clara: { map: 'PINE_HOLLOW_TOWN', x: 39, y: 26, dir: 'down' },
   pippa: { map: 'PINE_HOLLOW_TOWN', x: 36, y: 34, dir: 'up', wander: 2 },
   sam: { map: 'PINE_HOLLOW_TOWN', x: 40, y: 34, dir: 'up', wander: 2 },
+  liesl: { map: 'PINE_HOLLOW_TOWN', x: 34, y: 32, dir: 'right' },
+  walter: { map: 'PINE_HOLLOW_TOWN', x: 42, y: 32, dir: 'left' },
+  matthias: { map: 'PINE_HOLLOW_TOWN', x: 38, y: 34, dir: 'up', wander: 1 },
 };
+
+/** Opa Walter goes up to the High Bald on Radio Ridge to pick herbs, Tuesdays and Fridays when it's dry. */
+export const herbDay = (c: { weekday: string; wet: boolean }) => (c.weekday === 'Tue' || c.weekday === 'Fri') && !c.wet;
+/** Omi Liesl's Saturday bakery stall in the Town Square. */
+export const bakeryStall = (c: { weekday: string; wet: boolean; minutes: number }) => c.weekday === 'Sat' && !c.wet && between(c.minutes, H(9), H(13));
 
 /** The Junior Cryptid Club's day: town in the morning, the orchard after lunch, home by dark (with rain, Sunday and Saturday versions). */
 function kidDay(c: ScheduleCtx, id: 'pippa' | 'sam', k: number): Stop {
@@ -399,18 +407,136 @@ export const NPCS: readonly NpcDef[] = [
     },
     greet: ['Well, hey there, honey.', 'You\'re the Ranger! Samuel\'s told me all about you. All about you.', 'Mind the chickens. They don\'t mind you.'],
     chat: [
-      'My Walter went down No. 3 every morning for thirty-one years. I packed his lunch every one of them. Pepperoni roll and an apple.',
+      'My Earl went down No. 3 every morning for thirty-one years. I packed his lunch every one of them. Pepperoni roll and an apple.',
       'Those hens lay better when there\'s fog. Don\'t ask me why. Don\'t ask the hens, either.',
       'Samuel thinks I don\'t know about the glowing box under his bed. I know about everything under that bed.',
       'Back in my day we called it "the thing on the ridge" and we didn\'t go up there. Now there\'s a radio show. Times change.',
       'You eat enough? You don\'t look like you eat enough.',
     ],
-    rumor: 'Ruth leans in: "My Walter saw the {c} once, {time}, out by {place}. He swore it came for {lure}."',
+    rumor: 'Ruth leans in: "My Earl saw the {c} once, {time}, out by {place}. He swore it came for {lure}."',
     lines: {
       home: ['Sit by the fire, honey. Soup beans are on.', 'That quilt\'s older than me. Don\'t tell it I said so.'],
       porch: ['Best seat in Pine Hollow is a porch rocker and a cup of coffee.', 'I count the trucks go by. Used to be forty a day. Now I count chickens.'],
       chickens: ['Come on, girls! Come on! ...They\'re ignoring me. They know I\'ll feed them anyway.', 'That one\'s Pip. She lays the little ones. She tries her best.'],
       sunday: ['Sunday breakfast. Samuel gets half a coffee and acts like he\'s forty.'],
+    },
+  },
+  {
+    id: 'liesl', name: 'Omi Liesl Meissgeier', title: 'Baker', kind: 'person',
+    body: body('liesl', P.LANTERN, P.AMBER, P.FOG, P.MOON, P.TWILIGHT, 'bun'),
+    look: { outfit: 'npc_dirndl', hat: 'npc_kerchief' },
+    where: (c) => {
+      const m = c.minutes;
+      if (c.festival && m >= H(18)) return FEST.liesl;
+      if (m < H(5)) return asleep('liesl');
+      if (sundayBreakfast(c)) return diner(13, 9, 'right', 'sunday');
+      if (m < H(9) || (c.weekday === 'Sun' && m < H(12))) return homeAm('liesl');
+      if (bakeryStall(c)) return town(42, 31, 'down', 0, 'bakery');
+      // Weekday mornings she brings the bread round to Mabel's.
+      if (m < H(11) && c.weekday !== 'Sat' && c.weekday !== 'Sun') return diner(11, 8, 'up', 'bakery');
+      if (m < H(14)) return homeSit('liesl');
+      if (m < H(16) && !c.wet) return town(57, 55, 'down', 1, 'garden');
+      if (m < H(19)) return { ...homeAm('liesl'), tag: 'baking' };
+      if (m < H(20, 30)) return homeSit('liesl');
+      return asleep('liesl');
+    },
+    greet: ['Ah, the Ranger! You have eaten? No? Here.', 'Guten Morgen! Or afternoon. In a bakery it is always morning.', 'Come, Schatz, try this. Tell me it needs more anise. It does not.'],
+    chat: [
+      'My grandmother brought her sourdough over on the ship in 1891, in a crock in her lap. It is still alive. I feed it every morning. It is the oldest one in the family.',
+      'Fasnacht is the last night before Lent: you fry everything in the house so nothing tempts you for forty days. We burn Old Man Winter in the park. Matthias carves the masks. It is a very good night.',
+      'Belsnickel comes the night before the Christmas candles. Opa wears the furs. He has worn them for fifty years. The children still cry. He is very proud.',
+      'We came up from Pennsylvania in 1962, when No. 3 was hiring. Walter wanted mountains. He got them. I got a town that had never had a proper pretzel.',
+      'After the collapse, Walter could not sit under a roof for a year without the window open. So he went up instead. Up the ridge, up the old grade, up anything. Like he did as a boy in the Alps. He has been going up ever since.',
+      'On the old houses in Pennsylvania they paint stars on the barns. Some say for luck. My mother said they were to keep the Snallygaster away. She was a practical woman.',
+      'Springerle must dry overnight before you bake them, or the picture puffs away. Patience is the whole recipe. Also anise.',
+    ],
+    rumor: 'Omi Liesl lowers her voice over the dough: "My mother saw the {c} once, {time}, by {place}. She left out {lure} and it went away happy. That is how you do it."',
+    lines: {
+      home: ['Sit, sit. There is always coffee and there is always cake. That is the rule of this house.', 'Opa is up the mountain again. He will come home smelling of mint and complaining about his knees.'],
+      bakery: ['Fresh this morning! The stollen is for Christmas but I make it all year. Who is going to stop me?', 'Springerle, lebkuchen, a loaf for your table. Look, look.'],
+      garden: ['My cabbages. In the fall they become sauerkraut, and in January they become good luck.', 'Dill, savory, caraway. A German garden is mostly things to put on cabbage.'],
+      baking: ['Dough for tomorrow. Shh. It is resting. Like me, it needs its nap.'],
+      sunday: ['Mabel\'s pancakes on Sunday. I don\'t bake on Sunday. I eat.'],
+      rain: ['Rain is good bread weather. The dough likes the damp. So do my knees, not.'],
+    },
+  },
+  {
+    id: 'matthias', name: 'Matthias Meissgeier', title: 'Woodcarver', kind: 'person',
+    body: body('matthias', P.LANTERN, P.AMBER, P.AMBER, P.RUST, P.SHADOW, 'short'),
+    look: { outfit: 'npc_carver', hat: 'none' },
+    where: (c) => {
+      const m = c.minutes;
+      if (c.festival && m >= H(18)) return FEST.matthias;
+      if (m < H(7)) return asleep('matthias');
+      if (sundayBreakfast(c)) return diner(11, 9, 'up', 'sunday');
+      if (m < H(8)) return homeAm('matthias');
+      if (m < H(12)) return c.wet ? { ...homeAm('matthias'), tag: 'carving' } : town(61, 55, 'left', 0, 'carving');
+      if (m < H(13)) return diner(9, 9, 'up', 'lunch');
+      // Tuesdays and Thursdays he helps Gideon at the forge (handles, stocks, the odd hinge).
+      if ((c.weekday === 'Tue' || c.weekday === 'Thu') && m < H(17)) return at('STORE_INT', 14, 7, 'up', 0, 'forge');
+      if (m < H(17)) return c.wet ? { ...homeAm('matthias'), tag: 'carving' } : town(61, 55, 'left', 0, 'carving');
+      if (c.weekday === 'Fri' && m < H(21)) return diner(9, 9, 'up');
+      if (m < H(22, 30)) return homeSit('matthias');
+      return asleep('matthias');
+    },
+    greet: ['Hey.', 'Careful, there are shavings everywhere. There are always shavings everywhere.', 'Oh, hey, Ranger. Hold this. ...Thanks. You can let go now.'],
+    chat: [
+      'Linden wood for masks. It\'s soft, it doesn\'t split, and it smells like honey when you cut it. In the old country they call it the carver\'s tree.',
+      'Elias Vance taught me to carve, when I was twelve and nobody could get a word out of me. He just handed me a knife and a block and sat there whittling till I started too.',
+      'Every Fasnacht mask is a little bit of a lie and a little bit of the truth. You put on the goat, you get to be the goat for a night. Everybody needs that.',
+      'Omi says I\'m the last one in the family who\'ll keep the masks going. No pressure. None. Ha.',
+      'I\'m carving a little one of every cryptid you log. Thirty-something now. Don\'t tell Agnes or she\'ll want them for the museum.',
+      'Gideon says my hinges are "artistic." That is not a compliment, from Gideon.',
+    ],
+    rumor: 'Matthias turns a half-carved figure in his hands: "Carving the {c} right now. Elias said they turn up {time} near {place}. Something about {lure}."',
+    lines: {
+      carving: ['Mind the chips. This one\'s an owl. Or it will be, once I find it in there.', 'You don\'t make the face. You find it. The wood knows.'],
+      forge: ['Gideon\'s teaching me to forge my own chisels. I\'m teaching him that a hinge can have a curl on the end. We\'re both losing.'],
+      lunch: ['Lunch. The only hour Omi doesn\'t feed me, so I come here and Mabel feeds me.'],
+      home: ['Pull up a stool. Just not that one, it\'s still drying.'],
+      sunday: ['Sunday breakfast. I\'m carving a sugar spoon for Mabel. Don\'t tell her.'],
+    },
+  },
+  {
+    id: 'walter', name: 'Opa Walter Meissgeier', title: 'Herbalist & Hiker', kind: 'person',
+    body: body('walter', P.LANTERN, P.AMBER, P.FOG, P.MOON, P.SHADOW, 'beard'),
+    look: { outfit: 'npc_loden', hat: 'npc_alpine' },
+    where: (c) => {
+      const m = c.minutes;
+      if (c.festival && m >= H(18)) return FEST.walter;
+      if (m < H(5, 30)) return asleep('walter');
+      if (sundayBreakfast(c)) return diner(14, 9, 'right', 'sunday');
+      if (m < H(6, 30)) return homeAm('walter');
+      // Picking days: up the old grade to the High Bald on Radio Ridge, back down by mid-afternoon.
+      if (herbDay(c) && m < H(15, 30)) return at('RADIO_RIDGE_AND_CROSSROADS', 31, 17, 'down', 3, 'herbs');
+      if (m < H(9)) return homeAm('walter');
+      if (m < H(12) && !c.wet) return town(58, 55, 'down', 0, 'drying');
+      // Noon at the station with Barney, arguing about railroads.
+      if (m < H(14) && !c.wet && c.weekday !== 'Sun') return town(65, 36, 'right', 0, 'station');
+      if (m < H(17)) return c.wet ? homeSit('walter') : town(58, 55, 'down', 0, 'drying');
+      if (m < H(19)) return diner(13, 8, 'right');
+      if (m < H(21)) return homeSit('walter');
+      return asleep('walter');
+    },
+    greet: ['Gruss Gott! A good day for walking up.', 'Ah! The young Ranger. Sit with an old man a minute.', 'You smell that? Mountain mint. I have been up the ridge since dawn. My knees are furious.'],
+    chat: [
+      'I am from the Allgaeu, in the Alps. Cows with bells, a church on every hill, and mountains you climb all summer for the gentian and the arnica. When I saw these mountains I thought: here, I can breathe.',
+      'I worked No. 3 sixteen years. March of \'78, Danny Vance traded me his place at the face because my knee was bad. When the roof came in I was by the portal. Earl Haddix carried me out. Nobody could get to Danny.',
+      'I hung my check on the lamp-house board that morning, and I never took it back. That man stayed down there. This one goes up the mountains instead.',
+      'Elias never once said a hard word to me. Not once, in all those years. He taught my grandson to carve instead. That is the kind of man he is.',
+      'Up on the bald the herbs grow small and strong, like the people. Mountain mint, bee balm, Turk\'s-cap lily. You have to climb for anything worth having.',
+      'Ginseng. "Sang," Ruth calls it. You only dig a plant with three prongs or more, and you plant its red berries right there in the hole. Leave the mountain richer than you found it.',
+      'The old line goes on past the bald, you know. The Spruce Knob branch. Shay engines climbed up into the red spruce where it is cold even in July. The best herbs on God\'s earth are up there. If Barney ever fixes that railroad, I am on the first car.',
+      'In my village the Belsnickel came in furs with a switch and a sack. Good children got nuts and apples. The bad ones got a look. I have perfected the look.',
+    ],
+    rumor: 'Opa Walter taps his pipe out: "Up on the ridge, {time}, I saw the {c}. By {place}. It wanted {lure}, I think. Or my lunch."',
+    lines: {
+      herbs: ['Pick only one in five. That is the rule. The mountain keeps four, you take one, and next year there are more.', 'Bee balm! The hummingbirds and I are fighting over this patch. They are winning.', 'You climbed all the way up here? Good legs. Here, chew this. Mountain mint. Now you can climb back down.'],
+      drying: ['Hang them upside down, in the shade, never the sun. The sun steals the oil.', 'Smell. ...Ja. That is what July smells like, in February.'],
+      station: ['Barney says the Shay engines were ugly. I say they were beautiful. We have been having this fight since 1963.', 'If the old line ever runs to the high country again, Barney drives and I pick. We have it all planned. We have had it planned for thirty years.'],
+      home: ['Liesl\'s chair is the comfortable one. Mine is the one with the view. A good marriage is knowing which chair.'],
+      sunday: ['Sunday. No picking, no carving, no baking. Only eating. God made the Sabbath for Mabel\'s gravy.'],
+      rain: ['No picking today. The herbs drink, the old man rests.'],
     },
   },
   {

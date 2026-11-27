@@ -21,6 +21,7 @@ import { panel, bar, inRect, Rect } from '../ui/panel';
 import { sfx } from '../audio/sfx';
 import { DOCUMENTS, Kit, MOVE_DESC, MOVE_NAMES, SIGNALS, SIGNAL_GEAR, STEALTHS, stars } from './dex';
 import { clamp } from '../util';
+import { O } from '../data/tiles';
 import { drawClipped, More, tapMore } from '../ui/readMore';
 
 export interface EncounterSetup {
@@ -124,6 +125,10 @@ export class Encounter implements Overlay {
     const ph = game.clock.phase();
     this.nightCloak = game.look.outfit === 'yow_cloak' && (ph === 'night' || ph === 'witching');
     if (this.nightCloak) this.startle = Math.round(this.startle * 0.5);
+    // Matthias's carved Ranger's Mask: a still, masked face is less alarming to the shy ones.
+    if (game.look.hat === 'ranger_mask' && this.def.temperament === 'skittish') this.startle = Math.max(0, this.startle - 5);
+    // A painted barn star in your yard: the Snallygaster already knows you're under its protection.
+    if (this.def.id === 'snallygaster' && game.getMap('CABIN_YARD').countPlaced(O.BARN_STAR) > 0) this.startle = Math.max(0, this.startle - 15);
     if (setup.approach === 'quiet') this.startle = Math.max(0, this.startle - 12);
     if (setup.approach === 'bumped') this.startle = Math.min(60, this.startle + 12);
     this.shownStartle = this.startle;

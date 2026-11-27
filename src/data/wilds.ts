@@ -125,6 +125,7 @@ export function buildPineTrail(): MapDef {
 
   const forage = b.collect((x, y) => (b.g(x, y) === T.GRASS || b.g(x, y) === T.CLOVER) && b.free(x, y) && !inOrchard(x, y) && nearTree(b, x, y));
   const appleSpots = b.collect((x, y) => inOrchard(x, y) && b.free(x, y) && b.neighbors4(x, y, (_g, o) => o === O.APPLE_TREE));
+  const eggSpots = b.collect((x, y) => (inOrchard(x, y) || (x > 40 && x < 72 && y > 18 && y < 40)) && b.free(x, y) && (b.g(x, y) === T.GRASS || b.g(x, y) === T.CLOVER));
   return finish(b, {
     id: 'PINE_TRAIL_AND_ORCHARD', name: 'Pine Trail & Orchard',
     portals: [
@@ -137,6 +138,8 @@ export function buildPineTrail(): MapDef {
     forage: [
       { spots: forage, count: 8, table: ['wild_acorn', 'wild_onion', 'pine_resin', 'sweet_sap', 'sweet_sap', 'foraged_egg', 'wild_honeycomb', 'pawpaw'] },
       { spots: appleSpots, count: 4, table: ['wild_apple'] },
+      // Osterhase morning: the hare has hidden painted eggs all over the orchard.
+      { spots: eggSpots, count: 14, table: ['painted_egg'], only: 'event:osterhase' },
     ],
     battleColors: [P.FOG, P.MOSS],
   });
@@ -388,6 +391,10 @@ export function buildRadioRidge(): MapDef {
   b.setO(11, 6, O.ROD_BASE); b.setO(21, 6, O.ROD_BASE); b.setO(10, 10, O.CRATE); b.setO(22, 10, O.CRATE);
   b.zone('summit', 6, 1, 22, 13);
 
+  // The High Bald: a treeless grassy summit meadow (West Virginia's "balds"), where Opa Walter picks herbs.
+  const inBald = (x: number, y: number) => ((x - 32) / 7.5) ** 2 + ((y - 17) / 4.5) ** 2 <= 1;
+  for (let y = 12; y <= 22; y++) for (let x = 24; x <= 40; x++) if (inBald(x, y)) { b.setG(x, y, T.GRASS); b.setO(x, y, O.NONE); }
+
   // Trails (switchbacks become slope stairs where they cut the cliffs)
   b.trail([[80, 42], [68, 44], [56, 41], [46, 44], [40, 46]]);
   b.trail([[40, 46], [36, 52], [42, 57], [40, 64], [40, 72]]);
@@ -417,11 +424,16 @@ export function buildRadioRidge(): MapDef {
     else if (roll < 0.13) b.setO(x, y, O.DEAD_TREE);
     else if (roll < 0.15) b.setO(x, y, O.BRUSH);
   }
+  // Keep the bald open: no trees or rubble, a few lichen boulders, and the old grade marker.
+  for (let y = 12; y <= 22; y++) for (let x = 24; x <= 40; x++) if (inBald(x, y) && b.g(x, y) !== T.PATH) b.setO(x, y, O.NONE);
+  for (const [x, y] of [[27, 15], [37, 19], [33, 21]]) if (inBald(x, y) && b.g(x, y) !== T.PATH) b.setO(x, y, O.BOULDER);
+  b.sign(38, 14, 'THE HIGH BALD. A weathered C&O grade post: "SPRUCE KNOB BRANCH -- 11 MI. TO BALD KNOB." Past it, the old roadbed climbs on into dark red spruce and is lost in fog. Opa Walter says the best herbs are up there.');
   b.sign(70, 41, 'RADIO RIDGE. Switchbacks climb to the tower. Slopes are slippery in the rain.');
   b.sign(19, 13, 'WKPB RADIO TOWER. NATIONAL RADIO QUIET ZONE: transmitters prohibited. Dr. Okafor\'s night show broadcasts from here anyway.');
 
   const general = b.collect((x, y) => (b.g(x, y) === T.ROCKY || b.g(x, y) === T.GRASS) && b.free(x, y) && nearTree(b, x, y));
   const summit = b.collect((x, y) => x > 8 && x < 24 && y > 3 && y < 12 && b.free(x, y) && b.g(x, y) === T.ROCKY);
+  const bald = b.collect((x, y) => inBald(x, y) && b.free(x, y) && b.g(x, y) === T.GRASS);
   return finish(b, {
     id: 'RADIO_RIDGE_AND_CROSSROADS', name: 'Radio Ridge & Crossroads',
     portals: [
@@ -431,6 +443,9 @@ export function buildRadioRidge(): MapDef {
     forage: [
       { spots: general, count: 7, table: ['mineral_salt', 'crushed_quartz', 'wild_acorn', 'wild_onion', 'foraged_egg'] },
       { spots: summit, count: 2, table: ['scrap_copper', 'scrap_copper', 'iron_nail'] },
+      // High-country herbs and flowers on the bald (Opa Walter's satchel finds two more).
+      { spots: bald, count: 3, table: ['mountain_mint', 'mountain_mint', 'mountain_mint', 'bee_balm', 'bee_balm', 'turks_cap'], boost: 'herb_satchel' },
+      { spots: general, count: 1, table: ['wild_ginseng', 'wild_onion', 'wild_onion', 'wild_acorn', 'mineral_salt', 'mineral_salt'] },
     ],
     battleColors: [P.MOON, P.RUST],
   });

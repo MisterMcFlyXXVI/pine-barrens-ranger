@@ -375,5 +375,59 @@ function drawHat(p: Pen, h: HatDef, view: 'down' | 'up' | 'left', hy: number): v
       if (!side && view === 'down') { p.px(10, hy + 4, P.RED); p.px(13, hy + 4, P.RED); }
       return;
     }
+    case 'alpine':
+      // Green felt with a cord band and a feather tucked in the side.
+      p.rect(x0 + 1, hy - 3, x1 - x0 - 1, 4, h.main);
+      p.hline(x0 + 2, x1 - 2, hy - 3, h.shade);
+      p.hline(x0 + 1, x1 - 1, hy, h.accent);
+      p.hline(x0 - 1, x1 + 1, hy + 1, h.shade);
+      if (side) { p.px(13, hy - 4, P.FOG); p.px(14, hy - 5, P.FOG); p.px(13, hy - 5, P.MIST); }
+      else { p.px(x1 - 1, hy - 4, P.FOG); p.px(x1, hy - 5, P.FOG); p.px(x1 + 1, hy - 6, P.MIST); }
+      return;
+    case 'kerchief':
+      // A headscarf over the hair, knotted under the chin.
+      p.rect(x0, hy - 1, x1 - x0 + 1, 3, h.main);
+      p.hline(x0 + 1, x1 - 1, hy - 1, h.shade);
+      for (let x = x0 + 1; x < x1; x += 3) p.px(x, hy, h.accent);
+      if (side) { p.rect(12, hy + 2, 3, 4, h.main); p.px(12, hy + 6, h.shade); }
+      else if (view === 'down') { p.vline(x0 - 1, hy + 1, hy + 5, h.main); p.vline(x1 + 1, hy + 1, hy + 5, h.main); p.px(11, hy + 8, h.shade); p.px(12, hy + 8, h.main); }
+      else p.rect(x0, hy + 2, x1 - x0 + 1, 5, h.main);
+      return;
+    case 'mask':
+      drawMask(p, h, view, hy);
+      return;
   }
+}
+
+/** A carved Fasnacht mask over the face (strap at the back), with its creature's ears or horns. */
+function drawMask(p: Pen, h: HatDef, view: 'down' | 'up' | 'left', hy: number): void {
+  const side = view === 'left', face = h.mask ?? 'goat';
+  const m = h.main, sh = h.shade, a = h.accent;
+  const krampus = face === 'krampus';
+  // Ears / horns / antlers (all views).
+  const tops = side ? [11] : [9, 14];
+  for (const x of tops) {
+    const d = x < 11 ? -1 : 1;
+    if (face === 'goat') { p.px(x, hy - 1, a); p.px(x + d, hy - 2, a); p.px(x + d * 2, hy - 2, a); p.px(x + d * 2, hy - 1, a); }
+    else if (face === 'owl') { p.px(x, hy - 1, m); p.px(x + d, hy - 2, sh); }
+    else if (face === 'bear') { p.rect(x + (d < 0 ? -1 : 0), hy - 1, 2, 2, m); p.px(x, hy, sh); }
+    else if (face === 'stag') { p.vline(x, hy - 4, hy - 1, a); p.px(x + d, hy - 3, a); p.px(x - d, hy - 5, a); p.px(x + d * 2, hy - 5, a); }
+    else { p.vline(x, hy - 3, hy - 1, a); p.px(x + d, hy - 4, a); p.px(x + d, hy - 5, a); p.px(x + d * 2, hy - 6, a); }
+  }
+  if (view === 'up') { p.hline(8, 15, hy + 4, P.SHADOW); p.hline(8, 15, hy + 5, sh); return; }
+  const x0 = side ? 7 : 8, x1 = side ? 11 : 15;
+  p.rect(x0, hy + 1, x1 - x0 + 1, 7, m);
+  p.hline(x0, x1, hy + 7, sh);
+  if (side) p.vline(x1, hy + 2, hy + 6, sh);
+  const eye = krampus ? P.RED : P.VOID;
+  const eyes = side ? [9] : [10, 13];
+  for (const x of eyes) {
+    if (face === 'owl') { p.rect(x - 1, hy + 3, 3, 3, a); }
+    p.px(x, hy + 4, eye);
+  }
+  if (face === 'goat') { if (side) p.rect(7, hy + 8, 2, 2, m); else { p.rect(11, hy + 8, 2, 2, m); p.px(11, hy + 6, sh); p.px(12, hy + 6, sh); } }
+  else if (face === 'owl') { if (side) p.px(6, hy + 5, P.AMBER); else { p.px(11, hy + 6, P.AMBER); p.px(12, hy + 6, P.AMBER); p.px(11, hy + 7, P.AMBER); } }
+  else if (face === 'bear') { if (side) { p.rect(6, hy + 5, 2, 2, sh); p.px(6, hy + 5, P.VOID); } else { p.rect(10, hy + 5, 4, 2, a); p.hline(11, 12, hy + 5, P.VOID); } }
+  else if (face === 'stag') { if (side) p.px(7, hy + 6, P.VOID); else { p.hline(11, 12, hy + 6, P.VOID); p.px(9, hy + 2, a); p.px(14, hy + 2, a); } }
+  else { if (side) { p.vline(7, hy + 7, hy + 9, P.RED); } else { p.vline(11, hy + 6, hy + 9, P.RED); p.px(12, hy + 9, P.RED); p.px(10, hy + 6, P.FOG); p.px(13, hy + 6, P.FOG); } }
 }

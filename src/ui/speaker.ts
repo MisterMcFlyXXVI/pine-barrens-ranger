@@ -21,6 +21,7 @@ const ALIASES: Record<string, SpeakerId> = {
   agnes: 'agnes', barney: 'barnaby', barnaby: 'barnaby', mabel: 'mabel', gideon: 'gideon', clara: 'clara', okafor: 'clara',
   pippa: 'pippa', sam: 'sam', toby: 'toby', ruth: 'ruth', elias: 'vance', pruitt: 'inspector', harlan: 'inspector',
   ezri: 'ezri', pike: 'pike', indrid: 'indrid', you: 'player',
+  omi: 'liesl', liesl: 'liesl', matthias: 'matthias', opa: 'walter', walter: 'walter',
 };
 
 const LABEL = /^(?:(?:<3\s*)+(?:1\/2)?\s*)?([A-Za-z][A-Za-z ."'-]{0,30}?):\s/;
@@ -50,6 +51,8 @@ export function speakerName(id: SpeakerId): string {
   if (id === 'barnaby') return 'BARNEY';
   if (id === 'clara') return 'DR. OKAFOR';
   if (id === 'inspector') return 'PRUITT';
+  if (id === 'liesl') return 'OMI LIESL';
+  if (id === 'walter') return 'OPA WALTER';
   return NPCS_BY_ID[id].name.split(' ')[0].replace(/"/g, '').toUpperCase();
 }
 
@@ -67,6 +70,7 @@ const VOICES: Partial<Record<SpeakerId, [Wave, number, number]>> = {
   agnes: ['triangle', 880, 0.06], barnaby: ['square', 330, 0.05], mabel: ['square', 660, 0.1], gideon: ['triangle', 220, 0.03],
   clara: ['square', 990, 0.08], pippa: ['square', 1480, 0.14], sam: ['triangle', 1320, 0.06], toby: ['square', 1100, 0.1],
   ruth: ['triangle', 620, 0.05], vance: ['square', 260, 0.04], inspector: ['square', 470, 0.02], ezri: ['triangle', 520, 0.12],
+  liesl: ['triangle', 740, 0.11], matthias: ['triangle', 380, 0.04], walter: ['square', 300, 0.09],
   pike: ['square', 1240, 0.09], indrid: ['sine', 700, 0.0], player: ['triangle', 760, 0.07],
 };
 

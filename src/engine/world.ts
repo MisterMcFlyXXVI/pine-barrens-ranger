@@ -148,14 +148,16 @@ export class MapRuntime {
   }
 
   /** New-day forage spawn from each forage group (deterministic per day & map). */
-  spawnForage(day: number): void {
+  spawnForage(day: number, boosts: ReadonlySet<string> = new Set()): void {
     this.forage.clear();
     this.shaken.clear();
     let seed = (Math.imul(day, 2654435761) ^ (this.def.w * 977 + this.def.h)) >>> 0;
     const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
     for (const grp of this.def.forage) {
+      if (grp.only && !boosts.has(grp.only)) continue;
       const spots = grp.spots.filter((i) => this.objects[i] === O.NONE && !this.forage.has(i));
-      for (let k = 0; k < grp.count && spots.length; k++) {
+      const count = grp.count + (grp.boost && boosts.has(grp.boost) ? 2 : 0);
+      for (let k = 0; k < count && spots.length; k++) {
         const j = Math.floor(rnd() * spots.length);
         // Winter in the wilds: a share of finds are winter-only (winterberry, chaga, frost-rim antler).
         const winter = Math.floor((day - 1) / 28) % 4 === 3 && this.def.wild && this.id !== 'CABIN_YARD';
