@@ -12,26 +12,18 @@ import { STRUCT } from '../graphics/sprites';
 import { cryptidFrame } from '../graphics/cryptidSprites';
 import { playerFrame, personFrame } from '../graphics/playerSprite';
 import { NPCS_BY_ID } from '../data/npcs';
-import { INTRO_TEXT, INTRO_CABIN, EPILOGUE_TEXT, BARNEY_ASKS, BARNEY_REPLY, REASONS, REASON_CHOICE, REASON_LABEL } from '../data/campaign';
-import type { Reason } from '../data/campaign';
-import { Dialog } from './menus';
+import { EPILOGUE_TEXT } from '../data/campaign';
 import { recolor } from '../graphics/canvas';
 import type { Canv } from '../graphics/canvas';
 import { sfx } from '../audio/sfx';
 import { panel } from './panel';
+import { DriveIntro } from './driveIntro';
 import { hash2 } from '../util';
 
 /** Art painter for one panel: draws into the frame rect (already clipped). */
 type Art = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, t: number) => void;
 
 const fill = (g: CanvasRenderingContext2D, c: number, x: number, y: number, w: number, h: number) => { g.fillStyle = hex(c); g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-
-function stars(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, t: number, n = 30): void {
-  for (let i = 0; i < n; i++) {
-    if ((Math.floor(t * 2 + i) % 9) === 0) continue;
-    fill(g, i % 4 ? P.FOG : P.MOON, x + hash2(i, 1, 3) * w, y + hash2(i, 2, 3) * h, 1, 1);
-  }
-}
 
 function treeline(g: CanvasRenderingContext2D, x: number, base: number, w: number, color: number, seed: number, hgt = 26): void {
   g.fillStyle = hex(color);
@@ -55,71 +47,6 @@ function fogBands(g: CanvasRenderingContext2D, x: number, y: number, w: number, 
   }
   g.globalAlpha = 1;
 }
-
-/* ---------------- intro art ---------------- */
-
-const adArt: Art = (g, x, y, w, h) => {
-  fill(g, P.RUST, x, y, w, h);
-  const pw = Math.min(w - 16, 150), ph = h - 12;
-  const px = x + (w - pw) / 2, py = y + 6;
-  fill(g, P.LANTERN, px, py, pw, ph);
-  fill(g, P.AMBER, px, py + ph - 2, pw, 2);
-  drawTextCentered(g, 'THE HOLLER GAZETTE', px + pw / 2, py + 4, P.CRAN);
-  fill(g, P.CRAN, px + 4, py + 11, pw - 8, 1);
-  drawText(g, 'CLASSIFIEDS', px + 5, py + 15, P.RUST);
-  fill(g, P.VOID, px + 4, py + 22, pw - 8, ph - 28);
-  fill(g, P.FOG, px + 5, py + 23, pw - 10, ph - 30);
-  const lines = wrapText('HELP WANTED: OVERNIGHT FIRE-WATCH RANGER. PINE HOLLOW, W.VA. ROOM & BOARD. NO QUESTIONS.', pw - 16);
-  lines.slice(0, 5).forEach((l, i) => drawText(g, l, px + 8, py + 26 + i * 7, P.SHADOW));
-  const tx = px + pw - 18, ty = py + 15;
-  for (let k = 0; k < 6; k++) fill(g, P.FOREST, tx - k, ty + k, k * 2 + 1, 1);
-};
-
-const fogArt: Art = (g, x, y, w, h, t) => {
-  fill(g, P.SHADOW, x, y, w, h);
-  stars(g, x, y, w, h * 0.5, t);
-  fill(g, P.MOON, x + w * 0.8, y + 8, 8, 8);
-  treeline(g, x, y + h * 0.72, w, P.PINE, 1);
-  const walk = (t * 6) % (w * 0.5);
-  const fx = x + w * 0.25 + walk, fy = y + h * 0.72 - 9;
-  fill(g, P.VOID, fx, fy, 3, 8); fill(g, P.VOID, fx - 1, fy - 3, 4, 3);
-  fill(g, P.LANTERN, fx + 3, fy + 3, 2, 2);
-  fogBands(g, x, y + h * 0.55, w, t, 5);
-  g.globalAlpha = Math.min(0.7, walk / (w * 0.5));
-  fill(g, P.FOG, fx - 6, fy - 6, 16, 16);
-  g.globalAlpha = 1;
-};
-
-const towerArt: Art = (g, x, y, w, h, t) => {
-  fill(g, P.VOID, x, y, w, h);
-  stars(g, x, y, w, h * 0.6, t, 40);
-  const tx = x + w * 0.66, base = y + h * 0.62;
-  for (let k = 0; k < 34; k++) { const half = Math.round((k / 34) * 6) + 1; fill(g, P.TWILIGHT, tx - half, base - 34 + k, 1, 1); fill(g, P.TWILIGHT, tx + half, base - 34 + k, 1, 1); }
-  if (Math.floor(t * 1.5) % 2 === 0) { fill(g, P.RED, tx - 1, base - 37, 3, 3); g.globalAlpha = 0.3; fill(g, P.RED, tx - 4, base - 40, 9, 9); g.globalAlpha = 1; }
-  treeline(g, x, base + 4, w, P.SHADOW, 2, 18);
-  fill(g, P.AMBER, x, y + h - 14, w, 14);
-  const vx = x + w * 0.2 + Math.sin(t) * 2, vy = y + h - 22;
-  fill(g, P.CRAN, vx, vy, 22, 8); fill(g, P.CRAN, vx + 4, vy - 5, 12, 5); fill(g, P.TWILIGHT, vx + 6, vy - 4, 8, 3);
-  fill(g, P.VOID, vx + 2, vy + 7, 4, 3); fill(g, P.VOID, vx + 15, vy + 7, 4, 3);
-  g.globalAlpha = 0.35; fill(g, P.LANTERN, vx + 22, vy + 1, 30, 6); g.globalAlpha = 1;
-  fill(g, P.LANTERN, vx + 21, vy + 2, 2, 2);
-};
-
-const cabinArt: Art = (g, x, y, w, h, t) => {
-  fill(g, P.SHADOW, x, y, w, h);
-  stars(g, x, y, w, h * 0.4, t);
-  treeline(g, x, y + h * 0.5, w, P.PINE, 3, 22);
-  fill(g, P.FOREST, x, y + h * 0.5, w, h * 0.5);
-  const cab = STRUCT.cabin[1];
-  const s = Math.min(1, (h - 10) / cab.height);
-  const cw = cab.width * s, ch = cab.height * s;
-  g.drawImage(cab, Math.round(x + (w - cw) / 2), Math.round(y + h - ch - 4), Math.round(cw), Math.round(ch));
-  const pl = playerFrame({ outfit: 'ranger_jacket', hat: 'ranger_cap' }, 'down', 0, 'walk');
-  g.drawImage(pl, Math.round(x + w / 2 - 6), Math.round(y + h - 26));
-  g.globalAlpha = 0.18 + Math.sin(t * 6) * 0.04;
-  fill(g, P.LANTERN, x + w / 2 - 18, y + h - 34, 36, 30);
-  g.globalAlpha = 1;
-};
 
 /* ---------------- epilogue art ---------------- */
 
@@ -180,7 +107,6 @@ const mineArt: Art = (g, x, y, w, h, t) => {
   g.globalAlpha = 0.5 + Math.sin(t * 3) * 0.2; fill(g, P.LANTERN, x + w / 2 - 1, y + h - 20, 2, 2); g.globalAlpha = 1;
 };
 
-export const INTRO_ARTS: readonly Art[] = [adArt, fogArt, towerArt, cabinArt];
 export const EPILOGUE_ARTS: readonly Art[] = [dawnArt, carvingArt, reunionArt, mineArt];
 
 export class StoryPanels implements Overlay {
@@ -275,18 +201,9 @@ export class ActCard implements Overlay {
   }
 }
 
-/** The drive up: ad, legend and Barney's truck, then his question, then the cabin. */
+/** The drive up (src/ui/driveIntro.ts): one animated cinematic, with Barney's question in the truck. */
 export function playIntro(game: Game, onDone: () => void): void {
-  game.openOverlay(new StoryPanels(INTRO_TEXT, INTRO_ARTS.slice(0, 3), () => askWhy(game, onDone)));
-}
-
-function askWhy(game: Game, onDone: () => void): void {
-  const pick = (r: Reason) => () => {
-    game.progress.reason = r;
-    game.openOverlay(new StoryPanels(INTRO_CABIN, [cabinArt], onDone));
-    game.openOverlay(new Dialog([`You: "${REASON_CHOICE[r]}"`, ...BARNEY_REPLY[r]]));
-  };
-  game.openOverlay(new Dialog([...BARNEY_ASKS], REASONS.map((r) => ({ label: REASON_LABEL[r], fn: pick(r) }))));
+  game.openOverlay(new DriveIntro(game, onDone));
 }
 
 let carvingCache: Canv | null = null;

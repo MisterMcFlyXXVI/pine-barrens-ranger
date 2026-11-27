@@ -39,6 +39,7 @@ import type { Approach } from './sightings';
 import { Encounter } from './encounter';
 import { music, TrackId } from '../audio/music';
 import { StoryPanels } from '../ui/intro';
+import { DriveIntro } from '../ui/driveIntro';
 import { DexMenu } from '../ui/dex';
 import { WeatherFx } from '../graphics/weatherFx';
 import { Progress } from './progress';
@@ -984,7 +985,7 @@ export class Game {
     if (eventNow(this)?.id === 'memorial' && this.cur.id === 'PINE_HOLLOW_TOWN') return 'mine_hymn';
     const top = this.overlays[this.overlays.length - 1];
     if (top instanceof Encounter) return 'encounter';
-    if (top instanceof StoryPanels || top instanceof FinaleScene) return 'title';
+    if (top instanceof StoryPanels || top instanceof FinaleScene || this.overlays.some((o) => o instanceof DriveIntro)) return 'title';
     const m = this.cur;
     if (!m) return 'title';
     const rec = recordTrack(this);
