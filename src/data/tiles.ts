@@ -48,6 +48,8 @@ export const T = {
   GOB: 37,
   /** Lamp House plank floor. */
   LAMP_FLOOR: 38,
+  /** A low crawlway: only passable with your cap lamp shuttered, and too low for the Foreman. */
+  CRAWL: 39,
 } as const;
 
 /** Wadeable water: blocked unless the player owns Bog Waders. */
@@ -64,6 +66,7 @@ export const SLOW_GROUND: Readonly<Record<number, number>> = {
   [T.SHALLOW]: 1.4,
   [T.SPRING]: 1.4,
   [T.BOG]: 1.15,
+  [T.CRAWL]: 1.8,
 };
 
 export const SOLID_GROUND: ReadonlySet<number> = new Set<number>([
@@ -243,6 +246,14 @@ export const O = {
   CUPBOARD: 136,
   /** A pitch torch you set down in the mine. */
   TORCH: 137,
+  /** A glinting coal seam in the rib: lumps for decoys (and a little coin). */
+  COAL_SEAM: 138,
+  /** The rideable ore car on Level 1's haulage rail. */
+  RIDE_CART: 139,
+  /** Your canary's cage, home at the cabin after the Deep Seam is sealed. */
+  CANARY_CAGE: 140,
+  /** Pale cave fungus in the Old Works (a little light of its own). */
+  GLOW_FUNGUS: 141,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -354,6 +365,10 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.FIRST_AID]: { name: 'First-Aid Box', solid: true, interact: 'mine' },
   [O.CUPBOARD]: { name: 'Biscuit Cupboard', solid: true, interact: 'mine' },
   [O.TORCH]: { name: 'Pitch Torch', solid: false, interact: 'mine' },
+  [O.COAL_SEAM]: { name: 'Coal Seam', solid: true, interact: 'mine' },
+  [O.RIDE_CART]: { name: 'Ore Car', solid: true, interact: 'mine' },
+  [O.CANARY_CAGE]: { name: 'Canary Cage', solid: true, interact: 'mine' },
+  [O.GLOW_FUNGUS]: { name: 'Cave Fungus', solid: false, interact: 'mine' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
   [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
   [O.THISTLE]: { name: 'Thistle', solid: false },

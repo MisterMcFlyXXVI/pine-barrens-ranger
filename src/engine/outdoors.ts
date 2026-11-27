@@ -24,7 +24,7 @@ export function checkSnares(m: MapRuntime): void {
 /* Fishing                                                             */
 /* ------------------------------------------------------------------ */
 
-export type Water = 'creek' | 'lake' | 'deep';
+export type Water = 'creek' | 'lake' | 'deep' | 'cave';
 
 export interface FishDef { id: string; weight: number; hits: number; speed: number; zone: number; night?: boolean }
 
@@ -44,12 +44,19 @@ export const FISH: Record<Water, FishDef[]> = {
     { id: 'channel_catfish', weight: 4, hits: 3, speed: 1.0, zone: 0.26, night: true },
     { id: 'muskie', weight: 1, hits: 4, speed: 1.7, zone: 0.17 },
   ],
+  // The black lake of the Old Works, under the Deep Seam.
+  cave: [
+    { id: 'cave_crayfish', weight: 5, hits: 1, speed: 1.0, zone: 0.3 },
+    { id: 'blind_cavefish', weight: 2, hits: 3, speed: 1.5, zone: 0.2 },
+    { id: 'creek_chub', weight: 2, hits: 1, speed: 0.9, zone: 0.34 },
+  ],
 };
 
 /** Which water the player is casting into, or null if it isn't fishable. */
 export function waterAt(m: MapRuntime, x: number, y: number): Water | null {
   const g = m.ground(x, y);
   if (g !== T.WATER && g !== T.SHALLOW) return null;
+  if ((m.id as string) === 'MINE_L4') return 'cave';
   const zones = m.zonesAt(x, y);
   if (zones.includes('deep')) return 'deep';
   if (zones.includes('lake') || zones.includes('canal')) return 'lake';
