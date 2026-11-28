@@ -10,6 +10,8 @@ const KEYMAP: Record<string, Action> = {
   Tab: 'dex', KeyJ: 'dex',
   KeyI: 'bag', KeyB: 'bag',
   KeyP: 'map',
+  // Journal pages: Campaign, Field Journal, Quest Log, Materials List.
+  KeyC: 'campaign', KeyG: 'journal', KeyK: 'quests', KeyL: 'materials',
   KeyM: 'mute',
   // The Deep Seam: headlamp shutter, Sounding Bar, refill the carbide.
   KeyF: 'shutter', KeyT: 'tap', KeyR: 'refill',

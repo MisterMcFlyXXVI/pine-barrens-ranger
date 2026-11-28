@@ -452,10 +452,19 @@ export class DresserMenu implements Overlay {
 /* Journal / Cryptid-Dex (Tab)                                         */
 /* ------------------------------------------------------------------ */
 
+/** Journal pages the controller buttons jump straight to. */
+export const JOURNAL_SHORTCUTS = { campaign: 'campaign', journal: 'journal', quests: 'quests', materials: 'materials' } as const;
+export type JournalShortcut = keyof typeof JOURNAL_SHORTCUTS;
+
 export class JournalMenu implements Overlay {
   closed = false;
   private mores: Array<More | null> = [];
   private page = 0;
+
+  /** Open on a given page (CAMPAIGN / JOURNAL / QUESTS / LIST buttons). */
+  constructor(start?: JournalShortcut) {
+    if (start) this.page = Math.max(0, JournalMenu.IDS.indexOf(JOURNAL_SHORTCUTS[start]));
+  }
   private static readonly IDS = ['campaign', 'journal', 'quests', 'materials', 'folks', 'calendar', 'album', 'almanac', 'controls', 'mineledger', 'minealmanac'] as const;
   /** The pages you have: the MINE LEDGER only once you've geared up in the Lamp House. */
   private static idsFor(game: Game): ReadonlyArray<typeof JournalMenu.IDS[number]> {
@@ -474,6 +483,12 @@ export class JournalMenu implements Overlay {
     if (inp.repeat('left')) { this.page = (this.page + n - 1) % n; sfx.blip(); }
     if (inp.repeat('right') || inp.pressed('a') || inp.taps.length) { this.page = (this.page + 1) % n; sfx.blip(); }
     if (inp.pressed('b') || inp.pressed('dex')) { this.closed = true; sfx.cancel(); }
+    // The page buttons: jump to that page, or close if it's already open.
+    for (const k of Object.keys(JOURNAL_SHORTCUTS) as JournalShortcut[]) {
+      if (!inp.pressed(k)) continue;
+      const to = JournalMenu.idsFor(game).indexOf(JOURNAL_SHORTCUTS[k]);
+      if (to === this.page) { this.closed = true; sfx.cancel(); } else if (to >= 0) { this.page = to; sfx.blip(); }
+    }
   }
 
   /** A button drawn at the bottom of the page. */

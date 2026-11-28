@@ -1,6 +1,6 @@
 /**
  * Mobile handheld shell: Pointer-Event D-pad (thumb-slide + deadzone),
- * angled A/B buttons, DEX/BAG pills, PAD toggle, and canvas tap support.
+ * angled A/B buttons, DEX/BAG/MAP pills, a row of Journal-page pills (CAMPAIGN/JOURNAL/QUESTS/LIST), PAD toggle, and canvas tap support.
  */
 import type { Action, Input } from './input';
 import type { Dir } from '../util';
@@ -139,6 +139,12 @@ export class TouchControls {
     this.bindButton(el('div', 'pill', pills, 'DEX'), 'dex');
     this.bindButton(el('div', 'pill', pills, 'BAG'), 'bag');
     this.bindButton(el('div', 'pill', pills, 'MAP'), 'map');
+    // Second row: straight to a Journal page.
+    const pages = el('div', 'ctl pills pages', d);
+    this.bindButton(el('div', 'pill', pages, 'CAMPAIGN'), 'campaign');
+    this.bindButton(el('div', 'pill', pages, 'JOURNAL'), 'journal');
+    this.bindButton(el('div', 'pill', pages, 'QUESTS'), 'quests');
+    this.bindButton(el('div', 'pill', pages, 'LIST'), 'materials');
     // Underground only (body.in-mine): headlamp shutter and the Sounding Bar.
     this.bindButton(el('div', 'pill mine-only', pills, 'SHUT'), 'shutter');
     this.bindButton(el('div', 'pill mine-only', pills, 'TAP'), 'tap');

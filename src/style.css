@@ -266,14 +266,14 @@ body {
     /* Reserved strips: SND/PAD toggles + label on top, DEX/BAG pills at the bottom.
        The D-pad and A/B live only in the space between, so nothing can overlap. */
     --deck-top: 48px;
-    --deck-bot: calc(58px + env(safe-area-inset-bottom));
+    --deck-bot: calc(98px + env(safe-area-inset-bottom));
     --deck-mid: calc(var(--deck-top) + (100% - var(--deck-top) - var(--deck-bot)) / 2);
-    --dpad: min(42vw, calc(42dvh - 116px), 170px);
-    --btn: min(17vw, calc((42dvh - 140px) / 1.9), 74px);
+    --dpad: min(42vw, calc(42dvh - 156px), 170px);
+    --btn: min(17vw, calc((42dvh - 180px) / 1.9), 74px);
     /* Measure the deck itself (container units) so notch/home-bar insets can't oversize the pad. */
     container-type: size;
-    --dpad: min(42vw, calc(100cqh - 112px), 170px);
-    --btn: min(17vw, calc((100cqh - 136px) / 1.9), 74px);
+    --dpad: min(42vw, calc(100cqh - 156px), 170px);
+    --btn: min(17vw, calc((100cqh - 180px) / 1.9), 74px);
   }
   body.touch-on .dpad {
     left: 5vw;
@@ -300,6 +300,9 @@ body {
     left: 50%;
     bottom: calc(env(safe-area-inset-bottom) + 14px);
     transform: translateX(-50%);
+  }
+  body.touch-on .pills.pages {
+    bottom: calc(env(safe-area-inset-bottom) + 54px);
   }
   body.touch-on .deck-label {
     right: 14px;
@@ -351,6 +354,18 @@ body {
     left: 50%;
     top: calc(env(safe-area-inset-top) + 10px);
     transform: translateX(-50%);
+  }
+  /* Landscape: the page buttons stack down the left edge, under SND/PAD, clear of the game's middle. */
+  body.touch-on .pills.pages {
+    left: calc(env(safe-area-inset-left) + 12px);
+    top: calc(env(safe-area-inset-top) + 58px);
+    transform: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  body.touch-on .pills.pages .pill {
+    transform: none;
+    width: 70px;
   }
   body.touch-on .deck-label,
   body.touch-on .grille {
@@ -443,6 +458,10 @@ body {
 .acct-note.bad { background: var(--cran); color: var(--fog); }
 
 /* The Deep Seam: headlamp SHUT and Sounding Bar TAP pills, shown only underground. */
+.pills.pages { gap: 8px; }
+.pills.pages .pill { width: 66px; font-size: 9px; letter-spacing: 0.5px; background: var(--shadow); color: var(--moss); }
+.pills.pages .pill.down { background: var(--forest); color: var(--lantern); }
+body.in-mine .pills.pages .pill { width: 66px; }
 .pill.mine-only { display: none; background: var(--shadow); color: var(--amber); }
 body.in-mine .pill.mine-only { display: flex; }
 body.in-mine .pill { width: 46px; }

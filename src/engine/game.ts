@@ -1070,6 +1070,7 @@ export class Game {
     if (inp.pressed('bag')) { sfx.open(); this.openOverlay(new BagMenu()); }
     else if (inp.pressed('dex')) { sfx.open(); this.openOverlay(new DexMenu()); }
     else if (inp.pressed('map')) { sfx.open(); this.openOverlay(isMineMap(this.cur.id) ? new MineMap() : new WorldMap(this)); }
+    else for (const k of ['campaign', 'journal', 'quests', 'materials'] as const) if (inp.pressed(k)) { sfx.open(); this.openOverlay(new JournalMenu(k)); break; }
   }
 
   /* ------------------------------------------------------------ */
