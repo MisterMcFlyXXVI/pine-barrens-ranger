@@ -913,6 +913,7 @@ export class Encounter implements Overlay {
     if (this.phase !== 'kitPick') {
       const id = game.kit[CATS[this.kitCat]];
       const desc = MOVE_DESC[id] ?? ITEMS[id]?.desc ?? '';
+      panel(g, 0, L.boxY, W, L.boxH); // clear the action menu underneath
       this.mores = [drawClipped(g, desc, 7, L.boxY + 6, W - 14, 4, 8, P.MIST, moveName(id), [P.FOREST, P.LANTERN])];
       return;
     }
