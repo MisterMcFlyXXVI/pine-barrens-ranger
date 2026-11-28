@@ -50,6 +50,7 @@ export function heartTick(game: Game): void {
   if (game.mode !== 'play' || game.overlays.length || game.fading) return;
   const p = game.progress;
   if (p.flags.has('kids_lost')) { rescueTick(game); return; }
+  if (game.townsfolk.summoning()) return; // someone's already on their way over
   if (p.days.scene === game.clock.day) return;
   const m = game.cur.id, pl = game.player;
   const t = sceneTime(game);
@@ -76,37 +77,11 @@ const FRIEND_NAMES: Record<string, string> = {
   liesl: 'Omi Liesl', matthias: 'Matthias', walter: 'Opa Walter',
 };
 
-/** Step the townsfolk in the scene in beside you. */
-function gather(game: Game, ids: string[]): void {
-  const m = game.cur, pl = game.player;
-  const spots: Array<[number, number]> = [];
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) {
-    const x = pl.tx + dx, y = pl.ty + dy;
-    if (!m.inBounds(x, y) || m.blocked(x, y, true) || m.portalAt(x, y)) continue;
-    if (game.townsfolk.npcs.some((n) => n.map === m.id && n.tx === x && n.ty === y && !ids.includes(n.def.id))) continue;
-    spots.push([x, y]);
-  }
-  ids.forEach((id, k) => {
-    const npc = game.townsfolk.npcs.find((n) => n.def.id === id);
-    if (!npc) return;
-    // Already right here? Stay put.
-    if (npc.map === m.id && !npc.inBed && Math.abs(npc.tx - pl.tx) + Math.abs(npc.ty - pl.ty) <= 3) { game.townsfolk.hold(npc, m.id, npc.tx, npc.ty, SCENE_HOLD); return; }
-    const spot = spots[k] ?? [pl.tx, pl.ty + 1];
-    game.townsfolk.hold(npc, m.id, spot[0], spot[1], SCENE_HOLD);
-  });
-  for (const id of ids) {
-    const npc = game.townsfolk.npcs.find((n) => n.def.id === id);
-    if (!npc) continue;
-    const dx = pl.tx - npc.tx, dy = pl.ty - npc.ty;
-    npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
-  }
-}
-
 function play(game: Game, s: HeartScene): void {
   const p = game.progress;
-  p.days.scene = game.clock.day;
-  sfx.trustChime();
   if (s.special === 'rescue') {
+    p.days.scene = game.clock.day;
+    sfx.trustChime();
     p.flags.add('kids_lost');
     p.days.rescue = game.clock.day;
     watcherPlaced = -1;
@@ -119,8 +94,15 @@ function play(game: Game, s: HeartScene): void {
     game.openOverlay(new Dialog([header(s), ...s.lines]));
     return;
   }
+  // They walk over to you (in through the door or up the trail if they're elsewhere), then the scene.
+  game.townsfolk.summon(game, SCENE_CAST[s.who], () => begin(game, s), SCENE_HOLD);
+}
+
+function begin(game: Game, s: HeartScene): void {
+  const p = game.progress;
+  p.days.scene = game.clock.day;
+  sfx.trustChime();
   p.flags.add(`heart_${s.id}`);
-  gather(game, SCENE_CAST[s.who]);
   if (s.give) {
     const [it, n] = s.give;
     const left = game.inv.add(it, n);

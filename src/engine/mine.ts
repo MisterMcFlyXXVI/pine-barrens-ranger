@@ -217,10 +217,10 @@ export function canaryName(game: Game): string { return game.progress.mine.canar
 /** Fed today or yesterday: otherwise it sulks. */
 function canarySulks(game: Game): boolean { const s = game.progress.mine; return s.kit && s.canary.fed < game.clock.day - 1; }
 
-/** Step a townsperson in beside you for a scene. */
+/** Bring a townsperson over for a scene (on foot, unless you've just arrived and they were already here). */
 function holdNpc(game: Game, id: string, x: number, y: number, secs: number): void {
   const npc = game.townsfolk.npcs.find((n) => n.def.id === id);
-  if (npc) game.townsfolk.hold(npc, game.cur.id, x, y, secs);
+  if (npc) game.townsfolk.walkIn(game, npc, x, y, secs);
 }
 
 /** First step of the shortest walkable path from (fx,fy) toward (tx,ty) (null = stay). */

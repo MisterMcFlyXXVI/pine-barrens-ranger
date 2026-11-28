@@ -168,6 +168,8 @@ export class Game {
   // ---- Phase 3: town progression & townsfolk ----
   progress = new Progress();
   readonly townsfolk = new Townsfolk();
+  /** game.time when the current map was entered (folk already here vs. walking in). */
+  enteredAt = 0;
   /** Your cabin companion (pup, cat or raven). */
   readonly companion = new Companion();
   private talks = new Map<string, number>();
@@ -415,6 +417,7 @@ export class Game {
     if (id === 'PINE_HOLLOW_TOWN' && this.progress.days.firstTown === undefined) this.progress.days.firstTown = this.clock.day;
     this.progress.visited.add(id);
     [x, y] = this.openSpot(x, y);
+    this.enteredAt = this.time;
     this.player.place(x, y, dir);
     this.cur.reveal(x, y, 7);
     this.particles.clear();

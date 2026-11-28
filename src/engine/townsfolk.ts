@@ -99,6 +99,114 @@ export class Townsfolk {
   private held = new Map<string, { stop: Stop; t: number }>();
 
   /** Put someone right here for a scene (they go back to their day afterwards). */
+  /** Scenes waiting for their cast to walk up to you. */
+  private pending: Array<{ ids: string[]; then: () => void; t: number; secs: number; map: MapId }> = [];
+
+  /** Someone is on their way for a scene (heart scenes wait rather than start another). */
+  summoning(): boolean { return this.pending.length > 0; }
+
+  /**
+   * Where someone would come into `map` from wherever they are now: the door or
+   * trail end their usual route uses (else the doorway nearest the player).
+   */
+  private entryFor(game: Game, npc: NpcRT, map: MapId): [number, number] {
+    let at = npc.map;
+    for (let k = 0; at && at !== map && k < 10; k++) {
+      const h = this.hop(at, map);
+      if (!h) break;
+      if (h.to === map) return [h.tx, h.ty];
+      at = h.to;
+    }
+    const m = game.getMap(map), pl = game.player;
+    let best: [number, number] | null = null, bd = Infinity;
+    for (const p of m.def.portals) {
+      if (!BUILT_MAPS.has(p.to)) continue;
+      const x = Math.max(0, Math.min(m.w - 1, p.x)), y = Math.max(0, Math.min(m.h - 1, p.y));
+      const d = Math.abs(x - pl.tx) + Math.abs(y - pl.ty);
+      if (d < bd) { bd = d; best = [x, y]; }
+    }
+    return best ?? [pl.tx, pl.ty + 1];
+  }
+
+  /**
+   * Bring someone to (x, y) on the player's map on foot: from where they stand if
+   * they're nearby, else in through the door or trail they'd really use.
+   * (If you've only just arrived here yourself, they were already here.)
+   */
+  walkIn(game: Game, npc: NpcRT, x: number, y: number, secs: number): void {
+    const map = game.cur.id;
+    if (npc.map === map && !npc.inBed && Math.abs(npc.tx - x) + Math.abs(npc.ty - y) <= 10) {
+      this.held.set(npc.def.id, { stop: { map, x, y, dir: npc.dir, wander: 0 }, t: secs });
+      return;
+    }
+    if (game.time - game.enteredAt < 1.2) { this.hold(npc, map, x, y, secs); return; }
+    const [ex, ey] = this.entryFor(game, npc, map);
+    this.arrive(npc, map, ex, ey, x, y, secs);
+    if (Math.abs(ex - game.player.tx) + Math.abs(ey - game.player.ty) < 12) sfx.door();
+  }
+
+  /** Spots beside the player for a scene's cast (open floor, not doorways, not other folk). */
+  spotsNear(game: Game, ids: string[]): Array<[number, number]> {
+    const m = game.cur, pl = game.player;
+    const out: Array<[number, number]> = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [1, 1], [-1, 1], [0, -1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) {
+      const x = pl.tx + dx, y = pl.ty + dy;
+      if (!m.inBounds(x, y) || m.blocked(x, y, true) || m.portalAt(x, y)) continue;
+      if (this.npcs.some((n) => n.map === m.id && n.tx === x && n.ty === y && !ids.includes(n.def.id))) continue;
+      out.push([x, y]);
+    }
+    while (out.length < ids.length) out.push([pl.tx, pl.ty + 1]);
+    return out;
+  }
+
+  /** Call the cast of a scene over to you; `then` runs once they've all walked up (or after a while). */
+  summon(game: Game, ids: string[], then: () => void, secs = 40): void {
+    const cast = ids.filter((id) => this.npcs.some((n) => n.def.id === id));
+    const spots = this.spotsNear(game, cast);
+    cast.forEach((id, k) => {
+      const npc = this.npcs.find((n) => n.def.id === id)!;
+      // Already standing right here? Stay put.
+      const close = npc.map === game.cur.id && !npc.inBed && Math.abs(npc.tx - game.player.tx) + Math.abs(npc.ty - game.player.ty) <= 2;
+      if (close) this.hold(npc, game.cur.id, npc.tx, npc.ty, secs);
+      else this.walkIn(game, npc, spots[k][0], spots[k][1], secs);
+    });
+    this.pending.push({ ids: cast, then, t: 0, secs, map: game.cur.id });
+  }
+
+  /** Each frame: walk summoned folk up to you, and start the scene when they're there. */
+  private tickSummons(game: Game, dt: number): void {
+    if (!this.pending.length) return;
+    const pl = game.player;
+    for (const job of [...this.pending]) {
+      // You left: they'll catch you another time (the scene hasn't happened yet).
+      if (job.map !== game.cur.id) { this.pending.splice(this.pending.indexOf(job), 1); continue; }
+      if (game.overlays.length) continue;
+      job.t += dt;
+      const cast = job.ids.map((id) => this.npcs.find((n) => n.def.id === id)!).filter(Boolean);
+      const here = (n: NpcRT) => n.map === job.map && !n.moving && Math.abs(n.tx - pl.tx) + Math.abs(n.ty - pl.ty) <= 2;
+      if (!cast.every(here)) {
+        if (job.t < 25) {
+          // Keep heading for wherever you are now.
+          if (Math.floor(job.t * 2) !== Math.floor((job.t - dt) * 2)) {
+            const spots = this.spotsNear(game, job.ids);
+            cast.forEach((n, k) => { if (!here(n)) this.retarget(n, spots[k][0], spots[k][1], job.secs); });
+          }
+          continue;
+        }
+        // Taking too long (something in the way): they squeeze past.
+        const spots = this.spotsNear(game, job.ids);
+        cast.forEach((n, k) => { if (!here(n)) this.hold(n, job.map, spots[k][0], spots[k][1], job.secs); });
+      }
+      for (const n of cast) {
+        const dx = pl.tx - n.tx, dy = pl.ty - n.ty;
+        n.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+        this.retarget(n, n.tx, n.ty, job.secs);
+      }
+      this.pending.splice(this.pending.indexOf(job), 1);
+      job.then();
+    }
+  }
+
   /** Walk on from (fx, fy) to (tx, ty) on the player's map, then stay a while (a visitor arriving). */
   arrive(npc: NpcRT, map: MapId, fx: number, fy: number, tx: number, ty: number, secs: number): void {
     npc.inBed = false;
@@ -198,6 +306,7 @@ export class Townsfolk {
   }
 
   update(game: Game, dt: number): void {
+    this.tickSummons(game, dt);
     const ctx = this.ctx(game);
     const curId = game.cur.id;
     for (const [id, h] of this.held) { h.t -= dt; if (h.t <= 0 || h.stop.map !== curId) this.held.delete(id); }
