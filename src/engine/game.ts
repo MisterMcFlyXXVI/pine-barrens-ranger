@@ -412,6 +412,7 @@ export class Game {
 
   enterMap(id: MapId, x: number, y: number, dir: Dir): void {
     this.cur = this.getMap(id);
+    if (id === 'PINE_HOLLOW_TOWN' && this.progress.days.firstTown === undefined) this.progress.days.firstTown = this.clock.day;
     this.progress.visited.add(id);
     [x, y] = this.openSpot(x, y);
     this.player.place(x, y, dir);

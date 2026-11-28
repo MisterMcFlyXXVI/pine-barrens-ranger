@@ -99,6 +99,20 @@ export class Townsfolk {
   private held = new Map<string, { stop: Stop; t: number }>();
 
   /** Put someone right here for a scene (they go back to their day afterwards). */
+  /** Walk on from (fx, fy) to (tx, ty) on the player's map, then stay a while (a visitor arriving). */
+  arrive(npc: NpcRT, map: MapId, fx: number, fy: number, tx: number, ty: number, secs: number): void {
+    npc.inBed = false;
+    npc.place(map, fx, fy, fx > tx ? 'left' : 'right');
+    npc.hopT = 0; npc.stuckT = 0;
+    this.held.set(npc.def.id, { stop: { map, x: tx, y: ty, dir: npc.dir, wander: 0 }, t: secs });
+  }
+
+  /** Point an arriving visitor at a new spot (they keep walking). */
+  retarget(npc: NpcRT, tx: number, ty: number, secs: number): void {
+    const h = this.held.get(npc.def.id);
+    if (h) { h.stop = { ...h.stop, x: tx, y: ty }; h.t = Math.max(h.t, secs); }
+  }
+
   hold(npc: NpcRT, map: MapId, x: number, y: number, secs: number): void {
     npc.inBed = false;
     npc.place(map, x, y, npc.dir);

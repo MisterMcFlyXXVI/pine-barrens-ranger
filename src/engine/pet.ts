@@ -273,20 +273,60 @@ export function petOvernight(game: Game): string | null {
 
 /* ---------------- Adoption ---------------- */
 
-/** The porch visit: first week of the game, or any morning after if you said "not yet". */
+/** Barney and Mabel walking up from the road with the basket (null when nobody's coming). */
+let visit: { t: number } | null = null;
+const ROAD_IN: Array<[number, number]> = [[62, 33], [62, 35]];   // where the town road enters the yard
+
+/**
+ * The basket visit: once you've been into town and met folks, Barney and Mabel
+ * walk up the road to your yard one daytime with a laundry basket. They walk
+ * on from the road and find you; the choice opens when they reach you.
+ * If you leave the yard first, they come back another day.
+ */
 export function adoptionTick(game: Game): void {
   const p = game.progress;
-  if (p.pet || game.mode !== 'play' || game.overlays.length || game.fading) return;
-  if (game.cur.id !== 'CABIN_YARD' || game.clock.day < 2 || (p.days.petAsk ?? 0) > game.clock.day) return;
-  const mins = game.clock.minutes;
-  if (mins < 6 * 60 + 30 || mins > 11 * 60) return;
+  if (p.pet || game.mode !== 'play' || game.fading) { visit = null; return; }
+  if (game.cur.id !== 'CABIN_YARD') { visit = null; return; }
+  if (game.overlays.length) return;
   const pl = game.player;
-  if (Math.abs(pl.tx - 28) > 8 || Math.abs(pl.ty - 20) > 6) return;
-  p.days.petAsk = game.clock.day + 1;
-  for (const [id, dx] of [['barnaby', 1], ['mabel', -1]] as Array<[string, number]>) {
-    const npc = game.townsfolk.npcs.find((n) => n.def.id === id);
-    const x = pl.tx + dx, y = pl.ty + 1;
-    if (npc && game.cur.inBounds(x, y) && !game.cur.blocked(x, y)) game.townsfolk.hold(npc, 'CABIN_YARD', x, y, 6);
+  const barney = game.townsfolk.npcs.find((n) => n.def.id === 'barnaby');
+  const mabel = game.townsfolk.npcs.find((n) => n.def.id === 'mabel');
+  if (!barney || !mabel) return;
+  const spots = (): Array<[number, number]> => {
+    const out: Array<[number, number]> = [];
+    for (const [dx, dy] of [[1, 1], [-1, 1], [1, 0], [-1, 0], [0, 1], [2, 1], [-2, 1], [0, -1]]) {
+      const x = pl.tx + dx, y = pl.ty + dy;
+      if (game.cur.inBounds(x, y) && !game.cur.blocked(x, y) && !game.cur.portalAt(x, y)) out.push([x, y]);
+      if (out.length === 2) break;
+    }
+    while (out.length < 2) out.push([pl.tx, pl.ty + 1]);
+    return out;
+  };
+  if (visit) {
+    // They're on their way: keep heading for wherever you are, then the basket.
+    visit.t += 0.5;
+    const [a, b] = spots();
+    game.townsfolk.retarget(barney, a[0], a[1], 30);
+    game.townsfolk.retarget(mabel, b[0], b[1], 30);
+    const near = (n: typeof barney) => n.map === 'CABIN_YARD' && Math.abs(n.tx - pl.tx) + Math.abs(n.ty - pl.ty) <= 2 && !n.moving;
+    if (!(near(barney) && near(mabel)) && visit.t < 45) return;
+    if (visit.t >= 45) { game.townsfolk.hold(barney, 'CABIN_YARD', a[0], a[1], 25); game.townsfolk.hold(mabel, 'CABIN_YARD', b[0], b[1], 25); }
+    visit = null;
+    barney.dir = barney.tx < pl.tx ? 'right' : barney.tx > pl.tx ? 'left' : 'up';
+    mabel.dir = mabel.tx < pl.tx ? 'right' : mabel.tx > pl.tx ? 'left' : 'up';
+    game.townsfolk.retarget(barney, barney.tx, barney.ty, 25); game.townsfolk.retarget(mabel, mabel.tx, mabel.ty, 25);
+  } else {
+    // Only after you've been to town and met people; daytime; once a day at most.
+    if (!p.visited.has('PINE_HOLLOW_TOWN') || (p.days.petAsk ?? 0) > game.clock.day) return;
+    const mins = game.clock.minutes;
+    if (mins < 7 * 60 || mins > 17 * 60) return;
+    p.days.petAsk = game.clock.day + 1;
+    const [a, b] = spots();
+    game.townsfolk.arrive(barney, 'CABIN_YARD', ROAD_IN[0][0], ROAD_IN[0][1], a[0], a[1], 60);
+    game.townsfolk.arrive(mabel, 'CABIN_YARD', ROAD_IN[1][0], ROAD_IN[1][1], b[0], b[1], 60);
+    visit = { t: 0 };
+    game.toast('Someone\'s coming up the road from town: Barney and Mabel, carrying a laundry basket between them.');
+    return;
   }
   sfx.open();
   const choose = (k: PetKind) => () => {
@@ -303,7 +343,7 @@ export function adoptionTick(game: Game): void {
     }));
   };
   game.openOverlay(new Dialog([
-    'Barney and Mabel come up the path with a laundry basket between them. The basket is wiggling.',
+    'Barney and Mabel set the laundry basket down at your feet, a little out of breath from the climb. The basket is wiggling.',
     'Barney: "Buster\'s had a litter, and this one keeps chewing my timetables." Mabel: "And one of my barn kittens needs a porch to boss around."',
     'Barney: "And Clara found this fella up on the ridge with a hurt wing. Mended now. Won\'t leave her antenna alone." A raven peers out of the basket and says something rude in static.',
     'Mabel: "A fire-watch cabin needs company, hon. Take your pick."',
