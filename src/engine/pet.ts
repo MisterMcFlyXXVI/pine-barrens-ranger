@@ -1,14 +1,17 @@
 /**
- * Cabin companion runtime. Your pet follows a tile behind you around the cabin
- * yard and town (the hound and the raven come into the wilds too; the cat stays
- * home), waits outside doors and through encounters, and sleeps by the stove at
- * night. Pet them once a day for a little stamina and bond.
+ * Cabin companion runtime. Your pet lives at the cabin: by day they potter
+ * around their house in the yard (dog house, cat tower or raven perch) or
+ * lounge inside the cabin, and they sleep by the stove (or in their pet bed) at
+ * night. Press A on their house to take them along: then they follow a tile
+ * behind you around the yard and town (the hound and the raven come into the
+ * wilds too; cats don't hike), and wait outside doors. Each morning they start
+ * at home again. Pet them once a day for a little stamina and bond.
  */
 import type { Game } from './game';
 import type { MapId } from '../data/mapgen';
 import { PETS, CAT_GIFTS } from '../data/pets';
 import type { PetKind } from '../data/pets';
-import { O } from '../data/tiles';
+import { O, T } from '../data/tiles';
 import { DIR_VEC } from '../util';
 import { Dialog } from '../ui/menus';
 import { NamePrompt } from '../ui/namePrompt';
@@ -26,7 +29,26 @@ function petBedSpot(game: Game): [number, number] | null {
 }
 const DOORMAT: [number, number] = [27, 20];            // the cat's gift spot
 const SPEED = 70;                                       // px per second
-const PERCHES = new Set<number>([O.FENCE, O.SIGN, O.LAMP, O.MAILBOX, O.WOODPILE]);
+const PERCHES = new Set<number>([O.FENCE, O.SIGN, O.LAMP, O.MAILBOX, O.WOODPILE, O.PET_HOUSE]);
+const HOME_SPEED = 26;                                  // an unhurried amble around the yard
+/** Where the pet's house goes, in order of preference (beside the porch, off the paths). */
+const HOUSE_SPOTS: ReadonlyArray<[number, number]> = [[35, 20], [35, 21], [36, 21], [22, 20], [23, 21], [33, 21], [37, 20]];
+/** Inside the cabin, they lounge on or around the rug. */
+const INSIDE_ANCHOR: [number, number] = [6, 7];
+
+/** The pet's house in the yard (placing one if they don't have it yet). */
+export function ensurePetHouse(game: Game): [number, number] | null {
+  if (!game.progress.pet) return null;
+  const yard = game.getMap('CABIN_YARD');
+  for (const [i, o] of yard.placed) if (o === O.PET_HOUSE) return [i % yard.w, Math.floor(i / yard.w)];
+  const ok = (x: number, y: number) => yard.inBounds(x, y) && yard.obj(x, y) === O.NONE && !yard.blocked(x, y) && !yard.portalAt(x, y)
+    && yard.plotIndex(x, y) < 0 && yard.ground(x, y) !== T.PATH && !yard.blocked(x, y + 1);
+  let spot = HOUSE_SPOTS.find(([x, y]) => ok(x, y)) ?? null;
+  for (let r = 1; !spot && r < 12; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (ok(34 + dx, 21 + dy)) spot = [34 + dx, 21 + dy];
+  if (!spot) return null;
+  yard.placeObject(yard.idx(spot[0], spot[1]), O.PET_HOUSE);
+  return spot;
+}
 
 export type PetMode = 'follow' | 'wait' | 'home' | 'sleep';
 
@@ -49,6 +71,9 @@ export class Companion {
   private barkT = 4;
   private cawT = 8;
   private cawToastMap = '';
+  /** Home roaming: where they're ambling to, and when they'll pick somewhere new. */
+  private goal: [number, number] | null = null;
+  private goalT = 0;
 
   private place(map: MapId, tx: number, ty: number): void {
     this.map = map; this.tx = tx; this.ty = ty; this.x = tx * 16; this.y = ty * 16; this.trail = []; this.perched = false;
@@ -71,28 +96,71 @@ export class Companion {
       }
       return;
     }
-    const followable = !m.def.indoor && (m.id === 'CABIN_YARD' || m.id === 'PINE_HOLLOW_TOWN' || (def.hikes && m.def.wild));
-    if (followable) {
-      if (this.mode !== 'follow' || this.map !== m.id) {
-        // Trot in behind you.
-        const [dx, dy] = DIR_VEC[p.dir];
-        const bx = p.tx - dx, by = p.ty - dy;
-        if (m.inBounds(bx, by) && !m.blocked(bx, by)) this.place(m.id, bx, by); else this.place(m.id, p.tx, p.ty);
-        this.mode = 'follow';
+    if (pet.along) {
+      const followable = !m.def.indoor && (m.id === 'CABIN_YARD' || m.id === 'PINE_HOLLOW_TOWN' || (def.hikes && m.def.wild));
+      if (followable) {
+        if (this.mode !== 'follow' || this.map !== m.id) {
+          // Trot in behind you.
+          const [dx, dy] = DIR_VEC[p.dir];
+          const bx = p.tx - dx, by = p.ty - dy;
+          if (m.inBounds(bx, by) && !m.blocked(bx, by)) this.place(m.id, bx, by); else this.place(m.id, p.tx, p.ty);
+          this.mode = 'follow';
+        }
+        this.follow(game, dt);
+        this.perks(game, dt);
+        return;
       }
-      this.follow(game, dt);
-      this.perks(game, dt);
-      return;
+      if (m.def.indoor) {
+        // Waiting politely outside the door you went through.
+        if (this.mode === 'follow') this.mode = 'wait';
+        this.moving = false;
+        return;
+      }
+      // The wilds, with a cat: cats don't hike.
+      pet.along = false;
+      game.toast(`${pet.name} takes one look at the trail and heads home to the cabin. Cats don't hike.`);
     }
-    if (m.def.indoor) {
-      // Waiting politely by the door you went through (or at home if they weren't with you).
-      if (this.mode === 'follow') this.mode = 'wait';
-      if (this.mode === 'sleep' || this.map === null) { this.mode = 'home'; this.place('CABIN_YARD', HOME_SPOT[0], HOME_SPOT[1]); }
-      this.moving = false;
-      return;
+    this.atHome(game, dt);
+  }
+
+  /** At home: ambling round the house in the yard, or lounging inside, a few hours at a time. */
+  private atHome(game: Game, dt: number): void {
+    const pet = game.progress.pet!;
+    const def = PETS[pet.kind];
+    const house = ensurePetHouse(game);
+    const block = Math.floor(game.clock.minutes / 90) + game.clock.day * 17;
+    const inside = hash2(block, pet.kind.length, 311) < def.indoors;
+    const map: MapId = inside ? 'CABIN_INTERIOR' : 'CABIN_YARD';
+    const anchor: [number, number] = inside ? (petBedSpot(game) ?? INSIDE_ANCHOR) : house ? [house[0], house[1] + 1] : HOME_SPOT;
+    const hm = game.getMap(map);
+    if (this.mode !== 'home' || this.map !== map) {
+      this.mode = 'home'; this.goal = null; this.goalT = 0;
+      this.place(map, anchor[0], anchor[1]);
     }
-    // Somewhere they don't go: back home on the porch.
-    if (this.mode !== 'home' || this.map !== 'CABIN_YARD') { this.mode = 'home'; this.place('CABIN_YARD', HOME_SPOT[0], HOME_SPOT[1]); }
+    // The raven sits up on its perch most of the time.
+    if (pet.kind === 'raven' && house && !this.goal && hash2(block, 3, 9) < 0.7) {
+      this.goal = [house[0], house[1]];
+    }
+    this.goalT -= dt;
+    if (!this.goal || this.goalT <= 0) {
+      this.goalT = 4 + Math.random() * 5;
+      const r = inside ? 2 : 4;
+      for (let k = 0; k < 8; k++) {
+        const x = anchor[0] + Math.round((Math.random() * 2 - 1) * r), y = anchor[1] + Math.round((Math.random() * 2 - 1) * r);
+        if (hm.inBounds(x, y) && !hm.blocked(x, y) && !hm.portalAt(x, y)) { this.goal = [x, y]; break; }
+      }
+      if (pet.kind === 'raven' && house && Math.random() < 0.5) this.goal = [house[0], house[1]];
+    }
+    const [gx, gy] = this.goal ? [this.goal[0] * 16, this.goal[1] * 16] : [this.x, this.y];
+    const dx = gx - this.x, dy = gy - this.y, dist = Math.hypot(dx, dy);
+    if (dist > 0.5) {
+      const step = Math.min(dist, HOME_SPEED * (pet.kind === 'raven' ? 2.2 : 1) * dt);
+      this.x += (dx / dist) * step; this.y += (dy / dist) * step;
+      if (Math.abs(dx) > 0.5) this.right = dx > 0;
+    }
+    this.moving = dist > 0.5;
+    this.tx = Math.round(this.x / 16); this.ty = Math.round(this.y / 16);
+    this.perched = pet.kind === 'raven' && !this.moving && !!house && map === 'CABIN_YARD' && this.tx === house[0] && this.ty === house[1];
   }
 
   private follow(game: Game, dt: number): void {
@@ -193,6 +261,7 @@ export function bondWord(b: number): string {
 /** Morning: the cat sometimes leaves a gift on the doormat. Returns a summary line. */
 export function petOvernight(game: Game): string | null {
   const pet = game.progress.pet;
+  if (pet) pet.along = false; // a new day starts at home
   if (!pet || pet.kind !== 'cat') return null;
   const day = game.clock.day;
   if (hash2(day, 11, 707) > 0.55) return null;
@@ -224,10 +293,12 @@ export function adoptionTick(game: Game): void {
     const def = PETS[k];
     game.openOverlay(new NamePrompt(`What will you call your ${def.title.toLowerCase()}?`, def.names, (name) => {
       p.pet = { kind: k, name, bond: 0, petDay: 0, adoptDay: game.clock.day };
+      ensurePetHouse(game);
       sfx.fanfare();
       game.openOverlay(new Dialog([
         k === 'pup' ? `Barney: "${name}. Good name. She'll find you a jackalope before she finds her own tail."` : k === 'cat' ? `Mabel: "${name}! Keep that one in cream and she\'ll keep your cabin in mice-free bliss."` : `Barney: "${name}. Clara will be tickled. Watch out, it steals bottle caps."`,
         `(${name} has come to live at the cabin. Pet ${k === 'cat' ? 'her' : k === 'pup' ? 'her' : 'it'} once a day. ${def.perk})`,
+        `Barney sets up a ${def.house.toLowerCase()} by the porch. (${name} stays around the cabin. Press A on the ${def.house.toLowerCase()} to take ${name} along with you, or to send ${pet0(k)} home.)`,
       ]));
     }));
   };
@@ -241,5 +312,31 @@ export function adoptionTick(game: Game): void {
     { label: `${PETS.cat.title}`, fn: choose('cat') },
     { label: `${PETS.raven.title}`, fn: choose('raven') },
     { label: 'Not just yet', fn: () => { p.days.petAsk = game.clock.day + 3; game.openOverlay(new Dialog(['Mabel: "Suit yourself, hon. We\'ll swing by again."'])); } },
+  ]));
+}
+
+const pet0 = (k: PetKind) => (k === 'raven' ? 'it' : 'her');
+
+/** Press A on the pet's house: take them along, or send them home. */
+export function petHouseInteract(game: Game): void {
+  const pet = game.progress.pet;
+  if (!pet) { sfx.blip(); game.openOverlay(new Dialog(['An empty little house. Somebody ought to live in it.'])); return; }
+  const def = PETS[pet.kind];
+  const c = game.companion;
+  const night = game.clock.minutes >= 22 * 60 || game.clock.minutes < 6 * 60;
+  sfx.blip();
+  if (night) { game.openOverlay(new Dialog([`${pet.name} is asleep inside, by the stove. Let ${pet0(pet.kind)} be till morning.`])); return; }
+  const where = pet.along ? `${pet.name} is out with you today.` : c.map === 'CABIN_INTERIOR' ? `${pet.name} is lounging inside the cabin.` : `${pet.name} is pottering around the ${def.house.toLowerCase()}.`;
+  const hikeNote = def.hikes ? '' : ' (Cats come to the yard and town, but not the wilds.)';
+  game.openOverlay(new Dialog([`Your ${def.house.toLowerCase()}. ${where}${hikeNote}`], pet.along ? [
+    { label: `Send ${pet.name} home`, fn: () => { pet.along = false; sfx.confirm(); game.toast(`${pet.name} settles in at home. See you later.`); } },
+    { label: 'Leave it', fn: () => undefined },
+  ] : [
+    { label: `Take ${pet.name} along`, fn: () => {
+      pet.along = true; sfx.confirm();
+      if (pet.kind === 'pup') sfx.bark(); else if (pet.kind === 'raven') sfx.caw();
+      game.toast(`${pet.name} is coming with you${pet.kind === 'pup' ? ', tail going like a metronome' : pet.kind === 'raven' ? ', riding the wind just behind you' : ', tail up'}.`);
+    } },
+    { label: 'Leave them be', fn: () => undefined },
   ]));
 }

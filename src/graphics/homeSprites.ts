@@ -412,6 +412,46 @@ function petBed(): Canv {
   }, 16, 16, false);
 }
 
+/* ------------------------------ pet houses ------------------------------ */
+
+/** Barney's dog house: red boards, a shingled roof and a bone over the door. */
+function dogHouse(): Canv {
+  return art((p) => {
+    p.rect(2, 9, 16, 9, CRAN); for (let x = 3; x < 18; x += 3) p.vline(x, 9, 17, RED);
+    for (let y = 2; y < 10; y++) { const i = Math.round((9 - y) * 0.9); p.hline(1 + i, 18 - i, y, y % 2 ? SHADOW : PINE); }
+    p.hline(1, 18, 9, SHADOW);
+    p.rect(7, 11, 6, 7, VOID); p.hline(8, 11, 10, VOID); // arched door
+    p.hline(8, 11, 4, FOG); p.px(7, 3, FOG); p.px(7, 5, FOG); p.px(12, 3, FOG); p.px(12, 5, FOG); // the bone sign
+    p.rect(14, 17, 4, 2, MIST); p.hline(14, 17, 17, FOG); // water bowl
+    p.rect(1, 18, 18, 1, SHADOW);
+  }, 20, 19);
+}
+
+/** Mabel's cat tower: two carpeted posts, three platforms and a dangling mouse toy. */
+function catTower(): Canv {
+  return art((p) => {
+    p.rect(3, 4, 3, 19, AMBER); p.rect(12, 9, 3, 14, AMBER); // sisal posts
+    for (let y = 5; y < 23; y += 2) { p.px(3, y, RUST); p.px(12, y + 1, RUST); }
+    p.rect(1, 2, 9, 3, TWILIGHT); p.hline(1, 9, 2, MIST); // top perch
+    p.rect(8, 8, 9, 3, TWILIGHT); p.hline(8, 16, 8, MIST);
+    p.rect(0, 15, 17, 3, TWILIGHT); p.hline(0, 16, 15, MIST);
+    p.rect(1, 22, 16, 2, SHADOW); p.hline(1, 16, 22, TWILIGHT); // base
+    p.vline(15, 11, 13, FOG); p.rect(14, 14, 3, 1, MIST); p.px(14, 14, VOID); // mouse toy
+  }, 17, 24);
+}
+
+/** Clara's raven perch: a T-post with a little roof, a seed cup and a dangling bottle cap. */
+function ravenPerch(): Canv {
+  return art((p) => {
+    p.rect(7, 6, 2, 19, RUST); p.vline(7, 6, 24, AMBER);
+    p.rect(1, 9, 14, 2, AMBER); p.hline(1, 14, 9, LANTERN); // the crossbar
+    p.line(2, 6, 8, 1, PINE); p.line(14, 6, 8, 1, PINE); p.hline(2, 14, 6, SHADOW); p.line(3, 6, 8, 2, PINE); // little roof
+    p.rect(12, 11, 3, 2, MIST); p.px(13, 11, AMBER); // seed cup
+    p.vline(3, 11, 13, FOG); p.rect(2, 14, 3, 1, LANTERN); // a bottle cap on a string
+    p.rect(4, 24, 8, 2, SHADOW);
+  }, 16, 26);
+}
+
 /* ------------------------------ icons ------------------------------ */
 
 function shrink(c: Canv): Canv {
@@ -451,6 +491,9 @@ export function bakeHomestead(): void {
   HS.armchair = [armchair()];
   HS.floorlamp = [floorLamp(false), floorLamp(true)];
   HS.fern = [fern()];
+  HS.pethouse_pup = [dogHouse()];
+  HS.pethouse_cat = [catTower()];
+  HS.pethouse_raven = [ravenPerch()];
   HS.porchswing = [porchSwing(0), porchSwing(1)];
   HS.skep = [beeSkep(0), beeSkep(1)];
   HS.smokehouse = [smokehouse()];

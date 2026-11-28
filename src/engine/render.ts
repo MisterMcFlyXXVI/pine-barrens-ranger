@@ -8,6 +8,7 @@ import { petFrame, heartIcon } from '../graphics/petSprites';
 import { settings } from './settings';
 import { decoSprite, decoLight, henDrawables, eaveLights, eaveLightSources } from './homestead';
 import { FLAT_DECOS } from '../data/homestead';
+import { HS } from '../graphics/homeSprites';
 import { rescueTracks } from './heartScenes';
 import { visitorHere, visitorPos } from './bonds';
 import type { Game } from './game';
@@ -234,6 +235,7 @@ const BLAZE_TREES: ReadonlySet<number> = new Set<number>([O.PINE, O.OAK, O.HEMLO
 function objSprite(m: MapRuntime, o: number, x: number, y: number, time: number, night: boolean, rustling: boolean): Canv | null {
   const h = hash2(x, y, 3);
   if (o >= O.FIRE_PIT && o <= O.PET_BED && homeGame) return decoSprite(homeGame, o, x, y, time, night, season);
+  if (o === O.PET_HOUSE) return HS[`pethouse_${homeGame?.progress.pet?.kind ?? 'pup'}`]?.[0] ?? null;
   switch (o) {
     case O.FOUNTAIN: return OBJ.fountain[Math.floor(time * 3) % 2];
     case O.BOARD: return OBJ.board[0];

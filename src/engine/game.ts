@@ -6,7 +6,7 @@ import { oriTick } from './orientation';
 import { recordPrints, goldCount, backfillAlbum } from './album';
 import { markMilestone } from './barks';
 import { morningNews, eveningEventToday, eventNow, eventStallAt, winterBeaten, eventOn } from './calendar';
-import { Companion, petPet, petOvernight, adoptionTick } from './pet';
+import { Companion, petPet, petOvernight, adoptionTick , petHouseInteract } from './pet';
 import { NamePrompt } from '../ui/namePrompt';
 import { onSettings, settings, adoptSaveSettings } from './settings';
 import { LORE } from '../data/lore';
@@ -1793,6 +1793,9 @@ export class Game {
       case 'mine':
       case 'deco':
         return false;
+      case 'pethouse':
+        petHouseInteract(this);
+        return true;
       case 'barnstar':
         sfx.blip();
         this.openOverlay(new Dialog(['Your painted barn star: eight points, red and gold, in a ring of tulips. The Snallygaster gives a yard with a star a wide berth, Omi says. (Snallygaster encounters start calmer while it stands.)'], [
@@ -2161,6 +2164,7 @@ export class Game {
     };
     if (this.journalPagesOn(this.cur.id).some((pg) => pg.x === tx && pg.y === ty)) return 'PICK UP PAGE';
     if (kind === 'table' && this.cur.id === 'CABIN_INTERIOR') return 'READ JOURNAL';
+    if (kind === 'pethouse') return this.progress.pet ? (this.progress.pet.along ? 'SEND HOME' : 'TAKE ALONG') : 'LOOK';
     if (kind === 'deco') { const dd = DECO_BY_OBJ[this.cur.obj(tx, ty)]; return dd?.item === 'deco_coop' ? 'COOP' : dd?.item === 'deco_fire_pit' ? 'FIRE PIT' : 'LOOK'; }
     if (this.cur.id === 'CABIN_INTERIOR' && this.cur.ground(tx, ty) === T.WALL_BASE && WALL_DECOS.has(this.cur.obj(tx, ty - 1))) return 'LOOK';
     if (kind === 'crate' && this.cur.id === 'CABIN_INTERIOR') return 'STORAGE';

@@ -288,6 +288,8 @@ export const O = {
   RECORD_PLAYER: 172,
   RAG_RUG: 173,
   PET_BED: 174,
+  /** Your companion's home in the yard: dog house, cat tower or raven perch. */
+  PET_HOUSE: 175,
 } as const;
 
 /** Objects that count as encounter cover when stepped through. */
@@ -306,7 +308,7 @@ export type Interact =
   | 'snare' | 'handcar' | 'rocker' | 'radio' | 'cat' | 'dog' | 'gumball' | 'sign' | 'mailbox' | 'bookshelf' | 'stove' | 'crate' | 'lamp' | 'table' | 'woodpile' | 'plant'
   | 'apple' | 'hollow' | 'mount' | 'sawblade' | 'rodbase'
   | 'board' | 'counter' | 'case' | 'kiosk' | 'maptable' | 'railcar' | 'booth' | 'signal' | 'jukebox'
-  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar' | 'mine' | 'deco';
+  | 'grill' | 'shelf' | 'anvil' | 'fountain' | 'poster' | 'trap' | 'gazebo' | 'ledger' | 'barnstar' | 'mine' | 'deco' | 'pethouse';
 
 export interface Drop {
   item: string;
@@ -436,6 +438,7 @@ export const OBJ_PROPS: Record<number, ObjProps> = {
   [O.RECORD_PLAYER]: { name: 'Record Player', solid: true, interact: 'deco' },
   [O.RAG_RUG]: { name: 'Rag Rug', solid: false, interact: 'deco' },
   [O.PET_BED]: { name: 'Pet Bed', solid: false, interact: 'deco' },
+  [O.PET_HOUSE]: { name: 'Pet House', solid: true, interact: 'pethouse' },
   [O.HANDCAR]: { name: 'Handcar', solid: true, interact: 'handcar' },
   [O.FORGET_ME_NOT]: { name: 'Forget-me-nots', solid: false },
   [O.THISTLE]: { name: 'Thistle', solid: false },
